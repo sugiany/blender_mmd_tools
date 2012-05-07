@@ -53,7 +53,6 @@ class Header:
         self.bone_index_size = 1
         self.morph_index_size = 1
         self.rigid_index_size = 1
-        self.model_vertices = 0
 
     def load(self, fin):
         self.sign = str(fin.read(4), 'ascii')
@@ -68,22 +67,22 @@ class Header:
         self.encoding = Encoding(struct.unpack('<B', fin.read(1))[0])
         self.additional_uvs, = struct.unpack('<B', fin.read(1))
         self.vertex_index_size, = struct.unpack('<B', fin.read(1))
+        self.texture_index_size, = struct.unpack('<B', fin.read(1))
         self.material_index_size, = struct.unpack('<B', fin.read(1))
         self.bone_index_size, = struct.unpack('<B', fin.read(1))
         self.morph_index_size, = struct.unpack('<B', fin.read(1))
         self.rigid_index_size, = struct.unpack('<B', fin.read(1))
-        self.model_vertices, = struct.unpack('<B', fin.read(1))
 
     def __repr__(self):
-        return '<Header encoding %s, uvs %d, vtx %d, mat %d, bone %d, morph %d, rigid %d, model_vtx %d>'%(
+        return '<Header encoding %s, uvs %d, vtx %d, tex %d, mat %d, bone %d, morph %d, rigid %d>'%(
             str(self.encoding),
             self.additional_uvs,
             self.vertex_index_size,
+            self.texture_index_size,
             self.material_index_size,
             self.bone_index_size,
             self.morph_index_size,
             self.rigid_index_size,
-            self.model_vertices
             )
 
     def readStr(self, fin):
@@ -109,6 +108,9 @@ class Header:
 
     def readBoneIndex(self, fin):
         return self.readIndex(fin, self.bone_index_size)
+
+    def readTextureIndex(self, fin):
+        return self.readIndex(fin, self.texture_index_size)
 
 class Model:
     def __init__(self):
@@ -145,13 +147,34 @@ class Model:
             v.load(header, fin)
             self.vertices.append(v)
 
+        num_faces, = struct.unpack('<i', fin.read(4))
+        self.faces = []
+        for i in range(num_faces):
+            f = header.readVertexIndex(fin)
+            self.faces.append(f)
+
+        num_textures, = struct.unpack('<i', fin.read(4))
+        self.textures = []
+        for i in range(num_textures):
+            t = Texture()
+            t.load(header, fin)
+            self.textures.append(t)
+
+        num_materials, = struct.unpack('<i', fin.read(4))
+        self.materials = []
+        for i in range(num_materials):
+            m = Material()
+            m.load(header, fin)
+            self.materials.append(m)
+
 
     def __repr__(self):
-        return '<Model name %s, name_e %s, comment %s, comment_e %s>'%(
+        return '<Model name %s, name_e %s, comment %s, comment_e %s, textures %s>'%(
             self.name,
             self.name_e,
             self.comment,
             self.comment_e,
+            str(self.textures),
             )
 
 class Vertex:
@@ -249,13 +272,15 @@ class BoneWeight:
         else:
             raise ValueError('invalid weight type %s'%str(self.type))
 
-class Face:
-    def __init__(self):
-        self.vertices = []
-
 class Texture:
     def __init__(self):
         self.path = ''
+
+    def __repr__(self):
+        return '<Texture path %s>'%str(self.path)
+
+    def load(self, header, fin):
+        self.path = header.readStr(fin)
 
 class SharedTexture(Texture):
     def __init__(self):
@@ -263,6 +288,11 @@ class SharedTexture(Texture):
         self.prefix = ''
 
 class Material:
+    SPHERE_MODE_OFF = 0
+    SPHERE_MODE_MULT = 1
+    SPHERE_MODE_ADD = 2
+    SPHERE_MODE_SUB = 3
+
     def __init__(self):
         self.name = ''
         self.name_e = ''
@@ -271,20 +301,70 @@ class Material:
         self.specular = []
         self.ambient = []
 
-        self.isDoulbeSided = False
-        self.enabledDropShadow = False
-        self.enabledSelfShadowMap = False
-        self.enabledSelfShadow = False
-        self.enabledToonEdge = False
+        self.is_doulbe_sided = False
+        self.enabled_drop_shadow = False
+        self.enabled_self_shadow_map = False
+        self.enabled_self_shadow = False
+        self.enabled_toon_edge = False
 
         self.edge_color = []
         self.edge_size = 1
 
         self.texture = None
         self.sphere_texture = None
+        self.sphere_texture_mode = 0
+        self.is_shared_toon_texture = True
         self.toon_texture = None
 
         self.comment = ''
+
+    def __repr__(self):
+        return '<Material name %s, name_e %s, diffuse %s, specular %s, ambient %s, double_side %s, drop_shadow %s, self_shadow_map %s, self_shadow %s, toon_edge %s, edge_color %s, edge_size %s, toon_texture %s, comment %s>'%(
+            self.name,
+            self.name_e,
+            str(self.diffuse),
+            str(self.specular),
+            str(self.ambient),
+            str(self.is_doulbe_sided),
+            str(self.enabled_drop_shadow),
+            str(self.enabled_self_shadow_map),
+            str(self.enabled_self_shadow),
+            str(self.enabled_toon_edge),
+            str(self.edge_color),
+            str(self.edge_size),
+            str(self.texture),
+            str(self.sphere_texture),
+            str(self.toon_texture),
+            str(self.comment),)
+
+    def load(self, header, fin):
+        self.name = header.readStr(fin)
+        self.name_e = header.readStr(fin)
+
+        self.diffuse = list(struct.unpack('<ffff', fin.read(4*4)))
+        self.specular = list(struct.unpack('<ffff', fin.read(4*4)))
+        self.ambient = list(struct.unpack('<fff', fin.read(4*3)))
+
+        flags, = struct.unpack('<b', fin.read(1))
+        self.is_doulbe_sided = flags & 1
+        self.enabled_drop_shadow = flags & 2
+        self.enabled_self_shadow_map = flags & 4
+        self.enabled_self_shadow = flags & 8
+        self.enabled_toon_edge = flags & 16
+
+        self.edge_color = list(struct.unpack('<ffff', fin.read(4*4)))
+        self.edge_size, = struct.unpack('<f', fin.read(4))
+
+        self.texture = header.readTextureIndex(fin)
+        self.sphere_texture = header.readTextureIndex(fin)
+        self.sphere_texture_mode, = struct.unpack('<b', fin.read(1))
+
+        self.is_shared_toon_texture, = struct.unpack('<b', fin.read(1))
+        self.is_shared_toon_texture = (self.is_shared_toon_texture == 1)
+        self.toon_texture = header.readTextureIndex(fin)
+
+        self.comment = header.readStr(fin)
+        n, = struct.unpack('<i', fin.read(4))
 
 class Bone:
     def __init__(self):
