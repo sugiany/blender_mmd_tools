@@ -185,6 +185,16 @@ class Model:
             m = Morph.create(header, fin)
             self.morphs.append(m)
 
+        num_disp, = struct.unpack('<i', fin.read(4))
+        self.display = []
+        for i in range(num_disp):
+            d = Display()
+            d.load(header, fin)
+            print(d)
+            self.display.append(d)
+
+            
+
     def __repr__(self):
         return '<Model name %s, name_e %s, comment %s, comment_e %s, textures %s>'%(
             self.name,
@@ -683,7 +693,6 @@ class GroupMorph(Morph):
 
         self.data = []
 
-
 class Display:
     def __init__(self):
         self.name = ''
@@ -692,6 +701,30 @@ class Display:
         self.isSpecial = False
 
         self.data = []
+
+    def __repr__(self):
+        return '<Display name %s, name_e %s>'%(
+            self.name,
+            self.name_e,
+            )
+
+    def load(self, header, fin):
+        self.name = header.readStr(fin)
+        self.name_e = header.readStr(fin)
+
+        self.isSpecial = (struct.unpack('<b', fin.read(1))[0] == 1)
+        num, = struct.unpack('<i', fin.read(4))
+        self.data = []
+        for i in range(num):
+            disp_type, = struct.unpack('<b', fin.read(1))
+            index = None
+            if disp_type == 0:
+                index = header.readBoneIndex(fin)
+            elif disp_type == 1:
+                index = header.readMorphIndex(fin)
+            else:
+                raise Error('invalid value.')
+            self.data.append((disp_type, index))
 
 class Rigid:
     TYPE_SPHERE = 0
