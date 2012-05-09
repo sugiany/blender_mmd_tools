@@ -37,8 +37,8 @@ class Encoding:
 class Coordinate:
     """ """
     def __init__(self, xAxis, zAxis):
-        self.x_axis = []
-        self.z_axis = []
+        self.x_axis = xAxis
+        self.z_axis = zAxis
 
 class Header:
     def __init__(self):
@@ -169,6 +169,13 @@ class Model:
             m.load(header, fin)
             self.materials.append(m)
 
+        num_bones, = struct.unpack('<i', fin.read(4))
+        self.bones = []
+        for i in range(num_bones):
+            b = Bone()
+            b.load(header, fin)
+            print(b)
+            self.bones.append(b)
 
     def __repr__(self):
         return '<Model name %s, name_e %s, comment %s, comment_e %s, textures %s>'%(
@@ -377,23 +384,22 @@ class Bone:
 
         self.location = []
         self.parent = None
-        self.offset = []
         self.depth = 0
 
         # 接続先表示方法
-        # 座標オフセット(float3)または、Boneオブジェクト
+        # 座標オフセット(float3)または、boneIndex(int)
         self.displayConnection = None
 
         self.isRotatable = True
         self.isMovable = True
         self.visible = True
-        self.isEditable = True
+        self.isControllable = True
 
         self.ik = False
 
         # 回転付与
         # (Boneオブジェクト, 付与率float)のタプル
-        self.externalTrans = None
+        self.externalRotate = None
 
         # 移動付与
         # (Boneオブジェクト, 付与率float)のタプル
@@ -411,16 +417,7 @@ class Bone:
         # 外部親変形
         self.externalTransKey = None
 
-class IKLink:
-    def __init__(self):
-        self.target = None
-        self.maximunAngle = None
-        self.minimumAngle = None
-
-class IKBone(Bone):
-    def __init__(self):
-        Bone.__init__(self)
-
+        # 以下IKボーンのみ有効な変数
         self.target = None
         self.loopCount = 0
         # IKループ計三時の1回あたりの制限角度(ラジアン)
@@ -429,6 +426,95 @@ class IKBone(Bone):
         # IKLinkオブジェクトの配列
         self.ik_links = []
 
+    def __repr__(self):
+        return '<Bone name %s, name_e %s>'%(
+            self.name,
+            self.name_e,)
+
+    def load(self, header, fin):
+        self.name = header.readStr(fin)
+        self.name_e = header.readStr(fin)
+
+        self.location = list(struct.unpack('<fff', fin.read(4*3)))
+        self.parent = header.readBoneIndex(fin)
+        self.depth, = struct.unpack('<i', fin.read(4))
+
+        flags, = struct.unpack('<h', fin.read(2))
+        if flags & 0x0001:
+            self.displayConnection = header.readBoneIndex(fin)
+        else:
+            self.displayConnection = list(struct.unpack('<fff', fin.read(4*3)))
+
+        self.isRotatable    = ((flags & 0x0002) != 0)
+        self.isMovable      = ((flags & 0x0004) != 0)
+        self.visible        = ((flags & 0x0008) != 0)
+        self.isControllable = ((flags & 0x0010) != 0)
+
+        self.ik             = ((flags & 0x0020) != 0)
+
+        if flags & 0x0100:
+            t = header.readBoneIndex(fin)
+            v, = struct.unpack('<f', fin.read(4))
+            self.externalRotate = (t, v)
+        else:
+            self.externalRotate = None
+
+        if flags & 0x0200:
+            t = header.readBoneIndex(fin)
+            v, = struct.unpack('<f', fin.read(4))
+            self.externalTrans = (t, v)
+        else:
+            self.externalTrans = None
+
+        if flags & 0x0400:
+            self.axis = list(struct.unpack('<fff', fin.read(4*3)))
+        else:
+            self.axis = None
+
+        if flags & 0x0800:
+            xaxis = list(struct.unpack('<fff', fin.read(4*3)))
+            zaxis = list(struct.unpack('<fff', fin.read(4*3)))
+            self.localCoordinate = Coordinate(xaxis, zaxis)
+        else:
+            self.localCoordinate = None
+
+        self.transAfterPhis = ((flags & 0x1000) != 0)
+
+        if flags & 0x2000:
+            self.externalTransKey, = struct.unpack('<f', fin.read(4))
+        else:
+            self.externalTransKey = None
+
+        if self.ik:
+            self.target = header.readBoneIndex(fin)
+            self.loopCount, = struct.unpack('<i', fin.read(4))
+            self.rotationConstraint, = struct.unpack('<f', fin.read(4))
+
+            iklink_num, = struct.unpack('<i', fin.read(4))
+            self.ik_links = []
+            for i in range(iklink_num):
+                link = IKLink()
+                link.load(header, fin)
+                self.ik_links.append(link)
+
+class IKLink:
+    def __init__(self):
+        self.target = None
+        self.maximunAngle = None
+        self.minimumAngle = None
+
+    def __repr__(self):
+        return '<IKLink target %s>'%(str(self.target))
+
+    def load(self, header, fin):
+        self.target = header.readBoneIndex(fin)
+        flag, = struct.unpack('<b', fin.read(1))
+        if flag == 1:
+            self.minimumAngle = list(struct.unpack('<fff', fin.read(4*3)))
+            self.maximunAngle = list(struct.unpack('<fff', fin.read(4*3)))
+        else:
+            self.minimumAngle = None
+            self.maximunAngle = None
 
 class Morph:
     """ """
