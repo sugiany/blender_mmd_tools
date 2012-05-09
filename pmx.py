@@ -16,7 +16,6 @@ class Encoding:
         self.index = 0
         self.charset = ''
         t = None
-        print(arg)
         if isinstance(arg, str):
             t = list(filter(lambda x: x[1]==arg, self._MAP))
             if len(t) == 0:
@@ -115,6 +114,9 @@ class Header:
     def readMorphIndex(self, fin):
         return self.readIndex(fin, self.morph_index_size)
 
+    def readRigidIndex(self, fin):
+        return self.readIndex(fin, self.rigid_index_size)
+
 class Model:
     def __init__(self):
         self.header = None
@@ -190,10 +192,21 @@ class Model:
         for i in range(num_disp):
             d = Display()
             d.load(header, fin)
-            print(d)
             self.display.append(d)
 
-            
+        num_rigid, = struct.unpack('<i', fin.read(4))
+        self.rigids = []
+        for i in range(num_rigid):
+            r = Rigid()
+            r.load(header, fin)
+            self.rigids.append(r)
+
+        num_joints, = struct.unpack('<i', fin.read(4))
+        self.joints = []
+        for i in range(num_joints):
+            j = Joint()
+            j.load(header, fin)
+            self.joints.append(j)
 
     def __repr__(self):
         return '<Model name %s, name_e %s, comment %s, comment_e %s, textures %s>'%(
@@ -572,7 +585,7 @@ class Morph:
         morph = Morph.getClass(typeIndex)(name, name_e, category)
         morph.load(header, fin)
         return morph
-        
+
     def load(self, header, fin):
         num, = struct.unpack('<i', fin.read(4))
         cls = self.dataClass()
@@ -612,7 +625,7 @@ class BoneMorphData:
 class MaterialMorphData:
     TYPE_MULT = 0
     TYPE_ADD = 1
-    
+
     def __init__(self):
         self.material = None
         self.offset_type = TYPE_MULT
@@ -742,7 +755,7 @@ class Rigid:
         self.collision_group_number = 0
         self.non_collision_group_number = 0
 
-        self.type = TYPE_SPHERE
+        self.type = 0
         self.size = []
 
         self.location = []
@@ -754,7 +767,40 @@ class Rigid:
         self.bounce = []
         self.friction = []
 
-        self.mode = MODE_STATIC
+        self.mode = 0
+
+    def __repr__(self):
+        return '<Rigid name %s, name_e %s>'%(
+            self.name,
+            self.name_e,
+            )
+
+    def load(self, header, fin):
+        self.name = header.readStr(fin)
+        self.name_e = header.readStr(fin)
+
+        boneIndex = header.readBoneIndex(fin)
+        if boneIndex != -1:
+            self.bone = boneIndex
+        else:
+            self.bone = None
+
+        self.collision_group_number, = struct.unpack('<b', fin.read(1))
+        self.non_collision_group_number, = struct.unpack('<h', fin.read(2))
+
+        self.type, = struct.unpack('<b', fin.read(1))
+        self.size = list(struct.unpack('<fff', fin.read(4*3)))
+
+        self.location = list(struct.unpack('<fff', fin.read(4*3)))
+        self.rotation = list(struct.unpack('<fff', fin.read(4*3)))
+
+        self.mass, = struct.unpack('<f', fin.read(4))
+        self.velocity_attenuation, = struct.unpack('<f', fin.read(4))
+        self.rotation_attenuation, = struct.unpack('<f', fin.read(4))
+        self.bounce, = struct.unpack('<f', fin.read(4))
+        self.friction, = struct.unpack('<f', fin.read(4))
+
+        self.mode, = struct.unpack('<b', fin.read(1))
 
 class Joint:
     MODE_SPRING6DOF = 0
@@ -762,7 +808,7 @@ class Joint:
         self.name = ''
         self.name_e = ''
 
-        self.mode = MODE_SPRING6DOF
+        self.mode = 0
 
         self.src_rigid = None
         self.dest_rigid = None
@@ -778,6 +824,30 @@ class Joint:
         self.spring_constant = []
         self.spring_rotaion_constant = []
 
+    def load(self, header, fin):
+        self.name = header.readStr(fin)
+        self.name_e = header.readStr(fin)
+
+        self.mode, = struct.unpack('<b', fin.read(1))
+
+        self.src_rigid = header.readRigidIndex(fin)
+        self.dest_rigid = header.readRigidIndex(fin)
+        if self.src_rigid == -1:
+            self.src_rigid = None
+        if self.dest_rigid == -1:
+            self.dest_rigid = None
+
+        self.location = list(struct.unpack('<fff', fin.read(4*3)))
+        self.rotation = list(struct.unpack('<fff', fin.read(4*3)))
+
+        self.maximum_location = list(struct.unpack('<fff', fin.read(4*3)))
+        self.minimum_location = list(struct.unpack('<fff', fin.read(4*3)))
+        self.maximum_rotation = list(struct.unpack('<fff', fin.read(4*3)))
+        self.minimum_rotation = list(struct.unpack('<fff', fin.read(4*3)))
+
+        self.spring_constant = list(struct.unpack('<fff', fin.read(4*3)))
+        self.spring_rotaion_constant = list(struct.unpack('<fff', fin.read(4*3)))
+
 class File:
     def __init__(self):
         self.header = Header()
@@ -786,9 +856,7 @@ class File:
     def load(self, path):
         with open(path, 'rb') as fin:
             self.header.load(fin)
-            print(self.header)
             self.model.load(self.header, fin)
-            print(self.model)
 
 if __name__ == '__main__':
     f = File()
