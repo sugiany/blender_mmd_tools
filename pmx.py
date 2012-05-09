@@ -112,6 +112,9 @@ class Header:
     def readTextureIndex(self, fin):
         return self.readIndex(fin, self.texture_index_size)
 
+    def readMorphIndex(self, fin):
+        return self.readIndex(fin, self.morph_index_size)
+
 class Model:
     def __init__(self):
         self.header = None
@@ -174,8 +177,13 @@ class Model:
         for i in range(num_bones):
             b = Bone()
             b.load(header, fin)
-            print(b)
             self.bones.append(b)
+
+        num_morph, = struct.unpack('<i', fin.read(4))
+        self.morphs = []
+        for i in range(num_morph):
+            m = Morph.create(header, fin)
+            self.morphs.append(m)
 
     def __repr__(self):
         return '<Model name %s, name_e %s, comment %s, comment_e %s, textures %s>'%(
@@ -349,7 +357,6 @@ class Material:
 
     def load(self, header, fin):
         self.name = header.readStr(fin)
-        print(self.name)
         self.name_e = header.readStr(fin)
 
         self.diffuse = list(struct.unpack('<ffff', fin.read(4*4)))
@@ -395,7 +402,7 @@ class Bone:
         self.visible = True
         self.isControllable = True
 
-        self.ik = False
+        self.isIK = False
 
         # 回転付与
         # (Boneオブジェクト, 付与率float)のタプル
@@ -450,7 +457,7 @@ class Bone:
         self.visible        = ((flags & 0x0008) != 0)
         self.isControllable = ((flags & 0x0010) != 0)
 
-        self.ik             = ((flags & 0x0020) != 0)
+        self.isIK           = ((flags & 0x0020) != 0)
 
         if flags & 0x0100:
             t = header.readBoneIndex(fin)
@@ -485,7 +492,7 @@ class Bone:
         else:
             self.externalTransKey = None
 
-        if self.ik:
+        if self.isIK:
             self.target = header.readBoneIndex(fin)
             self.loopCount, = struct.unpack('<i', fin.read(4))
             self.rotationConstraint, = struct.unpack('<f', fin.read(4))
@@ -524,25 +531,73 @@ class Morph:
     CATEGORY_MOUTH = 3
     CATEGORY_OHTER = 4
 
-    def __init__(self):
-        self.name = ''
-        self.name_e = ''
+    def __init__(self, name, name_e):
+        self.name = name
+        self.name_e = name_e
+
+    def __repr__(self):
+        return '<Morph name %s, name_e %s>'%(self.name, self.name_e)
+
+    @staticmethod
+    def getClass(typeIndex):
+        CLASSES = {
+            0: GroupMorph,
+            1: VertexMorph,
+            2: BoneMorph,
+            3: UVMorph,
+            4: UVMorph,
+            5: UVMorph,
+            6: UVMorph,
+            7: UVMorph,
+            8: MaterialMorph,
+            }
+        return CLASSES[typeIndex]
+
+    @staticmethod
+    def create(header, fin):
+        name = header.readStr(fin)
+        name_e = header.readStr(fin)
+        category, = struct.unpack('<b', fin.read(1))
+        typeIndex, = struct.unpack('<b', fin.read(1))
+        morph = Morph.getClass(typeIndex)(name, name_e, category)
+        morph.load(header, fin)
+        return morph
+        
+    def load(self, header, fin):
+        num, = struct.unpack('<i', fin.read(4))
+        cls = self.dataClass()
+        for i in range(num):
+            d = cls()
+            d.load(header, fin)
 
 class VertexMorphData:
     def __init_(self):
         self.vertex = None
         self.offset = []
 
+    def load(self, header, fin):
+        self.vertex = header.readVertexIndex(fin)
+        self.offset = list(struct.unpack('<fff', fin.read(4*3)))
+
 class UVMorphData:
     def __init__(self):
         self.vertex = None
         self.offset = []
+
+    def load(self, header, fin):
+        self.vertex = header.readVertexIndex(fin)
+        self.offset = list(struct.unpack('<ffff', fin.read(4*4)))
 
 class BoneMorphData:
     def __init__(self):
         self.bone = None
         self.location_offset = []
         self.rotation_offset = []
+
+    def load(self, header, fin):
+        self.bone = header.readBoneIndex(fin)
+        self.location_offset = list(struct.unpack('<fff', fin.read(4*3)))
+        self.rotation_offset = list(struct.unpack('<ffff', fin.read(4*4)))
 
 class MaterialMorphData:
     TYPE_MULT = 0
@@ -560,38 +615,71 @@ class MaterialMorphData:
         self.sphere_texture_factor = []
         self.toon_texture_factor = []
 
+    def load(self, header, fin):
+        self.material = header.readMaterialIndex(fin)
+        self.offset_type, = struct.unpack('<b', fin.read(1))
+        self.diffuse_offset = list(struct.unpack('<ffff', fin.read(4*4)))
+        self.specular_offset = list(struct.unpack('<ffff', fin.read(4*4)))
+        self.ambient_offset = list(struct.unpack('<fff', fin.read(4*3)))
+        self.edge_color_offset = list(struct.unpack('<ffff', fin.read(4*4)))
+        self.edge_size_offset, = struct.unpack('<f', fin.read(4))
+        self.texture_factor = list(struct.unpack('<ffff', fin.read(4*4)))
+        self.sphere_texture_factor = list(struct.unpack('<ffff', fin.read(4*4)))
+        self.toon_texture_factor = list(struct.unpack('<ffff', fin.read(4*4)))
+
 class GroupMorphData:
     def __init__(self):
         self.morph = None
         self.factor = 0.0
 
+    def load(self, header, fin):
+        self.morph = header.readMorphIndex(fin)
+        self.factor, = struct.unpack('<f', fin.read(4))
+
 class VertexMorph(Morph):
-    def __init__(self):
-        Morph.__init__(self)
+    def __init__(self, name, name_e, category):
+        Morph.__init__(self, name, name_e)
 
         self.data = []
+
+    def dataClass(self):
+        return VertexMorphData
 
 class UVMorph(Morph):
-    def __init__(self):
-        Morph.__init__(self)
+    def __init__(self, name, name_e, category):
+        Morph.__init__(self, name, name_e)
 
+        # 追加UVの判別インデックス
+        # 0: UV
+        # 1-4: それぞれ追加UV1〜4に対応
+        self.uv_index = category - 3
         self.data = []
+
+    def dataClass(self):
+        return UVMorphData
 
 class BoneMorph(Morph):
-    def __init__(self):
-        Morph.__init__(self)
+    def __init__(self, name, name_e, category):
+        Morph.__init__(self, name, name_e)
 
         self.data = []
+
+    def dataClass(self):
+        return BoneMorphData
+
 
 class MaterialMorph(Morph):
-    def __init__(self):
-        Morph.__init__(self)
+    def __init__(self, name, name_e, category):
+        Morph.__init__(self, name, name_e)
 
         self.data = []
 
+    def dataClass(self):
+        return MaterialMorphData
+
 class GroupMorph(Morph):
-    def __init__(self):
-        Morph.__init__(self)
+    def __init__(self, name, name_e, category):
+        Morph.__init__(self, name, name_e)
 
         self.data = []
 
