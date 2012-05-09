@@ -149,9 +149,11 @@ class Model:
 
         num_faces, = struct.unpack('<i', fin.read(4))
         self.faces = []
-        for i in range(num_faces):
-            f = header.readVertexIndex(fin)
-            self.faces.append(f)
+        for i in range(int(num_faces/3)):
+            f1 = header.readVertexIndex(fin)
+            f2 = header.readVertexIndex(fin)
+            f3 = header.readVertexIndex(fin)
+            self.faces.append((f1, f2, f3))
 
         num_textures, = struct.unpack('<i', fin.read(4))
         self.textures = []
@@ -317,6 +319,7 @@ class Material:
         self.toon_texture = None
 
         self.comment = ''
+        self.vertex_count = 0
 
     def __repr__(self):
         return '<Material name %s, name_e %s, diffuse %s, specular %s, ambient %s, double_side %s, drop_shadow %s, self_shadow_map %s, self_shadow %s, toon_edge %s, edge_color %s, edge_size %s, toon_texture %s, comment %s>'%(
@@ -339,6 +342,7 @@ class Material:
 
     def load(self, header, fin):
         self.name = header.readStr(fin)
+        print(self.name)
         self.name_e = header.readStr(fin)
 
         self.diffuse = list(struct.unpack('<ffff', fin.read(4*4)))
@@ -364,7 +368,7 @@ class Material:
         self.toon_texture = header.readTextureIndex(fin)
 
         self.comment = header.readStr(fin)
-        n, = struct.unpack('<i', fin.read(4))
+        self.vertex_count, = struct.unpack('<i', fin.read(4))
 
 class Bone:
     def __init__(self):
