@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import struct
+import os
 
 class InvalidFileError(Exception):
     pass
@@ -40,7 +41,8 @@ class Coordinate:
         self.z_axis = zAxis
 
 class Header:
-    def __init__(self):
+    def __init__(self, filepath):
+        self.filepath = filepath
         self.sign = ''
         self.version = 0
 
@@ -116,6 +118,10 @@ class Header:
 
     def readRigidIndex(self, fin):
         return self.readIndex(fin, self.rigid_index_size)
+
+    def readMaterialIndex(self, fin):
+        return self.readIndex(fin, self.material_index_size)
+
 
 class Model:
     def __init__(self):
@@ -300,7 +306,7 @@ class BoneWeight:
             self.bones.append(header.readVertexIndex(fin))
             self.bones.append(header.readVertexIndex(fin))
             self.bones.append(header.readVertexIndex(fin))
-            self.weights.append(list(struct.unpack('<ffff', fin.read(4*4))))
+            self.weights = list(struct.unpack('<ffff', fin.read(4*4)))
         elif self.type == self.SDEF:
             self.bones.append(header.readVertexIndex(fin))
             self.bones.append(header.readVertexIndex(fin))
@@ -321,6 +327,8 @@ class Texture:
 
     def load(self, header, fin):
         self.path = header.readStr(fin)
+        if not os.path.isabs(self.path):
+            self.path = os.path.normpath(os.path.join(os.path.dirname(header.filepath), self.path))
 
 class SharedTexture(Texture):
     def __init__(self):
@@ -628,7 +636,7 @@ class MaterialMorphData:
 
     def __init__(self):
         self.material = None
-        self.offset_type = TYPE_MULT
+        self.offset_type = 0
         self.diffuse_offset = []
         self.specular_offset = []
         self.ambient_offset = []
@@ -850,12 +858,14 @@ class Joint:
 
 class File:
     def __init__(self):
-        self.header = Header()
-        self.model = Model()
+        self.header = None
+        self.model = None
 
     def load(self, path):
         with open(path, 'rb') as fin:
+            self.header = Header(path)
             self.header.load(fin)
+            self.model = Model()
             self.model.load(self.header, fin)
 
 if __name__ == '__main__':
