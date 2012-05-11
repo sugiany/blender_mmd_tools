@@ -7,7 +7,8 @@ import mathutils
 
 def main():
     pmx_file = pmx.File()
-    pmx_file.load('F:/mac-tmp/cg/tmp/zezemiku/zezemiku.pmx')
+    #pmx_file.load('F:/mac-tmp/cg/tmp/zezemiku/zezemiku.pmx')
+    pmx_file.load('F:/mac-tmp/cg/tmp/初音ミクVer2MP2.pmx')
 
     TO_BLE_MATRIX = mathutils.Matrix([
         [1.0, 0.0, 0.0, 0.0],
@@ -36,18 +37,19 @@ def main():
         bv.normal = v.normal
         if isinstance(v.weight.weights, pmx.BoneWeightSDEF):
             vertex_groups[v.weight.bones[0]].add(index=[i], weight=v.weight.weights.weight, type='REPLACE')
-            vertex_groups[v.weight.bones[1]].add(index=[i], weight=1.0 - v.weight.weight, type='REPLACE')
-        if len(v.weight.bones) == 1:
+            vertex_groups[v.weight.bones[1]].add(index=[i], weight=1.0-v.weight.weights.weight, type='REPLACE')
+        elif len(v.weight.bones) == 1:
             vertex_groups[v.weight.bones[0]].add(index=[i], weight=1.0, type='REPLACE')
         elif len(v.weight.bones) == 2:
             vertex_groups[v.weight.bones[0]].add(index=[i], weight=v.weight.weights[0], type='REPLACE')
-            vertex_groups[v.weight.bones[1]].add(index=[i], weight=1.0 - v.weight.weights[0], type='REPLACE')
+            vertex_groups[v.weight.bones[1]].add(index=[i], weight=1.0-v.weight.weights[0], type='REPLACE')
         elif len(v.weight.bones) == 4:
             vertex_groups[v.weight.bones[0]].add(index=[i], weight=v.weight.weights[0], type='REPLACE')
             vertex_groups[v.weight.bones[1]].add(index=[i], weight=v.weight.weights[1], type='REPLACE')
             vertex_groups[v.weight.bones[2]].add(index=[i], weight=v.weight.weights[2], type='REPLACE')
             vertex_groups[v.weight.bones[3]].add(index=[i], weight=v.weight.weights[3], type='REPLACE')
-
+        else:
+            raise Exception('unkown bone weight.')
 
     textures = []
     for i in model.textures:
@@ -65,7 +67,7 @@ def main():
     root.select=True
     if root.mode != 'EDIT':
         bpy.ops.object.mode_set(mode='EDIT')
-    bones = []
+        bones = []
     for i in model.bones:
         bone = arm.edit_bones.new(name=i.name)
         loc = mathutils.Vector(i.location)
@@ -85,11 +87,16 @@ def main():
         else:
             loc = mathutils.Vector(m_bone.displayConnection)
             loc.rotate(TO_BLE_MATRIX)
-            b_bone.tail = b_bone.head + loc
+            print(b_bone.name, loc)
+            if loc.length == 0:
+                loc = mathutils.Vector([0, 0, 1])
+                b_bone.tail = b_bone.head + loc
+
+    for b_bone in bones:
+        if b_bone.parent is not None and b_bone.parent.tail == b_bone.head:
+            b_bone.use_connect = True
 
     bpy.ops.object.mode_set(mode='OBJECT')
-
-
 
     mat_face_count_list = []
     bpy.types.Material.ambient_color = bpy.props.FloatVectorProperty(name='ambient color')
@@ -112,23 +119,22 @@ def main():
         v = 1.0 - v
         return [u, v]
 
-    print(mat_face_count_list)
     m.tessfaces.add(count=len(model.faces))
     uvLayer = m.tessface_uv_textures.new()
     for i, f in enumerate(model.faces):
         bf = m.tessfaces[i]
         bf.vertices_raw = list(f) + [0]
         bf.use_smooth = True
-        sum = 0
+        sum_face = 0
         uv = uvLayer.data[i]
         uv.uv1 = flipUV_V(model.vertices[f[0]].uv)
         uv.uv2 = flipUV_V(model.vertices[f[1]].uv)
         uv.uv3 = flipUV_V(model.vertices[f[2]].uv)
         for j, count in enumerate(mat_face_count_list):
-            if i < count + sum:
+            if i < count + sum_face:
                 bf.material_index = j
                 break
-            sum += count
+            sum_face += count
     m.transform(
     [
         [1.0, 0.0, 0.0, 0.0],
