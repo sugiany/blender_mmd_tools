@@ -130,15 +130,27 @@ class PMXImporter:
                 else:
                     loc = mathutils.Vector(m_bone.displayConnection)
                     loc.rotate(self.TO_BLE_MATRIX)
-                    if loc.length == 0:
-                        loc = mathutils.Vector([0, 0, 1])
-                        b_bone.tail = b_bone.head + loc
+                    b_bone.tail = b_bone.head + loc
+
+            for b_bone in self.__boneTable:
+                if b_bone.length  < 0.001:
+                    loc = mathutils.Vector([0, 0, 1])
+                    b_bone.tail = b_bone.head + loc
 
             for b_bone in self.__boneTable:
                 if b_bone.parent is not None and b_bone.parent.tail == b_bone.head:
                     b_bone.use_connect = True
+
         finally:
             bpy.ops.object.mode_set(mode='OBJECT')
+
+        pose_bones = self.__armObj.pose.bones
+        for p_bone in pmxModel.bones:
+            b_bone = pose_bones[p_bone.name]
+            if not p_bone.isRotatable:
+                b_bone.lock_rotation = [True, True, True]
+            if not p_bone.isMovable:
+                b_bone.lock_location =[True, True, True]
 
     def __importMaterials(self):
         self.__importTextures()
@@ -180,15 +192,30 @@ class PMXImporter:
 
             bf.material_index = self.__getMaterialIndexFromFaceIndex(i)
 
+    def __importVertexMorphs(self):
+        pmxModel = self.__pmxFile.model
+
+        for morph in filter(lambda x: isinstance(x, pmx.VertexMorph), pmxModel.morphs):
+            shapeKey = self.__meshObj.shape_key_add(morph.name)
+            for md in morph.data:
+                shapeKeyPoint = shapeKey.data[md.vertex]
+                offset = mathutils.Vector(md.offset)
+                offset.rotate(self.TO_BLE_MATRIX)
+                shapeKeyPoint.co = shapeKeyPoint.co + offset
+
+
     def execute(self, **args):
         self.__pmxFile = pmx.File()
         self.__pmxFile.load(args['filepath'])
 
         self.__createObjects()
+
         self.__importVertices()
         self.__importBones()
         self.__importMaterials()
         self.__importFaces()
+
+        self.__importVertexMorphs()
 
         self.__meshObj.data.update()
 

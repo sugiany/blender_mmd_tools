@@ -597,9 +597,11 @@ class Morph:
     def load(self, header, fin):
         num, = struct.unpack('<i', fin.read(4))
         cls = self.dataClass()
+        self.data = []
         for i in range(num):
             d = cls()
             d.load(header, fin)
+            self.data.append(d)
 
 class VertexMorphData:
     def __init_(self):
@@ -671,8 +673,6 @@ class VertexMorph(Morph):
     def __init__(self, name, name_e, category):
         Morph.__init__(self, name, name_e)
 
-        self.data = []
-
     def dataClass(self):
         return VertexMorphData
 
@@ -684,7 +684,6 @@ class UVMorph(Morph):
         # 0: UV
         # 1-4: それぞれ追加UV1〜4に対応
         self.uv_index = category - 3
-        self.data = []
 
     def dataClass(self):
         return UVMorphData
@@ -692,8 +691,6 @@ class UVMorph(Morph):
 class BoneMorph(Morph):
     def __init__(self, name, name_e, category):
         Morph.__init__(self, name, name_e)
-
-        self.data = []
 
     def dataClass(self):
         return BoneMorphData
@@ -703,16 +700,12 @@ class MaterialMorph(Morph):
     def __init__(self, name, name_e, category):
         Morph.__init__(self, name, name_e)
 
-        self.data = []
-
     def dataClass(self):
         return MaterialMorphData
 
 class GroupMorph(Morph):
     def __init__(self, name, name_e, category):
         Morph.__init__(self, name, name_e)
-
-        self.data = []
 
 class Display:
     def __init__(self):
