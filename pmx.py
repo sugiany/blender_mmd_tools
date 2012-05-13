@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import struct
 import os
+import utils
 
 class InvalidFileError(Exception):
     pass
@@ -419,6 +420,7 @@ class Bone:
     def __init__(self):
         self.name = ''
         self.name_e = ''
+        self.name_orig = ''
 
         self.location = []
         self.parent = None
@@ -470,7 +472,8 @@ class Bone:
             self.name_e,)
 
     def load(self, header, fin):
-        self.name = header.readStr(fin)
+        self.name_orig = header.readStr(fin)
+        self.name = utils.convertNameToLR(self.name_orig)
         self.name_e = header.readStr(fin)
 
         self.location = list(struct.unpack('<fff', fin.read(4*3)))
@@ -538,7 +541,7 @@ class Bone:
 class IKLink:
     def __init__(self):
         self.target = None
-        self.maximunAngle = None
+        self.maximumAngle = None
         self.minimumAngle = None
 
     def __repr__(self):
@@ -549,10 +552,10 @@ class IKLink:
         flag, = struct.unpack('<b', fin.read(1))
         if flag == 1:
             self.minimumAngle = list(struct.unpack('<fff', fin.read(4*3)))
-            self.maximunAngle = list(struct.unpack('<fff', fin.read(4*3)))
+            self.maximumAngle = list(struct.unpack('<fff', fin.read(4*3)))
         else:
             self.minimumAngle = None
-            self.maximunAngle = None
+            self.maximumAngle = None
 
 class Morph:
     """ """

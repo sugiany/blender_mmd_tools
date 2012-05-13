@@ -2,6 +2,8 @@
 import pmx
 import utils
 
+import math
+
 import bpy
 import os
 import mathutils
@@ -95,36 +97,39 @@ class PMXImporter:
 
         self.__textureTable = []
         for i in pmxModel.textures:
+            name = os.path.basename(i.path).split('.')[0]
+            tex = bpy.data.textures.new(name=name, type='IMAGE')
             try:
-                image = bpy.data.images.load(filepath=i.path)
+                tex.image = bpy.data.images.load(filepath=i.path)
             except Exception:
                 print('WARNING: failed to load %s'%str(i.path))
-        name = os.path.basename(i.path).split('.')[0]
-        tex = bpy.data.textures.new(name=name, type='IMAGE')
-        tex.image=image
-        self.__textureTable.append(tex)
+            self.__textureTable.append(tex)
 
     def __importBones(self):
+
         pmxModel = self.__pmxFile.model
 
         utils.enterEditMode(self.__armObj)
         try:
+            editBoneTable = []
+            tipBones = []
             self.__boneTable = []
             for i in pmxModel.bones:
                 bone = self.__armObj.data.edit_bones.new(name=i.name)
                 loc = mathutils.Vector(i.location)
                 loc.rotate(self.TO_BLE_MATRIX)
                 bone.head = loc
-                self.__boneTable.append(bone)
+                editBoneTable.append(bone)
+                self.__boneTable.append(i.name)
 
-            for b_bone, m_bone in zip(self.__boneTable, pmxModel.bones):
+            for b_bone, m_bone in zip(editBoneTable, pmxModel.bones):
                 if m_bone.parent != -1:
-                    b_bone.parent = self.__boneTable[m_bone.parent]
+                    b_bone.parent = editBoneTable[m_bone.parent]
 
-            for b_bone, m_bone in zip(self.__boneTable, pmxModel.bones):
+            for b_bone, m_bone in zip(editBoneTable, pmxModel.bones):
                 if isinstance(m_bone.displayConnection, int):
                     if m_bone.displayConnection != -1:
-                        b_bone.tail = self.__boneTable[m_bone.displayConnection].head
+                        b_bone.tail = editBoneTable[m_bone.displayConnection].head
                     else:
                         b_bone.tail = b_bone.head
                 else:
@@ -132,25 +137,62 @@ class PMXImporter:
                     loc.rotate(self.TO_BLE_MATRIX)
                     b_bone.tail = b_bone.head + loc
 
-            for b_bone in self.__boneTable:
+            for b_bone in editBoneTable:
                 if b_bone.length  < 0.001:
                     loc = mathutils.Vector([0, 0, 1])
                     b_bone.tail = b_bone.head + loc
+                    if len(b_bone.children) == 0:
+                        tipBones.append(b_bone.name)
 
-            for b_bone in self.__boneTable:
+            for b_bone, m_bone in zip(editBoneTable, pmxModel.bones):
                 if b_bone.parent is not None and b_bone.parent.tail == b_bone.head:
-                    b_bone.use_connect = True
+                    if not m_bone.isMovable:
+                        b_bone.use_connect = True
 
         finally:
             bpy.ops.object.mode_set(mode='OBJECT')
 
         pose_bones = self.__armObj.pose.bones
+        bpy.types.PoseBone.isTipBone = bpy.props.BoolProperty(name='isTipBone', default=False)
+        bpy.types.PoseBone.name_j = bpy.props.StringProperty(name='name_j', description='the bone name in japanese.')
+        bpy.types.PoseBone.name_e = bpy.props.StringProperty(name='name_e', description='the bone name in english.')
+        for i in tipBones:
+            b = pose_bones[i]
+            b.isTipBone = True
+            b.lock_rotation = [True, True, True]
+            b.lock_location = [True, True, True]
+            b.lock_scale = [True, True, True]
+            b.bone.hide = True
+
         for p_bone in pmxModel.bones:
             b_bone = pose_bones[p_bone.name]
+            b_bone.name_j = p_bone.name_orig
+            b_bone.name_e = p_bone.name_e
             if not p_bone.isRotatable:
                 b_bone.lock_rotation = [True, True, True]
             if not p_bone.isMovable:
                 b_bone.lock_location =[True, True, True]
+
+            if p_bone.isIK:
+                if p_bone.target != -1:
+                    bone = pose_bones[self.__boneTable[p_bone.target]].parent
+                    ikConst = bone.constraints.new('IK')
+                    ikConst.chain_count = len(p_bone.ik_links)
+                    ikConst.target = self.__armObj
+                    ikConst.subtarget = p_bone.name
+                    for i in p_bone.ik_links:
+                        if i.maximumAngle is not None:
+                            bone = pose_bones[self.__boneTable[i.target]]
+                            bone.use_ik_limit_x = True
+                            bone.use_ik_limit_y = True
+                            bone.use_ik_limit_z = True
+                            bone.ik_max_x = -i.minimumAngle[0]
+                            bone.ik_max_y = i.maximumAngle[1]
+                            bone.ik_max_z = i.maximumAngle[2]
+                            bone.ik_min_x = -i.maximumAngle[0]
+                            bone.ik_min_y = i.minimumAngle[1]
+                            bone.ik_min_z = i.minimumAngle[2]
+
 
     def __importMaterials(self):
         self.__importTextures()
@@ -222,7 +264,10 @@ class PMXImporter:
 
 def main():
     importer = PMXImporter()
-    importer.execute(filepath='F:/mac-tmp/cg/tmp/初音ミクVer2MP2.pmx')
+    #importer.execute(filepath='D:/primary/program files/MMD/MikuMikuDance_v739dot/UserFile/Model/SUPERリアルカ/ruka.pmx')
+    importer.execute(filepath='D:/primary/program files/MMD/MikuMikuDance_v739dot/UserFile/Model/Tda式改変テト制服/Tda式改変テト制服.pmx')
+    #importer.execute(filepath='F:/mac-tmp/cg/tmp/初音ミクVer2MP2.pmx')
+    #importer.execute(filepath='F:/mac-tmp/cg/tmp/zezemiku/zezemiku.pmx')
     return
 
     if False:
