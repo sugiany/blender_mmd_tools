@@ -26,3 +26,30 @@ def convertNameToLR(name):
     if m:
         name = m.group(1) + m.group(2) + '.R'
     return name
+
+
+def separateByMaterials(meshObj):
+    import bpy
+    prev_parent = meshObj.parent
+    dummy_parent = bpy.data.objects.new(name='tmp', object_data=None)
+    meshObj.parent = dummy_parent
+
+    enterEditMode(meshObj)
+    try:
+        bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.mesh.separate(type='MATERIAL')
+    finally:
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+    for i in dummy_parent.children:
+        mesh = i.data
+        if len(mesh.polygons) > 0:
+            mat_index = mesh.polygons[0].material_index
+            mat = mesh.materials[mat_index]
+            for k in mesh.materials:
+                mesh.materials.pop(index=0, update_data=True)
+            mesh.materials.append(mat)
+            for po in mesh.polygons:
+                po.material_index = 0
+            i.name = mat.name
+            i.parent = prev_parent

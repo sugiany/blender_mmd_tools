@@ -20,6 +20,9 @@ class PMXImporter:
         self.__pmxFile = None
         self.__targetScene = bpy.context.scene
 
+        self.__scale = None
+        self.__deleteTipBones = False
+
         self.__armObj = None
         self.__meshObj = None
 
@@ -92,6 +95,7 @@ class PMXImporter:
 
         mesh.transform(self.TO_BLE_MATRIX)
 
+
     def __importTextures(self):
         pmxModel = self.__pmxFile.model
 
@@ -104,6 +108,7 @@ class PMXImporter:
             except Exception:
                 print('WARNING: failed to load %s'%str(i.path))
             self.__textureTable.append(tex)
+
 
     def __importBones(self):
 
@@ -156,17 +161,8 @@ class PMXImporter:
         bpy.types.PoseBone.isTipBone = bpy.props.BoolProperty(name='isTipBone', default=False)
         bpy.types.PoseBone.name_j = bpy.props.StringProperty(name='name_j', description='the bone name in japanese.')
         bpy.types.PoseBone.name_e = bpy.props.StringProperty(name='name_e', description='the bone name in english.')
-        for i in tipBones:
-            b = pose_bones[i]
-            b.isTipBone = True
-            b.lock_rotation = [True, True, True]
-            b.lock_location = [True, True, True]
-            b.lock_scale = [True, True, True]
-            b.bone.hide = True
-
         for p_bone in pmxModel.bones:
             b_bone = pose_bones[p_bone.name]
-            b_bone.name_j = p_bone.name_orig
             b_bone.name_e = p_bone.name_e
             if not p_bone.isRotatable:
                 b_bone.lock_rotation = [True, True, True]
@@ -193,6 +189,23 @@ class PMXImporter:
                             bone.ik_min_y = i.minimumAngle[1]
                             bone.ik_min_z = i.minimumAngle[2]
 
+        if not self.__deleteTipBones:
+            for i in tipBones:
+                b = pose_bones[i]
+                b.isTipBone = True
+                b.lock_rotation = [True, True, True]
+                b.lock_location = [True, True, True]
+                b.lock_scale = [True, True, True]
+                b.bone.hide = True
+        else:
+            utils.enterEditMode(self.__armObj)
+            try:
+                edit_bones = self.__armObj.data.edit_bones
+                for i in tipBones:
+                    edit_bones.remove(edit_bones[i])
+            finally:
+                bpy.ops.object.mode_set(mode='OBJECT')
+                
 
     def __importMaterials(self):
         self.__importTextures()
@@ -215,6 +228,7 @@ class PMXImporter:
                 texture_slot = mat.texture_slots.add()
                 texture_slot.texture = self.__textureTable[i.texture]
                 texture_slot.texture_coords = 'UV'
+
 
     def __importFaces(self):
         pmxModel = self.__pmxFile.model
@@ -245,10 +259,20 @@ class PMXImporter:
                 offset.rotate(self.TO_BLE_MATRIX)
                 shapeKeyPoint.co = shapeKeyPoint.co + offset
 
+    def __renameLRBones(self):
+        pose_bones = self.__armObj.pose.bones
+        for i in pose_bones:
+            i.name_j = i.name
+            i.name = utils.convertNameToLR(i.name)
+            self.__meshObj.vertex_groups[i.name_j].name = i.name
 
     def execute(self, **args):
         self.__pmxFile = pmx.File()
         self.__pmxFile.load(args['filepath'])
+
+        self.__scale = args.get('scale', 1.0)
+        renameLRBones = args.get('rename_LR_bones', False)
+        self.__deleteTipBones = args.get('delete_tip_bones', False)
 
         self.__createObjects()
 
@@ -259,38 +283,30 @@ class PMXImporter:
 
         self.__importVertexMorphs()
 
+        if renameLRBones:
+            self.__renameLRBones()
+
         self.__meshObj.data.update()
+
+        if self.__scale != 1.0:
+            bpy.ops.object.select_all(action='DESELECT')
+            self.__armObj.select = True
+            bpy.ops.transform.resize(value=(self.__scale, self.__scale, self.__scale))
+            self.__meshObj.select = True
+            bpy.ops.object.transform_apply(scale=True)
+
+        bpy.types.Object.pmx_import_scale = bpy.props.FloatProperty(name='pmx_import_scale')
+        self.__armObj.pmx_import_scale = self.__scale
+
+        utils.separateByMaterials(self.__meshObj)
 
 
 def main():
     importer = PMXImporter()
     #importer.execute(filepath='D:/primary/program files/MMD/MikuMikuDance_v739dot/UserFile/Model/SUPERリアルカ/ruka.pmx')
-    importer.execute(filepath='D:/primary/program files/MMD/MikuMikuDance_v739dot/UserFile/Model/Tda式改変テト制服/Tda式改変テト制服.pmx')
-    #importer.execute(filepath='F:/mac-tmp/cg/tmp/初音ミクVer2MP2.pmx')
+    #importer.execute(filepath='D:/primary/program files/MMD/MikuMikuDance_v739dot/UserFile/Model/Tda式改変テト制服/Tda式改変テト制服.pmx')
+    importer.execute(filepath='F:/mac-tmp/cg/tmp/初音ミクVer2MP2.pmx')
     #importer.execute(filepath='F:/mac-tmp/cg/tmp/zezemiku/zezemiku.pmx')
     return
 
-    if False:
-        bpy.ops.object.select_all(action='DESELECT')
-        bpy.context.scene.objects.active = obj
-        obj.select=True
-        if obj.mode != 'EDIT':
-            bpy.ops.object.mode_set(mode='EDIT')
-        bpy.ops.mesh.select_all(action='SELECT')
-        bpy.ops.mesh.separate(type='MATERIAL')
-
-        for i in root.children:
-            mesh = i.data
-            if len(mesh.polygons) > 0:
-                mat_index = mesh.polygons[0].material_index
-                mat = mesh.materials[mat_index]
-                for k in mesh.materials:
-                    mesh.materials.pop(index=0, update_data=True)
-                mesh.materials.append(mat)
-                for po in mesh.polygons:
-                    po.material_index = 0
-                i.name = mat.name
-
-        bpy.ops.object.mode_set(mode='OBJECT')
-
-        m.update()
+       

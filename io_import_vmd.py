@@ -161,10 +161,10 @@ def convertVMDBoneRotationToBlender(blender_bone, rotation):
 def defaultNameFilter(name):
     m = re.match('左(.*)$', name)
     if m:
-        name = m.group(1) + '_L'
+        name = m.group(1) + '.L'
     m = re.match('右(.*)$', name)
     if m:
-        name = m.group(1) + '_R'
+        name = m.group(1) + '.R'
     return name
 
 def fixRotations(rotation_ary):

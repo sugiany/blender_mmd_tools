@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import struct
 import os
-import utils
 
 class InvalidFileError(Exception):
     pass
@@ -420,7 +419,6 @@ class Bone:
     def __init__(self):
         self.name = ''
         self.name_e = ''
-        self.name_orig = ''
 
         self.location = []
         self.parent = None
@@ -472,8 +470,7 @@ class Bone:
             self.name_e,)
 
     def load(self, header, fin):
-        self.name_orig = header.readStr(fin)
-        self.name = utils.convertNameToLR(self.name_orig)
+        self.name = header.readStr(fin)
         self.name_e = header.readStr(fin)
 
         self.location = list(struct.unpack('<fff', fin.read(4*3)))
