@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import re
 
-## 現在のモードを指定したオブジェクトのEdit Modeに変更する
-def enterEditMode(obj):
+## 指定したオブジェクトのみを選択状態かつアクティブにする
+def selectAObject(obj):
     import bpy
     try:
         bpy.ops.object.mode_set(mode='OBJECT')
@@ -11,6 +11,11 @@ def enterEditMode(obj):
     bpy.ops.object.select_all(action='DESELECT')
     bpy.context.scene.objects.active = obj
     obj.select=True
+
+## 現在のモードを指定したオブジェクトのEdit Modeに変更する
+def enterEditMode(obj):
+    import bpy
+    selectAObject(obj)
     if obj.mode != 'EDIT':
         bpy.ops.object.mode_set(mode='EDIT')
 

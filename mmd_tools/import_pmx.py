@@ -50,7 +50,7 @@ class PMXImporter:
         pmxModel = self.__pmxFile.model
 
         mesh = bpy.data.meshes.new(name=pmxModel.name)
-        self.__meshObj = bpy.data.objects.new(name='tmp', object_data=mesh)
+        self.__meshObj = bpy.data.objects.new(name=pmxModel.name+'_mesh', object_data=mesh)
 
         arm = bpy.data.armatures.new(name=pmxModel.name)
         self.__armObj = bpy.data.objects.new(name=pmxModel.name, object_data=arm)
@@ -248,8 +248,12 @@ class PMXImporter:
 
             bf.material_index = self.__getMaterialIndexFromFaceIndex(i)
 
+
     def __importVertexMorphs(self):
         pmxModel = self.__pmxFile.model
+
+        utils.selectAObject(self.__meshObj)
+        bpy.ops.object.shape_key_add()
 
         for morph in filter(lambda x: isinstance(x, pmx.VertexMorph), pmxModel.morphs):
             shapeKey = self.__meshObj.shape_key_add(morph.name)
@@ -258,6 +262,7 @@ class PMXImporter:
                 offset = mathutils.Vector(md.offset)
                 offset.rotate(self.TO_BLE_MATRIX)
                 shapeKeyPoint.co = shapeKeyPoint.co + offset
+
 
     def __renameLRBones(self):
         pose_bones = self.__armObj.pose.bones
@@ -297,8 +302,6 @@ class PMXImporter:
 
         bpy.types.Object.pmx_import_scale = bpy.props.FloatProperty(name='pmx_import_scale')
         self.__armObj.pmx_import_scale = self.__scale
-
-        utils.separateByMaterials(self.__meshObj)
 
 
 def __main():
