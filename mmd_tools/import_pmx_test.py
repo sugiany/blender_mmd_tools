@@ -301,7 +301,7 @@ class PMXImporter:
         utils.separateByMaterials(self.__meshObj)
 
 
-def main():
+def __main():
     importer = PMXImporter()
     #importer.execute(filepath='D:/primary/program files/MMD/MikuMikuDance_v739dot/UserFile/Model/SUPERリアルカ/ruka.pmx')
     #importer.execute(filepath='D:/primary/program files/MMD/MikuMikuDance_v739dot/UserFile/Model/Tda式改変テト制服/Tda式改変テト制服.pmx')
@@ -309,4 +309,5 @@ def main():
     #importer.execute(filepath='F:/mac-tmp/cg/tmp/zezemiku/zezemiku.pmx')
     return
 
-       
+if __name__=='__main__':
+    __main()
