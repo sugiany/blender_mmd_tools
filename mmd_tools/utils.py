@@ -58,3 +58,29 @@ def separateByMaterials(meshObj):
                 po.material_index = 0
             i.name = mat.name
             i.parent = prev_parent
+
+
+## Boneのカスタムプロパティにname_jが存在する場合、name_jの値を
+# それ以外の場合は通常のbone名をキーとしたpose_boneへの辞書を作成
+def makePmxBoneMap(armObj):
+    boneMap = {}
+    for i in armObj.pose.bones:
+        boneMap[i.get('name_j', i.name)] = i
+    return i
+
+
+class MMDCamera:
+    def __init__(self, obj):
+        self.__emptyObj = obj
+
+     @staticmethod
+    def isMMDCamera(obj):
+        if obj.type != 'EMPTY':
+            if obj.parent is None or obj.type != 'CAMERA':
+                return False
+            obj = obj.parent
+        return obj.type == 'EMPTY' and obj.get('is_mmd_camera', False)
+
+    @staticmethod
+    def convertToMMDCamera(self, cameraObj):
+        pass

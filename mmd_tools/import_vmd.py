@@ -7,165 +7,133 @@ import math
 import re
 import os
 
-bl_info= {
-    "name": "Import Vocaloid Motion Data file (.vmd)",
-    "author": "sugiany",
-    "version": (0, 1, 3),
-    "blender": (2, 6, 2),
-    "location": "File > Import > Import Vocaloid Motion Data file (.vmd)",
-    "description": "Import a MikuMikuDance Motion data file (.vmd).",
-    "warning": "",
-    "wiki_url": "",
-    "tracker_url": "",
-    "category": "Import-Export"}
 
-_MMD_CAMERA_NAME = 'MMD_Camera'
 
-def _toShiftJisString(byteString):
-    try:
-        eindex = byteString.index(b"\x00")
-    except Exception:
-        eindex = -1
-    if eindex < len(byteString):
-        byteString = byteString[0:eindex]
-    return byteString.decode("shift_jis")
+class VMDImporter:
+    def __init__(self, filepath, scale=1.0, use_pmx_bonename=True):
+        self.__vmdFile = vmd.File()
+        self.__vmdFile.load(filepath)
+        self.__scale = scale
+        self.__use_pmx_bonename = use_pmx_bonename
 
-class BoneFrame:
-    def __init__(self, frame, location, rotation, interp):
-        self.frame = int(frame)
-        self.location = location
-        self.rotation = rotation
-        self.interp = interp
 
-class ShapeKeyFrame:
-    def __init__(self, frame, weight):
-        self.frame = int(frame)
-        self.weight = float(weight)
+    @staticmethod
+    def makeVMDBoneLocationToBlenderMatrix(blender_bone):
+        mat = mathutils.Matrix([
+                [blender_bone.x_axis.x, blender_bone.y_axis.x, blender_bone.z_axis.x, 0.0],
+                [blender_bone.x_axis.y, blender_bone.y_axis.y, blender_bone.z_axis.y, 0.0],
+                [blender_bone.x_axis.z, blender_bone.y_axis.z, blender_bone.z_axis.z, 0.0],
+                [0.0, 0.0, 0.0, 1.0]
+                ])
+        mat2 = mathutils.Matrix([
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0]])
+        return mat2 * mat
 
-class CameraKeyFrame:
-    def __init__(self, frame, length, location, rotation, interp, angle, persp):
-        self.frame = int(frame)
-        self.length = length
-        self.location = location
-        self.rotation = rotation
-        self.interp = interp
-        self.angle = angle
-        self.persp = persp
-
-class VMDFile:
-    def __init__(self):
-        self.__signature = ""
-        self.__modelname = ""
-        self.__bones = {}
-        self.__shapes = {}
-        self.__camera = []
-
-    def bones(self):
-        return self.__bones
-
-    def shapes(self):
-        return self.__shapes
-
-    def camera(self):
-        return self.__camera
-
-    def load(self, path):
-        fin = open(path, 'rb')
-        try:
-            self.__readHeader(fin)
-
-            motionCount = self.__readCount(fin)
-            self.__readMotionKeys(fin, motionCount)
-
-            skinCount = self.__readCount(fin)
-            self.__readSkinMotionKeys(fin, skinCount)
-
-            cameraCount = self.__readCount(fin)
-            self.__readCameraKeys(fin, cameraCount)
-        finally:
-            fin.close()
-
-    def __readHeader(self, fin):
-        (self.__signature, data) = struct.unpack('<30s20s', fin.read(30+20))
-        self.__modelname = _toShiftJisString(data)
-
-    def __readCount(self, fin):
-        return int(struct.unpack('<L', fin.read(4))[0])
-
-    def __readMotionKeys(self, fin, num):
-        for i in range(num):
-            loc = mathutils.Vector()
-            rot = mathutils.Quaternion()
-            (name, frame, loc.x, loc.y, loc.z, rot.x, rot.y, rot.z, rot.w, interp) = struct.unpack('<15sLfffffff64s', fin.read(15+4+4*3+4*4+64))
-            name = _toShiftJisString(name)
-            if not name in self.__bones:
-                self.__bones[name] = []
-            self.__bones[name].append(BoneFrame(frame, loc, rot, interp))
-
-        for i in self.__bones.values():
-            i.sort(key=lambda x:x.frame)
-
-    def __readSkinMotionKeys(self, fin, num):
-        res = []
-        for i in range(num):
-            (name, frame, weight) = struct.unpack('<15sLf', fin.read(15+4+4))
-            name = _toShiftJisString(name)
-            if not name in self.__shapes:
-                self.__shapes[name] = []
-            self.__shapes[name].append(ShapeKeyFrame(frame, weight))
-
-        for i in self.__shapes.values():
-            i.sort(key=lambda x:x.frame)
-
-    def __readCameraKeys(self, fin, num):
-        for i in range(num):
-            loc = mathutils.Vector()
-            rot = mathutils.Vector()
-            (frame, length, loc.x, loc.y, loc.z, rot.x, rot.y, rot.z, interp, angle, persp) = struct.unpack('<Lfffffff24sL1s', fin.read(4+4+4*3+4*3+24+4+1))
-            self.__camera.append(CameraKeyFrame(frame, length, loc, rot, interp, angle, persp))
-
-        self.__camera.sort(key=lambda x:x.frame)
-
-    def __translateMat(self, bone):
+    @staticmethod
+    def convertVMDBoneRotationToBlender(blender_bone, rotation):
         mat = mathutils.Matrix()
-        mat[0][0], mat[1][0], mat[2][0] = bone.x_axis.x, bone.x_axis.y, bone.x_axis.z
-        mat[0][1], mat[1][1], mat[2][1] = bone.z_axis.x, bone.z_axis.y, bone.z_axis.z
-        mat[0][2], mat[1][2], mat[2][2] = bone.y_axis.x, bone.y_axis.y, bone.y_axis.z
-        return mat
+        mat[0][0], mat[1][0], mat[2][0] = blender_bone.x_axis.x, blender_bone.y_axis.x, blender_bone.z_axis.x
+        mat[0][1], mat[1][1], mat[2][1] = blender_bone.x_axis.y, blender_bone.y_axis.y, blender_bone.z_axis.y
+        mat[0][2], mat[1][2], mat[2][2] = blender_bone.x_axis.z, blender_bone.y_axis.z, blender_bone.z_axis.z
+        (vec, angle) = rotation.to_axis_angle()
+        v = mathutils.Vector((-vec.x, -vec.z, -vec.y))
+        return mathutils.Quaternion(mat*v, angle)
+
+    @staticmethod
+    def __fixRotations(rotation_ary):
+        rotation_ary = list(rotation_ary)
+        if len(rotation_ary) == 0:
+            return rotation_ary
+
+        pq = rotation_ary.pop(0)
+        res = [pq]
+        for q in rotation_ary:
+            nq = -q
+            t1 = (pq.w-q.w)**2+(pq.x-q.x)**2+(pq.y-q.y)**2+(pq.z-q.z)**2
+            t2 = (pq.w-nq.w)**2+(pq.x-nq.x)**2+(pq.y-nq.y)**2+(pq.z-nq.z)**2
+            if t2 < t1:
+                res.append(nq)
+                pq = nq
+            else:
+                res.append(q)
+                pq = q
+        return res
+
+    def __assignToArmature(self, armObj, action_name=None):
+        if action_name is not None:
+            act = bpy.data.actions.new(name=action_name)
+            a = meshObj.animation_data_create()
+            a.action = act
+
+        boneAnim = self._vmdFile.boneAnimation
+
+        pose_bones = armObj.pose.bones
+        if self.__use_pmx_bonename:
+            pose_bones = utils.makePmxBoneMap(pose_bones)
+        for name, keyFrames in boneAnim.items():
+            if name not in pose.bones.keys():
+                print("WARINIG: not found bone %s"%str(name))
+                continue
+
+            bone = pose_bones[name]
+            frameNumbers = map(lambda x: x.frame_number, keyFrames)
+            mat = makeVMDBoneLocationToBlenderMatrix(bone)
+            locations = map(lambda x: mat * x.location, keyFrames)
+            rotations = map(lambda x: convertVMDBoneRotationToBlender(bone, x.rotation), keyFrames)
+            rotations = self.__fixRotations(rotations)
+
+            for frame, location, rotation in zip(frameNumbers, locations, rotations):
+                bone.location = location
+                bone.rotation_quaternion = rotation
+                bone.keyframe_insert(data_path='location',
+                                     group=name,
+                                     frame=frame)
+                bone.keyframe_insert(data_path='rotation_quaternion',
+                                     group=name,
+                                     frame=frame)
 
 
-def convertVMDBoneLocationToBlender(blender_bone, location):
-    mat = mathutils.Matrix([
-            [blender_bone.x_axis.x, blender_bone.y_axis.x, blender_bone.z_axis.x, 0.0],
-            [blender_bone.x_axis.y, blender_bone.y_axis.y, blender_bone.z_axis.y, 0.0],
-            [blender_bone.x_axis.z, blender_bone.y_axis.z, blender_bone.z_axis.z, 0.0],
-            [0.0, 0.0, 0.0, 1.0]
-            ])
-    mat2 = mathutils.Matrix([
-        [1.0, 0.0, 0.0, 0.0],
-        [0.0, 0.0, 1.0, 0.0],
-        [0.0, 1.0, 0.0, 0.0],
-        [0.0, 0.0, 0.0, 1.0]])
+    def __assignToMesh(self, meshObj, action_name=None):
+        if action_name is not None:
+            act = bpy.data.actions.new(name=action_name)
+            a = meshObj.animation_data_create()
+            a.action = act
 
-    return mat2 * mat * location
+        shapeKeyAnim = self.__vmdFile.shapeKeyAnimation
 
-def convertVMDBoneRotationToBlender(blender_bone, rotation):
-    mat = mathutils.Matrix()
-    mat[0][0], mat[1][0], mat[2][0] = blender_bone.x_axis.x, blender_bone.y_axis.x, blender_bone.z_axis.x
-    mat[0][1], mat[1][1], mat[2][1] = blender_bone.x_axis.y, blender_bone.y_axis.y, blender_bone.z_axis.y
-    mat[0][2], mat[1][2], mat[2][2] = blender_bone.x_axis.z, blender_bone.y_axis.z, blender_bone.z_axis.z
-    (vec, angle) = rotation.to_axis_angle()
-    v = mathutils.Vector((-vec.x, -vec.z, -vec.y))
-    return mathutils.Quaternion(mat*v, angle)
+        shapeKeyDict = {}
+        for i in obj.data.shape_keys.key_blocks:
+            shapeKeyDict[i.name] = i
 
-def defaultNameFilter(name):
-    m = re.match('左(.*)$', name)
-    if m:
-        name = m.group(1) + '.L'
-    m = re.match('右(.*)$', name)
-    if m:
-        name = m.group(1) + '.R'
-    return name
+        for name, keyFrames in shapeKeyAnim.items():
+            if name not in shapeKeyDict:
+                print("WARINIG: not found bone %s"%str(name))
+                continue
+            shapeKey = shapeKeyDict[name]
+            for i in keyFrames:
+                shapeKey.value = i.weight
+                shapeKey.keyframe_insert(data_path='value',
+                                         group=name,
+                                         frame=i.frame_number)
+
+
+    def __assignToCamera(self, cameraObj):
+        pass
+
+    def assign(self, obj):
+        if obj.type == 'MESH':
+            self.__assignToMesh(obj)
+        elif obj.type == 'ARMATURE':
+            self.__assignToArmature(self, obj)
+        elif utils.MMDCamera.isMMDCamera(obj):
+            self.__assignToCamera(self, obj)
+        else:
+            raise ValueError('unsupport object type: %s'%obj.type)        
+
+
 
 def fixRotations(rotation_ary):
     rotation_ary = list(rotation_ary)
