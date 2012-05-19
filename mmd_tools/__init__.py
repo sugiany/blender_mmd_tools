@@ -84,7 +84,21 @@ class MMDToolsObjectPanel(bpy.types.Panel):
 def register():
     bpy.utils.register_module(__name__)
 
+    bpy.types.Object.is_mmd_camera = bpy.props.BoolProperty(name='is_mmd_camera', default=False)
+    bpy.types.Object.mmd_camera_location = bpy.props.FloatVectorProperty(name='mmd_camera_location')
+    bpy.types.Object.mmd_camera_rotation = bpy.props.FloatVectorProperty(name='mmd_camera_rotation')
+    bpy.types.Object.mmd_camera_distance = bpy.props.FloatProperty(name='mmd_camera_distance')
+    bpy.types.Object.mmd_camera_angle = bpy.props.FloatProperty(name='mmd_camera_angle')
+    bpy.types.Object.mmd_camera_persp = bpy.props.BoolProperty(name='mmd_camera_persp')
+
 def unregister():
+    del bpy.types.Object.is_mmd_camera
+    del bpy.types.Object.mmd_camera_location
+    del bpy.types.Object.mmd_camera_rotation
+    del bpy.types.Object.mmd_camera_distance
+    del bpy.types.Object.mmd_camera_angle
+    del bpy.types.Object.mmd_camera_persp
+
     bpy.utils.unregister_module(__name__)
 
 if __name__ == "__main__":
