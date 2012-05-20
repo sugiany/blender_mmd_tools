@@ -263,6 +263,10 @@ class PMXImporter:
                 offset.rotate(self.TO_BLE_MATRIX)
                 shapeKeyPoint.co = shapeKeyPoint.co + offset
 
+    def __addArmatureModifier(self, meshObj, armObj):
+        armModifier = meshObj.modifiers.new(name='Armature', type='ARMATURE')
+        armModifier.object = armObj
+        armModifier.use_vertex_groups = True
 
     def __renameLRBones(self):
         pose_bones = self.__armObj.pose.bones
@@ -291,6 +295,7 @@ class PMXImporter:
         if renameLRBones:
             self.__renameLRBones()
 
+        self.__addArmatureModifier(self.__meshObj, self.__armObj)
         self.__meshObj.data.update()
 
         if self.__scale != 1.0:

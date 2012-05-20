@@ -84,5 +84,6 @@ class MMDCamera:
 
         return MMDCamera(empty)
 
-    def object(sel):
+    def object(self):
         return self.__emptyObj
+

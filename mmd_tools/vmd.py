@@ -67,7 +67,7 @@ class ShapeKeyFrameKey:
 class CameraKeyFrameKey:
     def __init__(self):
         self.frame_number = 0
-        self.length = 0.0
+        self.distance = 0.0
         self.location = []
         self.rotation = []
         self.interp = []
@@ -76,18 +76,18 @@ class CameraKeyFrameKey:
 
     def load(self, fin):
         self.frame_number, = struct.unpack('<L', fin.read(4))
-        self.length, = struct.unpack('<f', fin.read(4))
+        self.distance, = struct.unpack('<f', fin.read(4))
         self.location = list(struct.unpack('<fff', fin.read(4*3)))
         self.rotation = list(struct.unpack('<fff', fin.read(4*3)))
         self.interp = list(struct.unpack('<24s', fin.read(24)))
-        self.angle, = struct.unpack('<f', fin.read(4))
+        self.angle, = struct.unpack('<L', fin.read(4))
         self.persp, = struct.unpack('<b', fin.read(1))
         self.persp = (self.persp == 1)
 
     def __repr__(self):
-        return '<CameraKeyFrameKey frame %s, length %s, loc %s, rot %s, angle %s, persp %s>'%(
+        return '<CameraKeyFrameKey frame %s, distance %s, loc %s, rot %s, angle %s, persp %s>'%(
             str(self.frame_number),
-            str(self.length),
+            str(self.distance),
             str(self.location),
             str(self.rotation),
             str(self.angle),
@@ -105,7 +105,6 @@ class _AnimationBase(collections.defaultdict):
             cls = self.frameClass()
             frameKey = cls()
             frameKey.load(fin)
-            print(frameKey)
             self[name].append(frameKey)
 
             
@@ -127,39 +126,47 @@ class ShapeKeyAnimation(_AnimationBase):
         return ShapeKeyFrameKey
 
 
-class CameraAnimation(_AnimationBase):
+class CameraAnimation(list):
     def __init__(self):
-        _AnimationBase.__init__(self)
+        list.__init__(self)
+        self = []
 
     @staticmethod
     def frameClass():
-        return CameraFrameKey
+        return CameraKeyFrameKey
+
+    def load(self, fin):
+        count, = struct.unpack('<L', fin.read(4))
+        for i in range(count):
+            cls = self.frameClass()
+            frameKey = cls()
+            frameKey.load(fin)
+            self.append(frameKey)
 
 
 class File:
     def __init__(self):
+        self.filepath = None
         self.header = None
         self.boneAnimation = None
         self.shapeKeyAnimation = None
-        self.CameraAnimation = None
+        self.cameraAnimation = None
 
     def load(self, **args):
         path = args['filepath']
 
         with open(path, 'rb') as fin:
+            self.filepath = path
             self.header = Header()
             self.boneAnimation = BoneAnimation()
             self.shapeKeyAnimation = ShapeKeyAnimation()
-            self.cameraAnimetion = CameraAnimation()
+            self.cameraAnimation = CameraAnimation()
 
             self.header.load(fin)
             self.boneAnimation.load(fin)
             self.shapeKeyAnimation.load(fin)
-            self.cameraAnimetion.load(fin)
+            self.cameraAnimation.load(fin)
 
-            print(self.boneAnimation)
-            print(self.shapeKeyAnimation)
-            print(self.cameraAnimetion)
 
 if __name__ == '__main__':
     vmdFile = File()

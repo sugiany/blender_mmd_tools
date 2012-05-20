@@ -4,6 +4,8 @@ import bpy
 import bpy_extras.io_utils
 
 import import_pmx
+import import_vmd
+import mmd_camera
 import utils
 
 bl_info= {
@@ -48,6 +50,29 @@ class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
         return {'RUNNING_MODAL'}
 
 
+class ImportVmd_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
+    bl_idname = 'mmd_tools.import_vmd'
+    bl_label = 'Import VMD file (.vmd)'
+    bl_description = 'Import a VMD file (.vmd)'
+    bl_options = {'PRESET'}
+
+    filename_ext = '.vmd'
+    filter_glob = bpy.props.StringProperty(default='*.vmd', options={'HIDDEN'})
+
+    scale = bpy.props.FloatProperty(name='scale', default=0.2)
+
+    def execute(self, context):
+        importer = import_vmd.VMDImporter(filepath=self.filepath, scale=self.scale)
+        for i in context.selected_objects:
+            importer.assign(i)
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        wm.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+
 ## Others
 class SeparateByMaterials_Op(bpy.types.Operator):
     bl_idname = 'mmd_tools.separate_by_materials'
@@ -75,7 +100,10 @@ class MMDToolsObjectPanel(bpy.types.Panel):
     def draw(self, context):
         active_obj = context.active_object
 
-        self.layout.operator('mmd_tools.import_pmx', text='import pmx')
+        sub = self.layout.column(True)
+        sub.label('Import-Export:')
+        sub.operator('mmd_tools.import_pmx', text='import pmx')
+        sub.operator('mmd_tools.import_vmd', text='import vmd')
         self.layout.separator()
         if active_obj is not None and active_obj.type == 'MESH':
             self.layout.operator('mmd_tools.separate_by_materials', text='separate by materials')
