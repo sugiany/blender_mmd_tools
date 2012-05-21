@@ -33,6 +33,19 @@ def convertNameToLR(name):
         name = m.group(1) + m.group(2) + '.R'
     return name
 
+## src_vertex_groupのWeightをdest_vertex_groupにaddする
+def mergeVertexGroup(meshObj, src_vertex_group_name, dest_vertex_group_name):
+    mesh = meshObj.data
+    src_vertex_group = meshObj.vertex_groups[src_vertex_group_name]
+    dest_vertex_group = meshObj.vertex_groups[dest_vertex_group_name]
+
+    vtxIndex = src_vertex_group.index
+    for v in mesh.vertices:
+        try:
+            gi = [i.group for i in v.groups].index(vtxIndex)
+            dest_vertex_group.add([v.index], v.groups[gi].weight, 'ADD')
+        except ValueError:
+            pass
 
 def separateByMaterials(meshObj):
     import bpy

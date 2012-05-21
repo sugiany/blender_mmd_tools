@@ -197,16 +197,19 @@ class PMXImporter:
                 b.lock_location = [True, True, True]
                 b.lock_scale = [True, True, True]
                 b.bone.hide = True
+                    
         else:
             utils.enterEditMode(self.__armObj)
             try:
                 edit_bones = self.__armObj.data.edit_bones
                 for i in tipBones:
-                    edit_bones.remove(edit_bones[i])
+                    edit_bone = edit_bones[i]
+                    if edit_bone.parent is not None:
+                        utils.mergeVertexGroup(self.__meshObj, edit_bone.name, edit_bone.parent.name)
+                    edit_bones.remove(edit_bone)
             finally:
                 bpy.ops.object.mode_set(mode='OBJECT')
                 
-
     def __importMaterials(self):
         self.__importTextures()
         bpy.types.Material.ambient_color = bpy.props.FloatVectorProperty(name='ambient color')

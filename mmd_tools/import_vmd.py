@@ -47,7 +47,7 @@ class VMDImporter:
         mat[0][2], mat[1][2], mat[2][2] = blender_bone.x_axis.z, blender_bone.y_axis.z, blender_bone.z_axis.z
         (vec, angle) = rotation.to_axis_angle()
         v = mathutils.Vector((-vec.x, -vec.z, -vec.y))
-        return mathutils.Quaternion(mat*v, angle)
+        return mathutils.Quaternion(mat*v, angle).normalized()
 
     @staticmethod
     def __fixRotations(rotation_ary):
@@ -58,9 +58,12 @@ class VMDImporter:
         pq = rotation_ary.pop(0)
         res = [pq]
         for q in rotation_ary:
-            nq = -q
+            nq = q.copy()
+            nq.negate()
             t1 = (pq.w-q.w)**2+(pq.x-q.x)**2+(pq.y-q.y)**2+(pq.z-q.z)**2
             t2 = (pq.w-nq.w)**2+(pq.x-nq.x)**2+(pq.y-nq.y)**2+(pq.z-nq.z)**2
+            # t1 = pq.axis.dot(q.axis)
+            # t2 = pq.axis.dot(nq.axis)
             if t2 < t1:
                 res.append(nq)
                 pq = nq
@@ -85,6 +88,7 @@ class VMDImporter:
                 print("WARINIG: not found bone %s"%str(name))
                 continue
 
+            keyFrames.sort(key=lambda x:x.frame_number)
             bone = pose_bones[name]
             frameNumbers = map(lambda x: x.frame_number, keyFrames)
             mat = self.makeVMDBoneLocationToBlenderMatrix(bone)
