@@ -410,7 +410,10 @@ class Material:
 
         self.is_shared_toon_texture, = struct.unpack('<b', fin.read(1))
         self.is_shared_toon_texture = (self.is_shared_toon_texture == 1)
-        self.toon_texture = header.readTextureIndex(fin)
+        if self.is_shared_toon_texture:
+            self.toon_texture, = struct.unpack('<b', fin.read(1))
+        else:
+            self.toon_texture = header.readTextureIndex(fin)
 
         self.comment = header.readStr(fin)
         self.vertex_count, = struct.unpack('<i', fin.read(4))
@@ -436,12 +439,13 @@ class Bone:
         self.isIK = False
 
         # 回転付与
-        # (Boneオブジェクト, 付与率float)のタプル
-        self.externalRotate = None
+        self.hasAdditionalRotate = False
 
         # 移動付与
-        # (Boneオブジェクト, 付与率float)のタプル
-        self.externalTrans = None
+        self.hasAdditionalLocation = False
+
+        # 回転付与および移動付与の付与量
+        self.additionalTransform = None
 
         # 軸固定
         # 軸ベクトルfloat3
@@ -471,6 +475,7 @@ class Bone:
 
     def load(self, header, fin):
         self.name = header.readStr(fin)
+        print(self.name)
         self.name_e = header.readStr(fin)
 
         self.location = list(struct.unpack('<fff', fin.read(4*3)))
@@ -490,19 +495,15 @@ class Bone:
 
         self.isIK           = ((flags & 0x0020) != 0)
 
-        if flags & 0x0100:
+        self.hasAdditionalRotate = ((flags & 0x0100) != 0)
+        self.hasAdditionalLocation = ((flags & 0x0200) != 0)
+        if self.hasAdditionalRotate or self.hasAdditionalLocation:
             t = header.readBoneIndex(fin)
             v, = struct.unpack('<f', fin.read(4))
-            self.externalRotate = (t, v)
+            self.additionalTransform = (t, v)
         else:
-            self.externalRotate = None
+            self.additionalTransform = None
 
-        if flags & 0x0200:
-            t = header.readBoneIndex(fin)
-            v, = struct.unpack('<f', fin.read(4))
-            self.externalTrans = (t, v)
-        else:
-            self.externalTrans = None
 
         if flags & 0x0400:
             self.axis = list(struct.unpack('<fff', fin.read(4*3)))
@@ -519,7 +520,7 @@ class Bone:
         self.transAfterPhis = ((flags & 0x1000) != 0)
 
         if flags & 0x2000:
-            self.externalTransKey, = struct.unpack('<f', fin.read(4))
+            self.externalTransKey, = struct.unpack('<i', fin.read(4))
         else:
             self.externalTransKey = None
 
@@ -604,7 +605,7 @@ class Morph:
             self.data.append(d)
 
 class VertexMorphData:
-    def __init_(self):
+    def __init__(self):
         self.vertex = None
         self.offset = []
 
@@ -706,6 +707,9 @@ class MaterialMorph(Morph):
 class GroupMorph(Morph):
     def __init__(self, name, name_e, category):
         Morph.__init__(self, name, name_e)
+
+    def dataClass(self):
+        return GroupMorphData
 
 class Display:
     def __init__(self):
