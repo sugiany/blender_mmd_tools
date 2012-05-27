@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-import pmx
-import utils
+from . import pmx
+from . import utils
 
 import math
 

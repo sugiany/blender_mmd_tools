@@ -7,9 +7,9 @@ import math
 import re
 import os
 
-import vmd
-import mmd_camera
-import utils
+from . import vmd
+from . import mmd_camera
+from . import utils
 
 class VMDImporter:
     def __init__(self, filepath, scale=1.0, use_pmx_bonename=True, convert_mmd_camera=True):

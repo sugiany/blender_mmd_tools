@@ -3,22 +3,36 @@
 import bpy
 import bpy_extras.io_utils
 
-import import_pmx
-import import_vmd
-import mmd_camera
-import utils
+from . import import_pmx
+from . import import_vmd
+from . import mmd_camera
+from . import utils
+from . import cycles_converter
 
 bl_info= {
     "name": "MMD Tools",
     "author": "sugiany",
     "version": (0, 1, 0),
-    "blender": (2, 6, 2),
+    "blender": (2, 6, 3),
     "location": "View3D > Tool Shelf > MMD Tools Panel",
     "description": "Utility tools for MMD model editing.",
     "warning": "",
     "wiki_url": "",
     "tracker_url": "",
     "category": "Object"}
+
+if "bpy" in locals():
+    import imp
+    if "import_pmx" in locals():
+        imp.reload(import_pmx)
+    if "import_vmd" in locals():
+        imp.reload(import_vmd)
+    if "mmd_camera" in locals():
+        imp.reload(mmd_camera)
+    if "utils" in locals():
+        imp.reload(utils)
+    if "cycles_converter" in locals():
+        imp.reload(cycles_converter)
 
 ## Import-Export
 class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
@@ -88,6 +102,20 @@ class SeparateByMaterials_Op(bpy.types.Operator):
         utils.separateByMaterials(obj)
         return {'FINISHED'}
 
+class ConvertToCyclesShader_Op(bpy.types.Operator):
+    bl_idname = 'mmd_tools.convert_to_cycles_shader'
+    bl_label = 'to cycles shader'
+    bl_description = 'Convert blender render shader to Cycles shader'
+    bl_options = {'PRESET'}
+
+    def execute(self, context):
+        obj = context.active_object
+        if obj is None or obj.type != 'MESH':
+            return {'FINISHED'}
+
+        cycles_converter.convertToCyclesShader(obj)
+        return {'FINISHED'}
+
 
 ## Main Panel
 class MMDToolsObjectPanel(bpy.types.Panel):
@@ -107,10 +135,13 @@ class MMDToolsObjectPanel(bpy.types.Panel):
         self.layout.separator()
         if active_obj is not None and active_obj.type == 'MESH':
             self.layout.operator('mmd_tools.separate_by_materials', text='separate by materials')
-        
+            self.layout.operator('mmd_tools.convert_to_cycles_shader', text='to cycles')
+
 
 def register():
     bpy.utils.register_module(__name__)
+
+    cycles_converter.create_MMDBasicShader()
 
     bpy.types.Object.is_mmd_camera = bpy.props.BoolProperty(name='is_mmd_camera', default=False)
     bpy.types.Object.mmd_camera_location = bpy.props.FloatVectorProperty(name='mmd_camera_location')
