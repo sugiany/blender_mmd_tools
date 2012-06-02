@@ -184,10 +184,3 @@ class VMDImporter:
         else:
             raise ValueError('unsupport object type: %s'%obj.type)
 
-
-def main():
-    vmd_importer = VMDImporter("D:/primary/program files/MMD/MikuMikuDance_v739dot/UserFile/Motion/Yellowモーションせっと2/Yellowモーションデータ.vmd", scale=0.2)
-    for i in bpy.context.selected_objects:
-        vmd_importer.assign(i)
-    #vmdFile.load(filepath='/Users/yoshinobu/cg/tmp/import_vmd/scenes/Yellow.vmd')
-

@@ -865,6 +865,3 @@ class File:
             self.model = Model()
             self.model.load(self.header, fin)
 
-if __name__ == '__main__':
-    f = File()
-    f.load('/Users/yoshinobu/dev/blender-scripts/import_pmx/初音ミクVer2MP2.pmx')

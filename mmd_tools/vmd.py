@@ -166,8 +166,3 @@ class File:
             self.boneAnimation.load(fin)
             self.shapeKeyAnimation.load(fin)
             self.cameraAnimation.load(fin)
-
-
-if __name__ == '__main__':
-    vmdFile = File()
-    vmdFile.load(filepath='/Users/yoshinobu/cg/tmp/import_vmd/scenes/Yellow.vmd')
