@@ -141,8 +141,6 @@ class MMDToolsObjectPanel(bpy.types.Panel):
 def register():
     bpy.utils.register_module(__name__)
 
-    cycles_converter.create_MMDBasicShader()
-
     bpy.types.Object.is_mmd_camera = bpy.props.BoolProperty(name='is_mmd_camera', default=False)
     bpy.types.Object.mmd_camera_location = bpy.props.FloatVectorProperty(name='mmd_camera_location')
     bpy.types.Object.mmd_camera_rotation = bpy.props.FloatVectorProperty(name='mmd_camera_rotation')

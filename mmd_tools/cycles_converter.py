@@ -3,11 +3,11 @@ import bpy
 
 def create_MMDBasicShader():
     bpy.context.scene.render.engine = 'CYCLES'
-    shader = None
-    if 'MMDBasicShader' not in bpy.data.node_groups:
-        shader = bpy.data.node_groups.new(name='MMDBasicShader', type='SHADER')
-    else:
+
+    if 'MMDBasicShader' in bpy.data.node_groups:
         return bpy.data.node_groups['MMDBasicShader']
+
+    shader = bpy.data.node_groups.new(name='MMDBasicShader', type='SHADER')
 
     dif = shader.nodes.new('BSDF_DIFFUSE')
     glo = shader.nodes.new('BSDF_GLOSSY')
@@ -27,10 +27,10 @@ def create_MMDBasicShader():
     shader.inputs['glossy_rough'].default_value = 0.0
     shader.inputs['reflection'].default_value = 0.02
 
+    return shader
 
 def convertToCyclesShader(obj):
     mmd_basic_shader_grp = create_MMDBasicShader()
-    bpy.context.scene.render.engine = 'CYCLES'
 
     for i in obj.material_slots:
         i.material.use_nodes = True
