@@ -5,13 +5,12 @@ import collections
 
 ## vmd仕様の文字列をstringに変換
 def _toShiftJisString(byteString):
+    byteString = byteString.split(b"\x00")[0]
     try:
-        eindex = byteString.index(b"\x00")
-    except Exception:
-        eindex = -1
-    if eindex < len(byteString):
-        byteString = byteString[0:eindex]
-    return byteString.decode("shift_jis")
+        return byteString.decode("shift_jis")
+    except UnicodeDecodeError:
+        # discard truncated sjis char
+        return byteString[:-1].decode("shift_jis")
 
 
 class Header:
