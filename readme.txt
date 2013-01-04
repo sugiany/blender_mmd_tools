@@ -2,10 +2,13 @@
 mmd_tools
 
 [ƒo[ƒWƒ‡ƒ“]
-0.1.0
+0.1.1
 
 [ìÒ]
 sugiany
+
+[ƒ‰ƒCƒZƒ“ƒX]
+MIT License
 
 [ŠT—v]
 blender 2.63—p‚ÌMMDƒ‚ƒfƒ‹(.pmx)‚¨‚æ‚Ñƒ‚[ƒVƒ‡ƒ“ƒf[ƒ^(.vmd)ƒCƒ“ƒ|[ƒ^‚Å‚·B
@@ -13,7 +16,8 @@ vmdƒCƒ“ƒ|[ƒgƒAƒhƒIƒ“uio_import_vmdv‚ÉpmxƒCƒ“ƒ|[ƒg‹@”\‚È‚Ç‚ğ’Ç‰Á‚µ‚½ƒAƒhƒIƒ“‚
 
 [“®ìŠm”FŠÂ‹«]
 Windows 7 64bit
-Blender 2.63a 64bit
+Mac OS X 10.7.4
+Blender 2.65a 64bit
 
 
 [g—p•û–@]
@@ -65,3 +69,7 @@ blenderƒfƒtƒHƒ‹ƒg‚Ì"Separate"¨"By Material"‹@”\‚ğg—p‚µ‚Ä‚¢‚Ü‚·B
 [•ÏX—š—ğ]
 v0.1.0
 ƒeƒXƒgƒŠƒŠ[ƒX
+v0.1.1
+iRi-E‚³‚ñ‚Ìfork‚©‚ç•ÏX‚ğƒ}[ƒW
+Eˆê•”“Ç‚İ‚ß‚È‚©‚Á‚½vmd‚É‘Î‰‚È‚Ç
+
