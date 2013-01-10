@@ -93,6 +93,26 @@ class CameraKeyFrameKey:
             str(self.persp),
             )
 
+
+class LampKeyFrameKey:
+    def __init__(self):
+        self.frame_number = 0
+        self.color = []
+        self.direction = []
+
+    def load(self, fin):
+        self.frame_number, = struct.unpack('<L', fin.read(4))
+        self.color = list(struct.unpack('<fff', fin.read(4*3)))
+        self.direction = list(struct.unpack('<fff', fin.read(4*3)))
+
+    def __repr__(self):
+        return '<LampKeyFrameKey frame %s, color %s, direction %s>'%(
+            str(self.frame_number),
+            str(self.color),
+            str(self.direction),
+            )
+
+
 class _AnimationBase(collections.defaultdict):
     def __init__(self):
         collections.defaultdict.__init__(self, list)
@@ -143,6 +163,24 @@ class CameraAnimation(list):
             self.append(frameKey)
 
 
+class LampAnimation(list):
+    def __init__(self):
+        list.__init__(self)
+        self = []
+
+    @staticmethod
+    def frameClass():
+        return LampKeyFrameKey
+
+    def load(self, fin):
+        count, = struct.unpack('<L', fin.read(4))
+        for i in range(count):
+            cls = self.frameClass()
+            frameKey = cls()
+            frameKey.load(fin)
+            self.append(frameKey)
+
+
 class File:
     def __init__(self):
         self.filepath = None
@@ -150,6 +188,7 @@ class File:
         self.boneAnimation = None
         self.shapeKeyAnimation = None
         self.cameraAnimation = None
+        self.lampAnimation = None
 
     def load(self, **args):
         path = args['filepath']
@@ -160,8 +199,10 @@ class File:
             self.boneAnimation = BoneAnimation()
             self.shapeKeyAnimation = ShapeKeyAnimation()
             self.cameraAnimation = CameraAnimation()
+            self.lampAnimation = LampAnimation()
 
             self.header.load(fin)
             self.boneAnimation.load(fin)
             self.shapeKeyAnimation.load(fin)
             self.cameraAnimation.load(fin)
+            self.lampAnimation.load(fin)

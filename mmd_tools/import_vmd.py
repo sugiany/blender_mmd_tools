@@ -9,14 +9,16 @@ import os
 
 from . import vmd
 from . import mmd_camera
+from . import mmd_lamp
 from . import utils
 
 class VMDImporter:
-    def __init__(self, filepath, scale=1.0, use_pmx_bonename=True, convert_mmd_camera=True):
+    def __init__(self, filepath, scale=1.0, use_pmx_bonename=True, convert_mmd_camera=True, convert_mmd_lamp=True):
         self.__vmdFile = vmd.File()
         self.__vmdFile.load(filepath=filepath)
         self.__scale = scale
         self.__convert_mmd_camera = convert_mmd_camera
+        self.__convert_mmd_lamp = convert_mmd_lamp
         self.__use_pmx_bonename = use_pmx_bonename
 
 
@@ -167,20 +169,69 @@ class VMDImporter:
             if fcurve.data_path == 'rotation_euler':
                 self.detectCameraChange(fcurve)
 
+    @staticmethod
+    def detectLampChange(fcurve, threshold=0.1):
+        frames = list(fcurve.keyframe_points)
+        frameCount = len(frames)
+        frames.sort(key=lambda x:x.co[0])
+        for i, f in enumerate(frames):
+            if i+1 < frameCount:
+                n = frames[i+1]
+                if n.co[0] - f.co[0] <= 1.0 and abs(f.co[1] - n.co[1]) > threshold:
+                    f.interpolation = 'CONSTANT'
+
+    def __assignToLamp(self, lampObj, action_name=None):
+        mmdLamp = mmd_lamp.MMDLamp.convertToMMDLamp(lampObj).object()
+        mmdLamp.scale = mathutils.Vector((self.__scale, self.__scale, self.__scale)) * 4.0
+        for obj in mmdLamp.children:
+            if obj.type == 'LAMP':
+                lamp = obj
+            elif obj.type == 'ARMATURE':
+                armature = obj
+                bone = armature.pose.bones[0]
+                bone_data_path = 'pose.bones["' + bone.name + '"].location'
+
+        if action_name is not None:
+            act = bpy.data.actions.new(name=action_name + '_color')
+            a = lamp.data.animation_data_create()
+            a.action = act
+            act = bpy.data.actions.new(name=action_name + '_location')
+            a = armature.animation_data_create()
+            a.action = act
+
+        lampAnim = self.__vmdFile.lampAnimation
+        for keyFrame in lampAnim:
+            lamp.data.color = mathutils.Vector(keyFrame.color)
+            bone.location = -(mathutils.Vector((keyFrame.direction[0], keyFrame.direction[2], keyFrame.direction[1])))
+            lamp.data.keyframe_insert(data_path='color',
+                                      frame=keyFrame.frame_number)
+            bone.keyframe_insert(data_path='location',
+                                 frame=keyFrame.frame_number)
+
+        for fcurve in armature.animation_data.action.fcurves:
+            if fcurve.data_path == bone_data_path:
+                self.detectLampChange(fcurve)
+
 
 
     def assign(self, obj, action_name=None):
         if action_name is None:
             action_name = os.path.splitext(os.path.basename(self.__vmdFile.filepath))[0]
-        if obj.type == 'MESH':
+
+        if mmd_camera.MMDCamera.isMMDCamera(obj):
+            self.__assignToCamera(obj, action_name+'_camera')
+        elif mmd_lamp.MMDLamp.isMMDLamp(obj):
+            self.__assignToLamp(obj, action_name+'_lamp')
+        elif obj.type == 'MESH':
             self.__assignToMesh(obj, action_name+'_facial')
         elif obj.type == 'ARMATURE':
             self.__assignToArmature(obj, action_name+'_bone')
-        elif mmd_camera.MMDCamera.isMMDCamera(obj):
-            self.__assignToCamera(obj, action_name+'_camera')
         elif obj.type == 'CAMERA' and self.__convert_mmd_camera:
             obj = mmd_camera.MMDCamera.convertToMMDCamera(obj)
             self.__assignToCamera(obj.object(), action_name+'_camera')
+        elif obj.type == 'LAMP' and self.__convert_mmd_lamp:
+            obj = mmd_lamp.MMDLamp.convertToMMDLamp(obj)
+            self.__assignToLamp(obj.object(), action_name+'_lamp')
         else:
             raise ValueError('unsupport object type: %s'%obj.type)
 
