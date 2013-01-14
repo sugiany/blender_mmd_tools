@@ -23,9 +23,9 @@ class VMDImporter:
     @staticmethod
     def makeVMDBoneLocationToBlenderMatrix(blender_bone):
         mat = mathutils.Matrix([
-                [blender_bone.x_axis.x, blender_bone.y_axis.x, blender_bone.z_axis.x, 0.0],
-                [blender_bone.x_axis.y, blender_bone.y_axis.y, blender_bone.z_axis.y, 0.0],
-                [blender_bone.x_axis.z, blender_bone.y_axis.z, blender_bone.z_axis.z, 0.0],
+                [blender_bone.x_axis.x, blender_bone.x_axis.y, blender_bone.x_axis.z, 0.0],
+                [blender_bone.y_axis.x, blender_bone.y_axis.y, blender_bone.y_axis.z, 0.0],
+                [blender_bone.z_axis.x, blender_bone.z_axis.y, blender_bone.z_axis.z, 0.0],
                 [0.0, 0.0, 0.0, 1.0]
                 ])
         mat2 = mathutils.Matrix([
@@ -33,7 +33,7 @@ class VMDImporter:
             [0.0, 0.0, 1.0, 0.0],
             [0.0, 1.0, 0.0, 0.0],
             [0.0, 0.0, 0.0, 1.0]])
-        return mat2 * mat
+        return mat * mat2
 
     @staticmethod
     def convertVMDBoneRotationToBlender(blender_bone, rotation):
