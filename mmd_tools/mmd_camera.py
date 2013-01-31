@@ -66,7 +66,7 @@ class MMDCamera:
         empty = bpy.data.objects.new(name=name, object_data=None)
         bpy.context.scene.objects.link(empty)
 
-        empty.rotation_mode = 'XYZ'
+        empty.rotation_mode = 'YXZ'
         empty.is_mmd_camera = True
         empty.mmd_camera_distance = 0.0
         empty.mmd_camera_angle = 45
