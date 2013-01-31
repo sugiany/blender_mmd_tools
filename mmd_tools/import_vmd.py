@@ -132,8 +132,8 @@ class VMDImporter:
                     idx = 3
                 frames = list(fcurve.keyframe_points)
                 frames.sort(key=lambda kp:kp.co.x)
-                for i in range(len(keyFrames) - 1):
-                    self.__setInterpolation(keyFrames[i].interp[idx:16:4], frames[i], frames[i + 1])
+                for i in range(1, len(keyFrames)):
+                    self.__setInterpolation(keyFrames[i].interp[idx:16:4], frames[i - 1], frames[i])
 
     def __assignToMesh(self, meshObj, action_name=None):
         if action_name is not None:
@@ -201,9 +201,9 @@ class VMDImporter:
                     idx = (paths.index(fcurve.data_path) + 3) * 4
                 frames = list(fcurve.keyframe_points)
                 frames.sort(key=lambda kp:kp.co.x)
-                for i in range(len(cameraAnim) - 1):
+                for i in range(1, len(cameraAnim)):
                     interp = cameraAnim[i].interp
-                    self.__setInterpolation([interp[idx + j] for j in [0, 2, 1, 3]], frames[i], frames[i + 1])
+                    self.__setInterpolation([interp[idx + j] for j in [0, 2, 1, 3]], frames[i - 1], frames[i])
 
         for fcurve in mmdCamera.animation_data.action.fcurves:
             if fcurve.data_path == 'rotation_euler':
