@@ -74,6 +74,18 @@ class VMDImporter:
                 pq = q
         return res
 
+    @staticmethod
+    def __setInterpolation(bezier, kp0, kp1):
+        if bezier[0] == bezier[1] and bezier[2] == bezier[3]:
+            kp0.interpolation = 'LINEAR'
+        else:
+            kp0.interpolation = 'BEZIER'
+            kp0.handle_right_type = 'FREE'
+            kp1.handle_left_type = 'FREE'
+            d = (kp1.co - kp0.co) / 127.0
+            kp0.handle_right = kp0.co + mathutils.Vector((d.x * bezier[0], d.y * bezier[1]))
+            kp1.handle_left = kp0.co + mathutils.Vector((d.x * bezier[2], d.y * bezier[3]))
+
     def __assignToArmature(self, armObj, action_name=None):
         if action_name is not None:
             act = bpy.data.actions.new(name=action_name)
@@ -108,6 +120,20 @@ class VMDImporter:
                                      group=name,
                                      frame=frame)
 
+        rePath = re.compile('^pose\.bones\["(.+)"\]\.([a-z_]+)$')
+        for fcurve in act.fcurves:
+            m = rePath.match(fcurve.data_path)
+            if m and m.group(2) in ['location', 'rotation_quaternion']:
+                bone = armObj.pose.bones[m.group(1)]
+                keyFrames = boneAnim[bone.get('name_j', bone.name)]
+                if m.group(2) == 'location':
+                    idx = [0, 2, 1][fcurve.array_index]
+                else:
+                    idx = 3
+                frames = list(fcurve.keyframe_points)
+                frames.sort(key=lambda kp:kp.co.x)
+                for i in range(len(keyFrames) - 1):
+                    self.__setInterpolation(keyFrames[i].interp[idx:16:4], frames[i], frames[i + 1])
 
     def __assignToMesh(self, meshObj, action_name=None):
         if action_name is not None:
@@ -151,6 +177,7 @@ class VMDImporter:
             a.action = act
 
         cameraAnim = self.__vmdFile.cameraAnimation
+        cameraAnim.sort(key=lambda x:x.frame_number)
         for keyFrame in cameraAnim:
             mmdCamera.mmd_camera_angle = keyFrame.angle
             mmdCamera.mmd_camera_distance = -keyFrame.distance * self.__scale
@@ -164,6 +191,19 @@ class VMDImporter:
                                       frame=keyFrame.frame_number)
             mmdCamera.keyframe_insert(data_path='rotation_euler',
                                       frame=keyFrame.frame_number)
+
+        paths = ['rotation_euler', 'mmd_camera_distance', 'mmd_camera_angle', 'location']
+        for fcurve in act.fcurves:
+            if fcurve.data_path in paths:
+                if fcurve.data_path =='location':
+                    idx = [0, 2, 1][fcurve.array_index] * 4
+                else:
+                    idx = (paths.index(fcurve.data_path) + 3) * 4
+                frames = list(fcurve.keyframe_points)
+                frames.sort(key=lambda kp:kp.co.x)
+                for i in range(len(cameraAnim) - 1):
+                    interp = cameraAnim[i].interp
+                    self.__setInterpolation([interp[idx + j] for j in [0, 2, 1, 3]], frames[i], frames[i + 1])
 
         for fcurve in mmdCamera.animation_data.action.fcurves:
             if fcurve.data_path == 'rotation_euler':

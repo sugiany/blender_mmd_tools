@@ -37,7 +37,7 @@ class BoneFrameKey:
         self.frame_number, = struct.unpack('<L', fin.read(4))
         self.location = list(struct.unpack('<fff', fin.read(4*3)))
         self.rotation = list(struct.unpack('<ffff', fin.read(4*4)))
-        self.interp = list(struct.unpack('<64s', fin.read(64)))
+        self.interp = list(struct.unpack('<64b', fin.read(64)))
 
     def __repr__(self):
         return '<BoneFrameKey frame %s, loa %s, rot %s>'%(
@@ -78,7 +78,7 @@ class CameraKeyFrameKey:
         self.distance, = struct.unpack('<f', fin.read(4))
         self.location = list(struct.unpack('<fff', fin.read(4*3)))
         self.rotation = list(struct.unpack('<fff', fin.read(4*3)))
-        self.interp = list(struct.unpack('<24s', fin.read(24)))
+        self.interp = list(struct.unpack('<24b', fin.read(24)))
         self.angle, = struct.unpack('<L', fin.read(4))
         self.persp, = struct.unpack('<b', fin.read(1))
         self.persp = (self.persp == 1)
