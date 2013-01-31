@@ -99,7 +99,7 @@ class VMDImporter:
             pose_bones = utils.makePmxBoneMap(armObj)
         for name, keyFrames in boneAnim.items():
             if name not in pose_bones:
-                print("WARINIG: not found bone %s"%str(name))
+                print("WARNING: not found bone %s"%str(name))
                 continue
 
             keyFrames.sort(key=lambda x:x.frame_number)
@@ -149,7 +149,7 @@ class VMDImporter:
 
         for name, keyFrames in shapeKeyAnim.items():
             if name not in shapeKeyDict:
-                print("WARINIG: not found bone %s"%str(name))
+                print("WARNING: not found shape key %s"%str(name))
                 continue
             shapeKey = shapeKeyDict[name]
             for i in keyFrames:
