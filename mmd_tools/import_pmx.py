@@ -176,6 +176,9 @@ class PMXImporter:
                     ikConst.chain_count = len(p_bone.ik_links)
                     ikConst.target = self.__armObj
                     ikConst.subtarget = p_bone.name
+                    if p_bone.isRotatable and not p_bone.isMovable :
+                        ikConst.use_location = p_bone.isMovable 
+                        ikConst.use_rotation = p_bone.isRotatable
                     for i in p_bone.ik_links:
                         if i.maximumAngle is not None:
                             bone = pose_bones[self.__boneTable[i.target]]
@@ -312,13 +315,6 @@ class PMXImporter:
         self.__armObj.pmx_import_scale = self.__scale
 
 
-def __main():
-    importer = PMXImporter()
-    #importer.execute(filepath='D:/primary/program files/MMD/MikuMikuDance_v739dot/UserFile/Model/SUPERリアルカ/ruka.pmx')
-    #importer.execute(filepath='D:/primary/program files/MMD/MikuMikuDance_v739dot/UserFile/Model/Tda式改変テト制服/Tda式改変テト制服.pmx')
-    importer.execute(filepath='F:/mac-tmp/cg/tmp/初音ミクVer2MP2.pmx')
-    #importer.execute(filepath='F:/mac-tmp/cg/tmp/zezemiku/zezemiku.pmx')
-    return
 
 if __name__=='__main__':
     __main()

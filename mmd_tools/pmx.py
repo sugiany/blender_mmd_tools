@@ -92,22 +92,19 @@ class Header:
         buf, = struct.unpack(format, fin.read(length))
         return str(buf, self.encoding.charset)
 
-    def readIndex(self, fin, size):
+    def readIndex(self, fin, size, typedict = { 1 :"<b", 2 :"<h", 4 :"<i"} ):
         index = None
-        if size == 1:
-            index, = struct.unpack('<b', fin.read(size))
-        elif size == 2:
-            index, = struct.unpack('<h', fin.read(size))
-        elif size == 4:
-            index, = struct.unpack('<i', fin.read(size))
+        if size in typedict :
+            index, = struct.unpack(typedict[size], fin.read(size))
         else:
             raise ValueError('invalid data size %s'%str(size))
         return index
 
     def readVertexIndex(self, fin):
-        return self.readIndex(fin, self.vertex_index_size)
+        typedict = { 1 :"<B", 2 :"<H", 4 :"<i" }
+        return self.readIndex(fin, self.vertex_index_size, typedict)
 
-    def readBoneIndex(self, fin):
+    def readBoneIndex(self, fin):   
         return self.readIndex(fin, self.bone_index_size)
 
     def readTextureIndex(self, fin):
@@ -292,24 +289,24 @@ class BoneWeight:
             return None
 
     def load(self, header, fin):
-        self.type, = struct.unpack('<b', fin.read(1))
+        self.type, = struct.unpack('<B', fin.read(1))
         self.bones = []
         self.weights = []
         if self.type == self.BDEF1:
-            self.bones.append(header.readVertexIndex(fin))
+            self.bones.append(header.readBoneIndex(fin))
         elif self.type == self.BDEF2:
-            self.bones.append(header.readVertexIndex(fin))
-            self.bones.append(header.readVertexIndex(fin))
+            self.bones.append(header.readBoneIndex(fin))
+            self.bones.append(header.readBoneIndex(fin))
             self.weights.append(struct.unpack('<f', fin.read(4))[0])
         elif self.type == self.BDEF4:
-            self.bones.append(header.readVertexIndex(fin))
-            self.bones.append(header.readVertexIndex(fin))
-            self.bones.append(header.readVertexIndex(fin))
-            self.bones.append(header.readVertexIndex(fin))
+            self.bones.append(header.readBoneIndex(fin))
+            self.bones.append(header.readBoneIndex(fin))
+            self.bones.append(header.readBoneIndex(fin))
+            self.bones.append(header.readBoneIndex(fin))
             self.weights = list(struct.unpack('<ffff', fin.read(4*4)))
         elif self.type == self.SDEF:
-            self.bones.append(header.readVertexIndex(fin))
-            self.bones.append(header.readVertexIndex(fin))
+            self.bones.append(header.readBoneIndex(fin))
+            self.bones.append(header.readBoneIndex(fin))
             self.weights = BoneWeightSDEF()
             self.weights.weight, = struct.unpack('<f', fin.read(4))
             self.weights.c = list(struct.unpack('<fff', fin.read(4*3)))
@@ -683,7 +680,7 @@ class UVMorph(Morph):
 
         # 追加UVの判別インデックス
         # 0: UV
-        # 1-4: それぞれ追加UV1〜4に対応
+        # 1-4: それぞれ追加UV1-4に対応
         self.uv_index = category - 3
 
     def dataClass(self):
