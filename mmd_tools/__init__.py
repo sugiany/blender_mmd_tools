@@ -8,6 +8,7 @@ from . import import_vmd
 from . import mmd_camera
 from . import utils
 from . import cycles_converter
+from . import test
 
 bl_info= {
     "name": "MMD Tools",
@@ -33,6 +34,8 @@ if "bpy" in locals():
         imp.reload(utils)
     if "cycles_converter" in locals():
         imp.reload(cycles_converter)
+    if "test" in locals():
+        imp.reload(test)
 
 ## Import-Export
 class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
