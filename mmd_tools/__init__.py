@@ -49,7 +49,7 @@ class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 
     scale = bpy.props.FloatProperty(name='scale', default=0.2)
     renameBones = bpy.props.BoolProperty(name='rename bones', default=True)
-    deleteTipBones = bpy.props.BoolProperty(name='delete tip bones', default=True)
+    deleteTipBones = bpy.props.BoolProperty(name='delete tip bones', default=False)
 
     def execute(self, context):
         importer = import_pmx.PMXImporter()
