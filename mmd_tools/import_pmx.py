@@ -176,6 +176,9 @@ class PMXImporter:
                     ikConst.chain_count = len(p_bone.ik_links)
                     ikConst.target = self.__armObj
                     ikConst.subtarget = p_bone.name
+                    if p_bone.isRotatable and not p_bone.isMovable :
+                        ikConst.use_location = p_bone.isMovable 
+                        ikConst.use_rotation = p_bone.isRotatable
                     for i in p_bone.ik_links:
                         if i.maximumAngle is not None:
                             bone = pose_bones[self.__boneTable[i.target]]
