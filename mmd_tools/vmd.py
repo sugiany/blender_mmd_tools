@@ -204,5 +204,8 @@ class File:
             self.header.load(fin)
             self.boneAnimation.load(fin)
             self.shapeKeyAnimation.load(fin)
-            self.cameraAnimation.load(fin)
-            self.lampAnimation.load(fin)
+            try:
+                self.cameraAnimation.load(fin)
+                self.lampAnimation.load(fin)
+            except struct.error:
+                pass # no valid camera/lamp data
