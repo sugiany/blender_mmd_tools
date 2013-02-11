@@ -37,7 +37,7 @@ class BoneFrameKey:
         self.frame_number, = struct.unpack('<L', fin.read(4))
         self.location = list(struct.unpack('<fff', fin.read(4*3)))
         self.rotation = list(struct.unpack('<ffff', fin.read(4*4)))
-        self.interp = list(struct.unpack('<64s', fin.read(64)))
+        self.interp = list(struct.unpack('<64b', fin.read(64)))
 
     def __repr__(self):
         return '<BoneFrameKey frame %s, loa %s, rot %s>'%(
@@ -78,7 +78,7 @@ class CameraKeyFrameKey:
         self.distance, = struct.unpack('<f', fin.read(4))
         self.location = list(struct.unpack('<fff', fin.read(4*3)))
         self.rotation = list(struct.unpack('<fff', fin.read(4*3)))
-        self.interp = list(struct.unpack('<24s', fin.read(24)))
+        self.interp = list(struct.unpack('<24b', fin.read(24)))
         self.angle, = struct.unpack('<L', fin.read(4))
         self.persp, = struct.unpack('<b', fin.read(1))
         self.persp = (self.persp == 1)
@@ -92,6 +92,26 @@ class CameraKeyFrameKey:
             str(self.angle),
             str(self.persp),
             )
+
+
+class LampKeyFrameKey:
+    def __init__(self):
+        self.frame_number = 0
+        self.color = []
+        self.direction = []
+
+    def load(self, fin):
+        self.frame_number, = struct.unpack('<L', fin.read(4))
+        self.color = list(struct.unpack('<fff', fin.read(4*3)))
+        self.direction = list(struct.unpack('<fff', fin.read(4*3)))
+
+    def __repr__(self):
+        return '<LampKeyFrameKey frame %s, color %s, direction %s>'%(
+            str(self.frame_number),
+            str(self.color),
+            str(self.direction),
+            )
+
 
 class _AnimationBase(collections.defaultdict):
     def __init__(self):
@@ -143,6 +163,24 @@ class CameraAnimation(list):
             self.append(frameKey)
 
 
+class LampAnimation(list):
+    def __init__(self):
+        list.__init__(self)
+        self = []
+
+    @staticmethod
+    def frameClass():
+        return LampKeyFrameKey
+
+    def load(self, fin):
+        count, = struct.unpack('<L', fin.read(4))
+        for i in range(count):
+            cls = self.frameClass()
+            frameKey = cls()
+            frameKey.load(fin)
+            self.append(frameKey)
+
+
 class File:
     def __init__(self):
         self.filepath = None
@@ -150,6 +188,7 @@ class File:
         self.boneAnimation = None
         self.shapeKeyAnimation = None
         self.cameraAnimation = None
+        self.lampAnimation = None
 
     def load(self, **args):
         path = args['filepath']
@@ -160,8 +199,13 @@ class File:
             self.boneAnimation = BoneAnimation()
             self.shapeKeyAnimation = ShapeKeyAnimation()
             self.cameraAnimation = CameraAnimation()
+            self.lampAnimation = LampAnimation()
 
             self.header.load(fin)
             self.boneAnimation.load(fin)
             self.shapeKeyAnimation.load(fin)
-            self.cameraAnimation.load(fin)
+            try:
+                self.cameraAnimation.load(fin)
+                self.lampAnimation.load(fin)
+            except struct.error:
+                pass # no valid camera/lamp data

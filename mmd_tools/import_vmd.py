@@ -9,23 +9,25 @@ import os
 
 from . import vmd
 from . import mmd_camera
+from . import mmd_lamp
 from . import utils
 
 class VMDImporter:
-    def __init__(self, filepath, scale=1.0, use_pmx_bonename=True, convert_mmd_camera=True):
+    def __init__(self, filepath, scale=1.0, use_pmx_bonename=True, convert_mmd_camera=True, convert_mmd_lamp=True):
         self.__vmdFile = vmd.File()
         self.__vmdFile.load(filepath=filepath)
         self.__scale = scale
         self.__convert_mmd_camera = convert_mmd_camera
+        self.__convert_mmd_lamp = convert_mmd_lamp
         self.__use_pmx_bonename = use_pmx_bonename
 
 
     @staticmethod
     def makeVMDBoneLocationToBlenderMatrix(blender_bone):
         mat = mathutils.Matrix([
-                [blender_bone.x_axis.x, blender_bone.y_axis.x, blender_bone.z_axis.x, 0.0],
-                [blender_bone.x_axis.y, blender_bone.y_axis.y, blender_bone.z_axis.y, 0.0],
-                [blender_bone.x_axis.z, blender_bone.y_axis.z, blender_bone.z_axis.z, 0.0],
+                [blender_bone.x_axis.x, blender_bone.x_axis.y, blender_bone.x_axis.z, 0.0],
+                [blender_bone.y_axis.x, blender_bone.y_axis.y, blender_bone.y_axis.z, 0.0],
+                [blender_bone.z_axis.x, blender_bone.z_axis.y, blender_bone.z_axis.z, 0.0],
                 [0.0, 0.0, 0.0, 1.0]
                 ])
         mat2 = mathutils.Matrix([
@@ -33,7 +35,7 @@ class VMDImporter:
             [0.0, 0.0, 1.0, 0.0],
             [0.0, 1.0, 0.0, 0.0],
             [0.0, 0.0, 0.0, 1.0]])
-        return mat2 * mat
+        return mat * mat2
 
     @staticmethod
     def convertVMDBoneRotationToBlender(blender_bone, rotation):
@@ -72,6 +74,18 @@ class VMDImporter:
                 pq = q
         return res
 
+    @staticmethod
+    def __setInterpolation(bezier, kp0, kp1):
+        if bezier[0] == bezier[1] and bezier[2] == bezier[3]:
+            kp0.interpolation = 'LINEAR'
+        else:
+            kp0.interpolation = 'BEZIER'
+            kp0.handle_right_type = 'FREE'
+            kp1.handle_left_type = 'FREE'
+            d = (kp1.co - kp0.co) / 127.0
+            kp0.handle_right = kp0.co + mathutils.Vector((d.x * bezier[0], d.y * bezier[1]))
+            kp1.handle_left = kp0.co + mathutils.Vector((d.x * bezier[2], d.y * bezier[3]))
+
     def __assignToArmature(self, armObj, action_name=None):
         if action_name is not None:
             act = bpy.data.actions.new(name=action_name)
@@ -85,7 +99,7 @@ class VMDImporter:
             pose_bones = utils.makePmxBoneMap(armObj)
         for name, keyFrames in boneAnim.items():
             if name not in pose_bones:
-                print("WARINIG: not found bone %s"%str(name))
+                print("WARNING: not found bone %s"%str(name))
                 continue
 
             keyFrames.sort(key=lambda x:x.frame_number)
@@ -106,6 +120,20 @@ class VMDImporter:
                                      group=name,
                                      frame=frame)
 
+        rePath = re.compile('^pose\.bones\["(.+)"\]\.([a-z_]+)$')
+        for fcurve in act.fcurves:
+            m = rePath.match(fcurve.data_path)
+            if m and m.group(2) in ['location', 'rotation_quaternion']:
+                bone = armObj.pose.bones[m.group(1)]
+                keyFrames = boneAnim[bone.get('name_j', bone.name)]
+                if m.group(2) == 'location':
+                    idx = [0, 2, 1][fcurve.array_index]
+                else:
+                    idx = 3
+                frames = list(fcurve.keyframe_points)
+                frames.sort(key=lambda kp:kp.co.x)
+                for i in range(1, len(keyFrames)):
+                    self.__setInterpolation(keyFrames[i].interp[idx:16:4], frames[i - 1], frames[i])
 
     def __assignToMesh(self, meshObj, action_name=None):
         if action_name is not None:
@@ -121,7 +149,7 @@ class VMDImporter:
 
         for name, keyFrames in shapeKeyAnim.items():
             if name not in shapeKeyDict:
-                print("WARINIG: not found bone %s"%str(name))
+                print("WARNING: not found shape key %s"%str(name))
                 continue
             shapeKey = shapeKeyDict[name]
             for i in keyFrames:
@@ -149,6 +177,7 @@ class VMDImporter:
             a.action = act
 
         cameraAnim = self.__vmdFile.cameraAnimation
+        cameraAnim.sort(key=lambda x:x.frame_number)
         for keyFrame in cameraAnim:
             mmdCamera.mmd_camera_angle = keyFrame.angle
             mmdCamera.mmd_camera_distance = -keyFrame.distance * self.__scale
@@ -163,24 +192,86 @@ class VMDImporter:
             mmdCamera.keyframe_insert(data_path='rotation_euler',
                                       frame=keyFrame.frame_number)
 
+        paths = ['rotation_euler', 'mmd_camera_distance', 'mmd_camera_angle', 'location']
+        for fcurve in act.fcurves:
+            if fcurve.data_path in paths:
+                if fcurve.data_path =='location':
+                    idx = [0, 2, 1][fcurve.array_index] * 4
+                else:
+                    idx = (paths.index(fcurve.data_path) + 3) * 4
+                frames = list(fcurve.keyframe_points)
+                frames.sort(key=lambda kp:kp.co.x)
+                for i in range(1, len(cameraAnim)):
+                    interp = cameraAnim[i].interp
+                    self.__setInterpolation([interp[idx + j] for j in [0, 2, 1, 3]], frames[i - 1], frames[i])
+
         for fcurve in mmdCamera.animation_data.action.fcurves:
             if fcurve.data_path == 'rotation_euler':
                 self.detectCameraChange(fcurve)
+
+    @staticmethod
+    def detectLampChange(fcurve, threshold=0.1):
+        frames = list(fcurve.keyframe_points)
+        frameCount = len(frames)
+        frames.sort(key=lambda x:x.co[0])
+        for i, f in enumerate(frames):
+            if i+1 < frameCount:
+                n = frames[i+1]
+                if n.co[0] - f.co[0] <= 1.0 and abs(f.co[1] - n.co[1]) > threshold:
+                    f.interpolation = 'CONSTANT'
+
+    def __assignToLamp(self, lampObj, action_name=None):
+        mmdLamp = mmd_lamp.MMDLamp.convertToMMDLamp(lampObj).object()
+        mmdLamp.scale = mathutils.Vector((self.__scale, self.__scale, self.__scale)) * 4.0
+        for obj in mmdLamp.children:
+            if obj.type == 'LAMP':
+                lamp = obj
+            elif obj.type == 'ARMATURE':
+                armature = obj
+                bone = armature.pose.bones[0]
+                bone_data_path = 'pose.bones["' + bone.name + '"].location'
+
+        if action_name is not None:
+            act = bpy.data.actions.new(name=action_name + '_color')
+            a = lamp.data.animation_data_create()
+            a.action = act
+            act = bpy.data.actions.new(name=action_name + '_location')
+            a = armature.animation_data_create()
+            a.action = act
+
+        lampAnim = self.__vmdFile.lampAnimation
+        for keyFrame in lampAnim:
+            lamp.data.color = mathutils.Vector(keyFrame.color)
+            bone.location = -(mathutils.Vector((keyFrame.direction[0], keyFrame.direction[2], keyFrame.direction[1])))
+            lamp.data.keyframe_insert(data_path='color',
+                                      frame=keyFrame.frame_number)
+            bone.keyframe_insert(data_path='location',
+                                 frame=keyFrame.frame_number)
+
+        for fcurve in armature.animation_data.action.fcurves:
+            if fcurve.data_path == bone_data_path:
+                self.detectLampChange(fcurve)
 
 
 
     def assign(self, obj, action_name=None):
         if action_name is None:
             action_name = os.path.splitext(os.path.basename(self.__vmdFile.filepath))[0]
-        if obj.type == 'MESH':
+
+        if mmd_camera.MMDCamera.isMMDCamera(obj):
+            self.__assignToCamera(obj, action_name+'_camera')
+        elif mmd_lamp.MMDLamp.isMMDLamp(obj):
+            self.__assignToLamp(obj, action_name+'_lamp')
+        elif obj.type == 'MESH':
             self.__assignToMesh(obj, action_name+'_facial')
         elif obj.type == 'ARMATURE':
             self.__assignToArmature(obj, action_name+'_bone')
-        elif mmd_camera.MMDCamera.isMMDCamera(obj):
-            self.__assignToCamera(obj, action_name+'_camera')
         elif obj.type == 'CAMERA' and self.__convert_mmd_camera:
             obj = mmd_camera.MMDCamera.convertToMMDCamera(obj)
             self.__assignToCamera(obj.object(), action_name+'_camera')
+        elif obj.type == 'LAMP' and self.__convert_mmd_lamp:
+            obj = mmd_lamp.MMDLamp.convertToMMDLamp(obj)
+            self.__assignToLamp(obj.object(), action_name+'_lamp')
         else:
             raise ValueError('unsupport object type: %s'%obj.type)
 
