@@ -49,7 +49,7 @@ class MMDCamera:
         sensorHeight.targets[0].id_type = 'OBJECT'
         sensorHeight.targets[0].id = camera
         sensorHeight.targets[0].data_path = 'data.sensor_height'
-        
+
         driver.type = 'SCRIPTED'
         driver.expression = '%s/(2*tan(radians(%s)/2))'%(sensorHeight.name, angle.name)
 
@@ -86,4 +86,3 @@ class MMDCamera:
 
     def object(self):
         return self.__emptyObj
-
