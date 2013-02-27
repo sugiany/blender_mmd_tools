@@ -161,7 +161,7 @@ class Model:
             f1 = header.readVertexIndex(fin)
             f2 = header.readVertexIndex(fin)
             f3 = header.readVertexIndex(fin)
-            self.faces.append((f1, f2, f3))
+            self.faces.append((f3, f2, f1))
 
         num_textures, = struct.unpack('<i', fin.read(4))
         self.textures = []
