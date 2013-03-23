@@ -23,12 +23,16 @@ class PMXImporter:
         self.__scale = None
         self.__deleteTipBones = False
 
+        self.__root = None
         self.__armObj = None
         self.__meshObj = None
 
         self.__vertexTable = None
         self.__vertexGroupTable = None
         self.__textureTable = None
+
+        self.__rigidTable = []
+        self.__jointTable = []
 
         self.__materialFaceCountTable = None
 
@@ -49,15 +53,20 @@ class PMXImporter:
     def __createObjects(self):
         pmxModel = self.__pmxFile.model
 
+        self.__root = bpy.data.objects.new(name=pmxModel.name, object_data=None)
+        self.__targetScene.objects.link(self.__root)
+
         mesh = bpy.data.meshes.new(name=pmxModel.name)
         self.__meshObj = bpy.data.objects.new(name=pmxModel.name+'_mesh', object_data=mesh)
 
         arm = bpy.data.armatures.new(name=pmxModel.name)
-        self.__armObj = bpy.data.objects.new(name=pmxModel.name, object_data=arm)
+        self.__armObj = bpy.data.objects.new(name=pmxModel.name+'_arm', object_data=arm)
         self.__meshObj.parent = self.__armObj
 
         self.__targetScene.objects.link(self.__meshObj)
         self.__targetScene.objects.link(self.__armObj)
+
+        self.__armObj.parent = self.__root
 
     def __importVertexGroup(self):
         self.__vertexGroupTable = []
@@ -212,7 +221,152 @@ class PMXImporter:
                     edit_bones.remove(edit_bone)
             finally:
                 bpy.ops.object.mode_set(mode='OBJECT')
-                
+
+
+    def __importRigids(self):
+        self.__rigidTable = []
+        for rigid in self.__pmxFile.model.rigids:
+            loc = mathutils.Vector(rigid.location) * self.TO_BLE_MATRIX
+            rot = mathutils.Vector(rigid.rotation) * self.TO_BLE_MATRIX * -1
+            rigid_type = None
+            if rigid.type == pmx.Rigid.TYPE_SPHERE:
+                bpy.ops.mesh.primitive_uv_sphere_add(
+                    segments=16,
+                    ring_count=8,
+                    size=1,
+                    view_align=False,
+                    enter_editmode=False
+                    )
+                size = mathutils.Vector([1,1,1]) * rigid.size[0]
+                rigid_type = 'SPHERE'
+                bpy.ops.object.shade_smooth()
+            elif rigid.type == pmx.Rigid.TYPE_BOX:
+                bpy.ops.mesh.primitive_cube_add(
+                    view_align=False,
+                    enter_editmode=False
+                    )
+                size = mathutils.Vector(rigid.size) * self.TO_BLE_MATRIX * 0.5
+                rigid_type = 'BOX'
+            elif rigid.type == pmx.Rigid.TYPE_CAPSULE:
+                obj = utils.makeCapsule(radius=rigid.size[0], height=rigid.size[1])
+                size = mathutils.Vector([1,1,1])
+                rigid_type = 'CAPSULE'
+                bpy.ops.object.shade_smooth()
+            else:
+                raise Exception('Invalid rigid type')
+
+            if rigid.type != pmx.Rigid.TYPE_CAPSULE:
+                obj = bpy.context.selected_objects[0]
+            obj.name = rigid.name
+            obj.location = loc
+            obj.rotation_euler = rot
+            obj.scale = size
+            obj.hide_render = True
+            obj.draw_type = 'WIRE'
+            utils.selectAObject(obj)
+            bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+            bpy.ops.rigidbody.object_add(type='ACTIVE')
+            if rigid.mode == pmx.Rigid.MODE_STATIC and rigid.bone is not None:
+                utils.setParentToBone(obj, self.__armObj, self.__boneTable[rigid.bone])
+            elif rigid.bone is not None:
+                #const = self.__armObj.pose.bones[self.__boneTable[rigid.bone]].constraints.new('COPY_ROTATION')
+                bpy.ops.object.select_all(action='DESELECT')
+                obj.select = True
+                bpy.context.scene.objects.active = self.__root
+                bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=True)
+
+                const = self.__armObj.pose.bones[self.__boneTable[rigid.bone]].constraints.new('DAMPED_TRACK')
+                const.target = obj
+                #const.target_space = 'LOCAL'
+                #const.owner_space = 'LOCAL'
+                #obj.parent = self.__armObj
+            else:
+                bpy.ops.object.select_all(action='DESELECT')
+                obj.select = True
+                bpy.context.scene.objects.active = self.__armObj
+                bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=True)
+
+            obj.rigid_body.collision_shape = rigid_type
+            group_flags = []
+            for i in range(20):
+                group_flags.append(i==rigid.collision_group_number or (rigid.collision_group_mask & (1<<i) != 0))
+            rb = obj.rigid_body
+            rb.collision_groups = group_flags
+            rb.friction = rigid.friction
+            rb.mass = rigid.mass
+            rb.angular_damping = rigid.rotation_attenuation
+            rb.linear_damping = rigid.velocity_attenuation
+            rb.restitution = rigid.bounce
+            if rigid.mode == pmx.Rigid.MODE_STATIC:
+                rb.kinematic = True
+
+            self.__rigidTable.append(obj)
+
+    def __importJoints(self):
+        self.__jointTable = []
+        for joint in self.__pmxFile.model.joints:
+            loc = mathutils.Vector(joint.location) * self.TO_BLE_MATRIX
+            rot = mathutils.Vector(joint.rotation) * self.TO_BLE_MATRIX * -1
+            bpy.ops.object.add(type='EMPTY',
+                               view_align=False,
+                               enter_editmode=False,
+                               location=loc,
+                               rotation=rot
+                               )
+            obj = bpy.context.selected_objects[0]
+            obj.name = joint.name
+            obj.hide_render = True
+            bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
+            rbc = obj.rigid_body_constraint
+            rbc.object1 = self.__rigidTable[joint.src_rigid]
+            rbc.object2 = self.__rigidTable[joint.dest_rigid]
+            rbc.use_limit_ang_x = True
+            rbc.use_limit_ang_y = True
+            rbc.use_limit_ang_z = True
+            rbc.use_limit_lin_x = True
+            rbc.use_limit_lin_y = True
+            rbc.use_limit_lin_z = True
+            rbc.use_spring_x = True
+            rbc.use_spring_y = True
+            rbc.use_spring_z = True
+
+            max_loc = mathutils.Vector(joint.maximum_location) * self.TO_BLE_MATRIX
+            rbc.limit_lin_x_upper = max_loc[0]
+            rbc.limit_lin_y_upper = max_loc[1]
+            rbc.limit_lin_z_upper = max_loc[2]
+
+            min_loc = mathutils.Vector(joint.minimum_location) * self.TO_BLE_MATRIX
+            rbc.limit_lin_x_lower = min_loc[0]
+            rbc.limit_lin_y_lower = min_loc[1]
+            rbc.limit_lin_z_lower = min_loc[2]
+
+            max_rot = mathutils.Vector(joint.maximum_rotation) * self.TO_BLE_MATRIX * -1
+            rbc.limit_ang_x_upper = max_rot[0]
+            rbc.limit_ang_y_upper = max_rot[1]
+            rbc.limit_ang_z_upper = max_rot[2]
+
+            min_rot = mathutils.Vector(joint.minimum_rotation) * self.TO_BLE_MATRIX * -1
+            rbc.limit_ang_x_lower = min_rot[0]
+            rbc.limit_ang_y_lower = min_rot[1]
+            rbc.limit_ang_z_lower = min_rot[2]
+
+            spring_damp = mathutils.Vector(joint.spring_constant) * self.TO_BLE_MATRIX
+            rbc.spring_damping_x = spring_damp[0]
+            rbc.spring_damping_y = spring_damp[1]
+            rbc.spring_damping_z = spring_damp[2]
+
+            spring_stiff = mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX
+            rbc.spring_stiffness_x = spring_stiff[0]
+            rbc.spring_stiffness_y = spring_stiff[1]
+            rbc.spring_stiffness_z = spring_stiff[2]
+
+            self.__jointTable.append(obj)
+            bpy.ops.object.select_all(action='DESELECT')
+            obj.select = True
+            bpy.context.scene.objects.active = self.__armObj
+            bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=True)
+
+
     def __importMaterials(self):
         self.__importTextures()
         bpy.types.Material.ambient_color = bpy.props.FloatVectorProperty(name='ambient color')
@@ -295,6 +449,8 @@ class PMXImporter:
         self.__importBones()
         self.__importMaterials()
         self.__importFaces()
+        self.__importRigids()
+        self.__importJoints()
 
         self.__importVertexMorphs()
 
@@ -306,15 +462,10 @@ class PMXImporter:
 
         if self.__scale != 1.0:
             bpy.ops.object.select_all(action='DESELECT')
-            self.__armObj.select = True
+            self.__root.select = True
             bpy.ops.transform.resize(value=(self.__scale, self.__scale, self.__scale))
             self.__meshObj.select = True
             bpy.ops.object.transform_apply(scale=True)
 
         bpy.types.Object.pmx_import_scale = bpy.props.FloatProperty(name='pmx_import_scale')
         self.__armObj.pmx_import_scale = self.__scale
-
-
-
-if __name__=='__main__':
-    __main()

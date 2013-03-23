@@ -472,7 +472,6 @@ class Bone:
 
     def load(self, header, fin):
         self.name = header.readStr(fin)
-        print(self.name)
         self.name_e = header.readStr(fin)
 
         self.location = list(struct.unpack('<fff', fin.read(4*3)))
@@ -755,7 +754,7 @@ class Rigid:
 
         self.bone = None
         self.collision_group_number = 0
-        self.non_collision_group_number = 0
+        self.collision_group_mask = 0
 
         self.type = 0
         self.size = []
@@ -788,7 +787,7 @@ class Rigid:
             self.bone = None
 
         self.collision_group_number, = struct.unpack('<b', fin.read(1))
-        self.non_collision_group_number, = struct.unpack('<h', fin.read(2))
+        self.collision_group_mask, = struct.unpack('<H', fin.read(2))
 
         self.type, = struct.unpack('<b', fin.read(1))
         self.size = list(struct.unpack('<fff', fin.read(4*3)))
@@ -824,7 +823,7 @@ class Joint:
         self.minimum_rotation = []
 
         self.spring_constant = []
-        self.spring_rotaion_constant = []
+        self.spring_rotation_constant = []
 
     def load(self, header, fin):
         self.name = header.readStr(fin)
@@ -848,7 +847,7 @@ class Joint:
         self.minimum_rotation = list(struct.unpack('<fff', fin.read(4*3)))
 
         self.spring_constant = list(struct.unpack('<fff', fin.read(4*3)))
-        self.spring_rotaion_constant = list(struct.unpack('<fff', fin.read(4*3)))
+        self.spring_rotation_constant = list(struct.unpack('<fff', fin.read(4*3)))
 
 class File:
     def __init__(self):

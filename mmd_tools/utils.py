@@ -20,6 +20,25 @@ def enterEditMode(obj):
     if obj.mode != 'EDIT':
         bpy.ops.object.mode_set(mode='EDIT')
 
+def setParentToBone(obj, parent, bone_name):
+    import bpy
+    selectAObject(parent)
+    bpy.ops.object.mode_set(mode='POSE')
+    selectAObject(obj)
+    bpy.context.scene.objects.active = parent
+    parent.select = True
+    bpy.ops.object.mode_set(mode='POSE')
+    parent.data.bones.active = parent.data.bones[bone_name]
+    bpy.ops.object.parent_set(type='BONE', xmirror=False, keep_transform=False)
+    bpy.ops.object.mode_set(mode='OBJECT')
+
+# def addBoneConstraint(obj, bone_name, constraint_type):
+#     import bpy
+#     selectAObject(obj)
+#     bpy.ops.object.mode_set(mode='POSE')
+#     obj.data.bones.active = parent.data.bones[bone_name]
+#     bpy.ops.pose.constraint_add(type=constraint_type)
+
 
 __CONVERT_NAME_TO_L_REGEXP = re.compile('^(.*)左(.*)$')
 __CONVERT_NAME_TO_R_REGEXP = re.compile('^(.*)右(.*)$')
@@ -81,4 +100,57 @@ def makePmxBoneMap(armObj):
     for i in armObj.pose.bones:
         boneMap[i.get('name_j', i.name)] = i
     return boneMap
+
+
+def makeCapsule(segment=16, ring_count=8, radius=1.0, height=1.0, target_scene=None):
+    import bpy
+    if target_scene is None:
+        target_scene = bpy.context.scene
+    mesh = bpy.data.meshes.new(name='Capsule')
+    meshObj = bpy.data.objects.new(name='Capsule', object_data=mesh)
+    vertices = []
+    top = (0, 0, height/2+radius)
+    vertices.append(top)
+
+    f = lambda i: radius*i/ring_count
+    for i in range(ring_count, 0, -1):
+        z = f(i-1)
+        t = math.sqrt(radius**2 - z**2)
+        for j in range(segment):
+            theta = 2*math.pi/segment*j
+            x = t * math.sin(-theta)
+            y = t * math.cos(-theta)
+            vertices.append((x,y,z+height/2))
+
+    for i in range(ring_count):
+        z = -f(i)
+        t = math.sqrt(radius**2 - z**2)
+        for j in range(segment):
+            theta = 2*math.pi/segment*j
+            x = t * math.sin(-theta)
+            y = t * math.cos(-theta)
+            vertices.append((x,y,z-height/2))
+
+    bottom = (0, 0, -(height/2+radius))
+    vertices.append(bottom)
+
+    faces = []
+    for i in range(1, segment):
+        faces.append([0, i, i+1])
+    faces.append([0, segment, 1])
+    offset = segment + 1
+    for i in range(ring_count*2-1):
+        for j in range(segment-1):
+            t = offset + j
+            faces.append([t-segment, t, t+1, t-segment+1])
+        faces.append([offset-1, offset+segment-1, offset, offset-segment])
+        offset += segment
+    for i in range(segment-1):
+        t = offset + i
+        faces.append([t-segment, offset, t-segment+1])
+    faces.append([offset-1, offset, offset-segment])
+
+    mesh.from_pydata(vertices, [], faces)
+    target_scene.objects.link(meshObj)
+    return meshObj
 
