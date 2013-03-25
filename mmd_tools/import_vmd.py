@@ -13,13 +13,14 @@ from . import mmd_lamp
 from . import utils
 
 class VMDImporter:
-    def __init__(self, filepath, scale=1.0, use_pmx_bonename=True, convert_mmd_camera=True, convert_mmd_lamp=True):
+    def __init__(self, filepath, scale=1.0, use_pmx_bonename=True, convert_mmd_camera=True, convert_mmd_lamp=True, frame_margin=5):
         self.__vmdFile = vmd.File()
         self.__vmdFile.load(filepath=filepath)
         self.__scale = scale
         self.__convert_mmd_camera = convert_mmd_camera
         self.__convert_mmd_lamp = convert_mmd_lamp
         self.__use_pmx_bonename = use_pmx_bonename
+        self.__frame_margin = frame_margin
 
 
     @staticmethod
@@ -92,6 +93,16 @@ class VMDImporter:
             a = armObj.animation_data_create()
             a.action = act
 
+        if self.__frame_margin > 0:
+            utils.selectAObject(armObj)
+            bpy.context.scene.frame_current = 1
+            bpy.ops.object.mode_set(mode='POSE')
+            for i in armObj.data.bones:
+                i.select = True
+            bpy.ops.pose.transforms_clear()
+            bpy.ops.anim.keyframe_insert_menu(type='LocRotScale', confirm_success=False, always_prompt=False)
+            bpy.ops.object.mode_set(mode='OBJECT')
+            
         boneAnim = self.__vmdFile.boneAnimation
 
         pose_bones = armObj.pose.bones
@@ -115,10 +126,10 @@ class VMDImporter:
                 bone.rotation_quaternion = rotation
                 bone.keyframe_insert(data_path='location',
                                      group=name,
-                                     frame=frame)
+                                     frame=frame+self.__frame_margin)
                 bone.keyframe_insert(data_path='rotation_quaternion',
                                      group=name,
-                                     frame=frame)
+                                     frame=frame+self.__frame_margin)
 
         rePath = re.compile('^pose\.bones\["(.+)"\]\.([a-z_]+)$')
         for fcurve in act.fcurves:
@@ -156,7 +167,7 @@ class VMDImporter:
                 shapeKey.value = i.weight
                 shapeKey.keyframe_insert(data_path='value',
                                          group=name,
-                                         frame=i.frame_number)
+                                         frame=i.frame_number+self.__frame_margin)
 
     @staticmethod
     def detectCameraChange(fcurve, threshold=10.0):
@@ -184,13 +195,13 @@ class VMDImporter:
             mmdCamera.location = mathutils.Vector((keyFrame.location[0], keyFrame.location[2], keyFrame.location[1])) * self.__scale
             mmdCamera.rotation_euler = mathutils.Vector((keyFrame.rotation[0], keyFrame.rotation[2], keyFrame.rotation[1]))
             mmdCamera.keyframe_insert(data_path='mmd_camera_angle',
-                                           frame=keyFrame.frame_number)
+                                           frame=keyFrame.frame_number+self.__frame_margin)
             mmdCamera.keyframe_insert(data_path='mmd_camera_distance',
-                                      frame=keyFrame.frame_number)
+                                      frame=keyFrame.frame_number+self.__frame_margin)
             mmdCamera.keyframe_insert(data_path='location',
-                                      frame=keyFrame.frame_number)
+                                      frame=keyFrame.frame_number+self.__frame_margin)
             mmdCamera.keyframe_insert(data_path='rotation_euler',
-                                      frame=keyFrame.frame_number)
+                                      frame=keyFrame.frame_number+self.__frame_margin)
 
         paths = ['rotation_euler', 'mmd_camera_distance', 'mmd_camera_angle', 'location']
         for fcurve in act.fcurves:
@@ -244,9 +255,9 @@ class VMDImporter:
             lamp.data.color = mathutils.Vector(keyFrame.color)
             bone.location = -(mathutils.Vector((keyFrame.direction[0], keyFrame.direction[2], keyFrame.direction[1])))
             lamp.data.keyframe_insert(data_path='color',
-                                      frame=keyFrame.frame_number)
+                                      frame=keyFrame.frame_number+self.__frame_margin)
             bone.keyframe_insert(data_path='location',
-                                 frame=keyFrame.frame_number)
+                                 frame=keyFrame.frame_number+self.__frame_margin)
 
         for fcurve in armature.animation_data.action.fcurves:
             if fcurve.data_path == bone_data_path:

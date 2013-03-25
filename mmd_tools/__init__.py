@@ -14,7 +14,7 @@ bl_info= {
     "name": "MMD Tools",
     "author": "sugiany",
     "version": (0, 1, 0),
-    "blender": (2, 6, 3),
+    "blender": (2, 6, 6),
     "location": "View3D > Tool Shelf > MMD Tools Panel",
     "description": "Utility tools for MMD model editing.",
     "warning": "",
@@ -77,9 +77,10 @@ class ImportVmd_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     filter_glob = bpy.props.StringProperty(default='*.vmd', options={'HIDDEN'})
 
     scale = bpy.props.FloatProperty(name='scale', default=0.2)
+    margin = bpy.props.IntProperty(name='margin', default=0, min=0)
 
     def execute(self, context):
-        importer = import_vmd.VMDImporter(filepath=self.filepath, scale=self.scale)
+        importer = import_vmd.VMDImporter(filepath=self.filepath, scale=self.scale, frame_margin=self.margin)
         for i in context.selected_objects:
             importer.assign(i)
         return {'FINISHED'}
