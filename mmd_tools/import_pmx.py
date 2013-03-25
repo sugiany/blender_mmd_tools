@@ -331,24 +331,24 @@ class PMXImporter:
             rbc.use_spring_z = True
 
             max_loc = mathutils.Vector(joint.maximum_location) * self.TO_BLE_MATRIX
-            rbc.limit_lin_x_upper = max_loc[0]
-            rbc.limit_lin_y_upper = max_loc[1]
-            rbc.limit_lin_z_upper = max_loc[2]
-
             min_loc = mathutils.Vector(joint.minimum_location) * self.TO_BLE_MATRIX
-            rbc.limit_lin_x_lower = min_loc[0]
-            rbc.limit_lin_y_lower = min_loc[1]
-            rbc.limit_lin_z_lower = min_loc[2]
+            rbc.limit_lin_x_upper = max(min_loc[0], max_loc[0])
+            rbc.limit_lin_y_upper = max(min_loc[1], max_loc[1])
+            rbc.limit_lin_z_upper = max(min_loc[2], max_loc[2])
+
+            rbc.limit_lin_x_lower = min(min_loc[0], max_loc[0])
+            rbc.limit_lin_y_lower = min(min_loc[1], max_loc[1])
+            rbc.limit_lin_z_lower = min(min_loc[2], max_loc[2])
 
             max_rot = mathutils.Vector(joint.maximum_rotation) * self.TO_BLE_MATRIX * -1
-            rbc.limit_ang_x_upper = max_rot[0]
-            rbc.limit_ang_y_upper = max_rot[1]
-            rbc.limit_ang_z_upper = max_rot[2]
-
             min_rot = mathutils.Vector(joint.minimum_rotation) * self.TO_BLE_MATRIX * -1
-            rbc.limit_ang_x_lower = min_rot[0]
-            rbc.limit_ang_y_lower = min_rot[1]
-            rbc.limit_ang_z_lower = min_rot[2]
+            rbc.limit_ang_x_upper = max(min_rot[0], max_rot[0])
+            rbc.limit_ang_y_upper = max(min_rot[1], max_rot[1])
+            rbc.limit_ang_z_upper = max(min_rot[2], max_rot[2])
+
+            rbc.limit_ang_x_lower = min(min_rot[0], max_rot[0])
+            rbc.limit_ang_y_lower = min(min_rot[1], max_rot[1])
+            rbc.limit_ang_z_lower = min(min_rot[2], max_rot[2])
 
             spring_damp = mathutils.Vector(joint.spring_constant) * self.TO_BLE_MATRIX
             rbc.spring_damping_x = spring_damp[0]
