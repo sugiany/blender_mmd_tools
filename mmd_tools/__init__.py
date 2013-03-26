@@ -9,6 +9,7 @@ from . import mmd_camera
 from . import utils
 from . import cycles_converter
 from . import test
+from . import auto_scene_setup
 
 bl_info= {
     "name": "MMD Tools",
@@ -34,6 +35,8 @@ if "bpy" in locals():
         imp.reload(utils)
     if "cycles_converter" in locals():
         imp.reload(cycles_converter)
+    if "auto_scene_setup" in locals():
+        imp.reload(auto_scene_setup)
     if "test" in locals():
         imp.reload(test)
 
@@ -120,6 +123,18 @@ class ConvertToCyclesShader_Op(bpy.types.Operator):
         cycles_converter.convertToCyclesShader(obj)
         return {'FINISHED'}
 
+class AutoSceneSetup_Op(bpy.types.Operator):
+    bl_idname = 'mmd_tools.auto_scene_setup'
+    bl_label = 'auto setup'
+    bl_description = 'set basic parameters for test renderings.'
+    bl_options = {'PRESET'}
+
+    def execute(self, context):
+        auto_scene_setup.setupFrameRanges()
+        auto_scene_setup.setupLighting()
+        auto_scene_setup.setupFps()
+        return {'FINISHED'}
+
 
 ## Main Panel
 class MMDToolsObjectPanel(bpy.types.Panel):
@@ -140,6 +155,7 @@ class MMDToolsObjectPanel(bpy.types.Panel):
         if active_obj is not None and active_obj.type == 'MESH':
             self.layout.operator('mmd_tools.separate_by_materials', text='separate by materials')
             self.layout.operator('mmd_tools.convert_to_cycles_shader', text='to cycles')
+        self.layout.operator('mmd_tools.auto_scene_setup', text='auto setup')
 
 
 def register():
