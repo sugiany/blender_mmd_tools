@@ -20,7 +20,7 @@ class VMDImporter:
         self.__convert_mmd_camera = convert_mmd_camera
         self.__convert_mmd_lamp = convert_mmd_lamp
         self.__use_pmx_bonename = use_pmx_bonename
-        self.__frame_margin = frame_margin
+        self.__frame_margin = frame_margin + 1
 
 
     @staticmethod
@@ -93,7 +93,7 @@ class VMDImporter:
             a = armObj.animation_data_create()
             a.action = act
 
-        if self.__frame_margin > 0:
+        if self.__frame_margin > 1:
             utils.selectAObject(armObj)
             bpy.context.scene.frame_current = 1
             bpy.ops.object.mode_set(mode='POSE')

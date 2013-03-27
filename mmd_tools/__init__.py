@@ -80,7 +80,7 @@ class ImportVmd_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     filter_glob = bpy.props.StringProperty(default='*.vmd', options={'HIDDEN'})
 
     scale = bpy.props.FloatProperty(name='scale', default=0.2)
-    margin = bpy.props.IntProperty(name='margin', default=0, min=0)
+    margin = bpy.props.IntProperty(name='margin', default=5, min=0)
 
     def execute(self, context):
         importer = import_vmd.VMDImporter(filepath=self.filepath, scale=self.scale, frame_margin=self.margin)
