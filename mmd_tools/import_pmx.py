@@ -83,7 +83,7 @@ class PMXImporter:
         for i, pv in enumerate(pmxModel.vertices):
             bv = mesh.vertices[i]
 
-            bv.co = pv.co
+            bv.co = mathutils.Vector(pv.co) * self.__scale
             bv.normal = pv.normal
 
             if isinstance(pv.weight.weights, pmx.BoneWeightSDEF):
@@ -130,7 +130,7 @@ class PMXImporter:
             self.__boneTable = []
             for i in pmxModel.bones:
                 bone = self.__armObj.data.edit_bones.new(name=i.name)
-                loc = mathutils.Vector(i.location)
+                loc = mathutils.Vector(i.location) * self.__scale
                 loc.rotate(self.TO_BLE_MATRIX)
                 bone.head = loc
                 editBoneTable.append(bone)
@@ -153,7 +153,7 @@ class PMXImporter:
 
             for b_bone in editBoneTable:
                 if b_bone.length  < 0.001:
-                    loc = mathutils.Vector([0, 0, 1])
+                    loc = mathutils.Vector([0, 0, 1]) * self.__scale
                     b_bone.tail = b_bone.head + loc
                     if len(b_bone.children) == 0:
                         tipBones.append(b_bone.name)
@@ -226,7 +226,7 @@ class PMXImporter:
     def __importRigids(self):
         self.__rigidTable = []
         for rigid in self.__pmxFile.model.rigids:
-            loc = mathutils.Vector(rigid.location) * self.TO_BLE_MATRIX
+            loc = mathutils.Vector(rigid.location) * self.TO_BLE_MATRIX * self.__scale
             rot = mathutils.Vector(rigid.rotation) * self.TO_BLE_MATRIX * -1
             rigid_type = None
             if rigid.type == pmx.Rigid.TYPE_SPHERE:
@@ -260,7 +260,7 @@ class PMXImporter:
             obj.name = rigid.name
             obj.location = loc
             obj.rotation_euler = rot
-            obj.scale = size
+            obj.scale = size * self.__scale
             obj.hide_render = True
             obj.draw_type = 'WIRE'
             utils.selectAObject(obj)
@@ -305,7 +305,7 @@ class PMXImporter:
     def __importJoints(self):
         self.__jointTable = []
         for joint in self.__pmxFile.model.joints:
-            loc = mathutils.Vector(joint.location) * self.TO_BLE_MATRIX
+            loc = mathutils.Vector(joint.location) * self.TO_BLE_MATRIX * self.__scale
             rot = mathutils.Vector(joint.rotation) * self.TO_BLE_MATRIX * -1
             bpy.ops.object.add(type='EMPTY',
                                view_align=False,
@@ -315,6 +315,7 @@ class PMXImporter:
                                )
             obj = bpy.context.selected_objects[0]
             obj.name = joint.name
+            obj.scale = [self.__scale, self.__scale, self.__scale]
             obj.hide_render = True
             bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
             rbc = obj.rigid_body_constraint
@@ -330,8 +331,8 @@ class PMXImporter:
             rbc.use_spring_y = True
             rbc.use_spring_z = True
 
-            max_loc = mathutils.Vector(joint.maximum_location) * self.TO_BLE_MATRIX
-            min_loc = mathutils.Vector(joint.minimum_location) * self.TO_BLE_MATRIX
+            max_loc = mathutils.Vector(joint.maximum_location) * self.TO_BLE_MATRIX * self.__scale
+            min_loc = mathutils.Vector(joint.minimum_location) * self.TO_BLE_MATRIX * self.__scale
             rbc.limit_lin_x_upper = max(min_loc[0], max_loc[0])
             rbc.limit_lin_y_upper = max(min_loc[1], max_loc[1])
             rbc.limit_lin_z_upper = max(min_loc[2], max_loc[2])
@@ -340,8 +341,8 @@ class PMXImporter:
             rbc.limit_lin_y_lower = min(min_loc[1], max_loc[1])
             rbc.limit_lin_z_lower = min(min_loc[2], max_loc[2])
 
-            max_rot = mathutils.Vector(joint.maximum_rotation) * self.TO_BLE_MATRIX * -1
-            min_rot = mathutils.Vector(joint.minimum_rotation) * self.TO_BLE_MATRIX * -1
+            max_rot = mathutils.Vector(joint.maximum_rotation) * self.TO_BLE_MATRIX
+            min_rot = mathutils.Vector(joint.minimum_rotation) * self.TO_BLE_MATRIX
             rbc.limit_ang_x_upper = max(min_rot[0], max_rot[0])
             rbc.limit_ang_y_upper = max(min_rot[1], max_rot[1])
             rbc.limit_ang_z_upper = max(min_rot[2], max_rot[2])
@@ -350,15 +351,15 @@ class PMXImporter:
             rbc.limit_ang_y_lower = min(min_rot[1], max_rot[1])
             rbc.limit_ang_z_lower = min(min_rot[2], max_rot[2])
 
-            spring_damp = mathutils.Vector(joint.spring_constant) * self.TO_BLE_MATRIX
-            rbc.spring_damping_x = spring_damp[0]
-            rbc.spring_damping_y = spring_damp[1]
-            rbc.spring_damping_z = spring_damp[2]
+            # spring_damp = mathutils.Vector(joint.spring_constant) * self.TO_BLE_MATRIX
+            # rbc.spring_damping_x = spring_damp[0]
+            # rbc.spring_damping_y = spring_damp[1]
+            # rbc.spring_damping_z = spring_damp[2]
 
-            spring_stiff = mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX
-            rbc.spring_stiffness_x = spring_stiff[0]
-            rbc.spring_stiffness_y = spring_stiff[1]
-            rbc.spring_stiffness_z = spring_stiff[2]
+            # spring_stiff = mathutils.Vector()
+            # rbc.spring_stiffness_x = spring_stiff[0]
+            # rbc.spring_stiffness_y = spring_stiff[1]
+            # rbc.spring_stiffness_z = spring_stiff[2]
 
             self.__jointTable.append(obj)
             bpy.ops.object.select_all(action='DESELECT')
@@ -421,7 +422,7 @@ class PMXImporter:
                 shapeKeyPoint = shapeKey.data[md.vertex]
                 offset = mathutils.Vector(md.offset)
                 offset.rotate(self.TO_BLE_MATRIX)
-                shapeKeyPoint.co = shapeKeyPoint.co + offset
+                shapeKeyPoint.co = shapeKeyPoint.co + offset * self.__scale
 
     def __addArmatureModifier(self, meshObj, armObj):
         armModifier = meshObj.modifiers.new(name='Armature', type='ARMATURE')
@@ -460,12 +461,12 @@ class PMXImporter:
         self.__addArmatureModifier(self.__meshObj, self.__armObj)
         self.__meshObj.data.update()
 
-        if self.__scale != 1.0:
-            bpy.ops.object.select_all(action='DESELECT')
-            self.__root.select = True
-            bpy.ops.transform.resize(value=(self.__scale, self.__scale, self.__scale))
-            self.__meshObj.select = True
-            bpy.ops.object.transform_apply(scale=True)
+        # if self.__scale != 1.0:
+        #     bpy.ops.object.select_all(action='DESELECT')
+        #     self.__root.select = True
+        #     bpy.ops.transform.resize(value=(self.__scale, self.__scale, self.__scale))
+        #     self.__meshObj.select = True
+        #     bpy.ops.object.transform_apply(scale=True)
 
         bpy.types.Object.pmx_import_scale = bpy.props.FloatProperty(name='pmx_import_scale')
         self.__armObj.pmx_import_scale = self.__scale
