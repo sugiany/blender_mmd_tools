@@ -272,9 +272,24 @@ class PMXImporter:
                 obj.select = True
                 bpy.context.scene.objects.active = self.__root
                 bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=True)
+                #track_point = self.__armObj.data.bones[self.__boneTable[rigid.bone]].tail
 
-                const = self.__armObj.pose.bones[self.__boneTable[rigid.bone]].constraints.new('DAMPED_TRACK')
-                const.target = obj
+                target_bone = self.__armObj.pose.bones[self.__boneTable[rigid.bone]]
+                bpy.ops.object.add(type='EMPTY',
+                                   view_align=False,
+                                   enter_editmode=False,
+                                   location=target_bone.tail
+                                   )
+                empty = bpy.context.selected_objects[0]
+                empty.name = 'mmd_bonetrack'
+                empty.empty_draw_size = 0.5 * self.__scale
+                empty.empty_draw_type = 'ARROWS'
+
+                bpy.context.scene.objects.active = obj
+                bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=False)
+
+                const = target_bone.constraints.new('DAMPED_TRACK')
+                const.target = empty
                 #const.target_space = 'LOCAL'
                 #const.owner_space = 'LOCAL'
                 #obj.parent = self.__armObj
