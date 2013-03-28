@@ -83,7 +83,7 @@ class PMXImporter:
         for i, pv in enumerate(pmxModel.vertices):
             bv = mesh.vertices[i]
 
-            bv.co = mathutils.Vector(pv.co) * self.__scale
+            bv.co = mathutils.Vector(pv.co) * self.TO_BLE_MATRIX * self.__scale
             bv.normal = pv.normal
 
             if isinstance(pv.weight.weights, pmx.BoneWeightSDEF):
@@ -102,7 +102,7 @@ class PMXImporter:
             else:
                 raise Exception('unkown bone weight type.')
 
-        mesh.transform(self.TO_BLE_MATRIX)
+        #mesh.transform(self.TO_BLE_MATRIX)
 
 
     def __importTextures(self):
@@ -130,8 +130,7 @@ class PMXImporter:
             self.__boneTable = []
             for i in pmxModel.bones:
                 bone = self.__armObj.data.edit_bones.new(name=i.name)
-                loc = mathutils.Vector(i.location) * self.__scale
-                loc.rotate(self.TO_BLE_MATRIX)
+                loc = mathutils.Vector(i.location) * self.__scale * self.TO_BLE_MATRIX
                 bone.head = loc
                 editBoneTable.append(bone)
                 self.__boneTable.append(i.name)
@@ -147,8 +146,7 @@ class PMXImporter:
                     else:
                         b_bone.tail = b_bone.head
                 else:
-                    loc = mathutils.Vector(m_bone.displayConnection)
-                    loc.rotate(self.TO_BLE_MATRIX)
+                    loc = mathutils.Vector(m_bone.displayConnection) * self.TO_BLE_MATRIX
                     b_bone.tail = b_bone.head + loc
 
             for b_bone in editBoneTable:
@@ -245,7 +243,7 @@ class PMXImporter:
                     view_align=False,
                     enter_editmode=False
                     )
-                size = mathutils.Vector(rigid.size) * self.TO_BLE_MATRIX * 0.5
+                size = mathutils.Vector(rigid.size) * self.TO_BLE_MATRIX
                 rigid_type = 'BOX'
             elif rigid.type == pmx.Rigid.TYPE_CAPSULE:
                 obj = utils.makeCapsule(radius=rigid.size[0], height=rigid.size[1])
@@ -258,13 +256,13 @@ class PMXImporter:
             if rigid.type != pmx.Rigid.TYPE_CAPSULE:
                 obj = bpy.context.selected_objects[0]
             obj.name = rigid.name
-            obj.location = loc
-            obj.rotation_euler = rot
             obj.scale = size * self.__scale
             obj.hide_render = True
             obj.draw_type = 'WIRE'
             utils.selectAObject(obj)
             bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+            obj.location = loc
+            obj.rotation_euler = rot
             bpy.ops.rigidbody.object_add(type='ACTIVE')
             if rigid.mode == pmx.Rigid.MODE_STATIC and rigid.bone is not None:
                 utils.setParentToBone(obj, self.__armObj, self.__boneTable[rigid.bone])
@@ -283,8 +281,8 @@ class PMXImporter:
             else:
                 bpy.ops.object.select_all(action='DESELECT')
                 obj.select = True
-                bpy.context.scene.objects.active = self.__armObj
-                bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=True)
+                #bpy.context.scene.objects.active = self.__armObj
+                #bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=True)
 
             obj.rigid_body.collision_shape = rigid_type
             group_flags = []
@@ -315,7 +313,8 @@ class PMXImporter:
                                )
             obj = bpy.context.selected_objects[0]
             obj.name = joint.name
-            obj.scale = [self.__scale, self.__scale, self.__scale]
+            obj.empty_draw_size = 0.5 * self.__scale
+            obj.empty_draw_type = 'ARROWS'
             obj.hide_render = True
             bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
             rbc = obj.rigid_body_constraint
@@ -341,8 +340,8 @@ class PMXImporter:
             rbc.limit_lin_y_lower = min(min_loc[1], max_loc[1])
             rbc.limit_lin_z_lower = min(min_loc[2], max_loc[2])
 
-            max_rot = mathutils.Vector(joint.maximum_rotation) * self.TO_BLE_MATRIX
-            min_rot = mathutils.Vector(joint.minimum_rotation) * self.TO_BLE_MATRIX
+            max_rot = mathutils.Vector(joint.maximum_rotation) * self.TO_BLE_MATRIX * -1
+            min_rot = mathutils.Vector(joint.minimum_rotation) * self.TO_BLE_MATRIX * -1
             rbc.limit_ang_x_upper = max(min_rot[0], max_rot[0])
             rbc.limit_ang_y_upper = max(min_rot[1], max_rot[1])
             rbc.limit_ang_z_upper = max(min_rot[2], max_rot[2])
@@ -420,8 +419,7 @@ class PMXImporter:
             shapeKey = self.__meshObj.shape_key_add(morph.name)
             for md in morph.data:
                 shapeKeyPoint = shapeKey.data[md.vertex]
-                offset = mathutils.Vector(md.offset)
-                offset.rotate(self.TO_BLE_MATRIX)
+                offset = mathutils.Vector(md.offset) * self.TO_BLE_MATRIX
                 shapeKeyPoint.co = shapeKeyPoint.co + offset * self.__scale
 
     def __addArmatureModifier(self, meshObj, armObj):
