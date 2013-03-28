@@ -102,9 +102,6 @@ class PMXImporter:
             else:
                 raise Exception('unkown bone weight type.')
 
-        #mesh.transform(self.TO_BLE_MATRIX)
-
-
     def __importTextures(self):
         pmxModel = self.__pmxFile.model
 
@@ -267,12 +264,10 @@ class PMXImporter:
             if rigid.mode == pmx.Rigid.MODE_STATIC and rigid.bone is not None:
                 utils.setParentToBone(obj, self.__armObj, self.__boneTable[rigid.bone])
             elif rigid.bone is not None:
-                #const = self.__armObj.pose.bones[self.__boneTable[rigid.bone]].constraints.new('COPY_ROTATION')
                 bpy.ops.object.select_all(action='DESELECT')
                 obj.select = True
                 bpy.context.scene.objects.active = self.__root
                 bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=True)
-                #track_point = self.__armObj.data.bones[self.__boneTable[rigid.bone]].tail
 
                 target_bone = self.__armObj.pose.bones[self.__boneTable[rigid.bone]]
                 bpy.ops.object.add(type='EMPTY',
@@ -290,14 +285,9 @@ class PMXImporter:
 
                 const = target_bone.constraints.new('DAMPED_TRACK')
                 const.target = empty
-                #const.target_space = 'LOCAL'
-                #const.owner_space = 'LOCAL'
-                #obj.parent = self.__armObj
             else:
                 bpy.ops.object.select_all(action='DESELECT')
                 obj.select = True
-                #bpy.context.scene.objects.active = self.__armObj
-                #bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=True)
 
             obj.rigid_body.collision_shape = rigid_type
             group_flags = []
@@ -473,13 +463,6 @@ class PMXImporter:
 
         self.__addArmatureModifier(self.__meshObj, self.__armObj)
         self.__meshObj.data.update()
-
-        # if self.__scale != 1.0:
-        #     bpy.ops.object.select_all(action='DESELECT')
-        #     self.__root.select = True
-        #     bpy.ops.transform.resize(value=(self.__scale, self.__scale, self.__scale))
-        #     self.__meshObj.select = True
-        #     bpy.ops.object.transform_apply(scale=True)
 
         bpy.types.Object.pmx_import_scale = bpy.props.FloatProperty(name='pmx_import_scale')
         self.__armObj.pmx_import_scale = self.__scale
