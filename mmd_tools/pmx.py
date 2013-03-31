@@ -841,10 +841,10 @@ class Joint:
         self.location = list(struct.unpack('<fff', fin.read(4*3)))
         self.rotation = list(struct.unpack('<fff', fin.read(4*3)))
 
-        self.maximum_location = list(struct.unpack('<fff', fin.read(4*3)))
         self.minimum_location = list(struct.unpack('<fff', fin.read(4*3)))
-        self.maximum_rotation = list(struct.unpack('<fff', fin.read(4*3)))
+        self.maximum_location = list(struct.unpack('<fff', fin.read(4*3)))
         self.minimum_rotation = list(struct.unpack('<fff', fin.read(4*3)))
+        self.maximum_rotation = list(struct.unpack('<fff', fin.read(4*3)))
 
         self.spring_constant = list(struct.unpack('<fff', fin.read(4*3)))
         self.spring_rotation_constant = list(struct.unpack('<fff', fin.read(4*3)))
