@@ -221,6 +221,9 @@ class PMXImporter:
     def __importRigids(self):
         self.__rigidTable = []
         for rigid in self.__pmxFile.model.rigids:
+            if self.__onlyCollisions and rigid.mode != pmx.Rigid.MODE_STATIC:
+                continue
+
             loc = mathutils.Vector(rigid.location) * self.TO_BLE_MATRIX * self.__scale
             rot = mathutils.Vector(rigid.rotation) * self.TO_BLE_MATRIX * -1
             rigid_type = None
@@ -263,6 +266,7 @@ class PMXImporter:
             obj.rotation_euler = rot
             bpy.ops.rigidbody.object_add(type='ACTIVE')
             if rigid.mode == pmx.Rigid.MODE_STATIC and rigid.bone is not None:
+                bpy.ops.object.modifier_add(type='COLLISION')
                 utils.setParentToBone(obj, self.__armObj, self.__boneTable[rigid.bone])
             elif rigid.bone is not None:
                 bpy.ops.object.select_all(action='DESELECT')
@@ -314,6 +318,8 @@ class PMXImporter:
             self.__rigidTable.append(obj)
 
     def __importJoints(self):
+        if self.__onlyCollisions:
+            return
         self.__jointTable = []
         for joint in self.__pmxFile.model.joints:
             loc = mathutils.Vector(joint.location) * self.TO_BLE_MATRIX * self.__scale
@@ -465,6 +471,7 @@ class PMXImporter:
         self.__scale = args.get('scale', 1.0)
         renameLRBones = args.get('rename_LR_bones', False)
         self.__deleteTipBones = args.get('delete_tip_bones', False)
+        self.__onlyCollisions = args.get('only_collisions', False)
 
         self.__createObjects()
 
