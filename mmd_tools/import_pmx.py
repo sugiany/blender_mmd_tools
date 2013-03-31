@@ -267,7 +267,7 @@ class PMXImporter:
             elif rigid.bone is not None:
                 bpy.ops.object.select_all(action='DESELECT')
                 obj.select = True
-                bpy.context.scene.objects.active = self.__root
+                bpy.context.scene.objects.active = self.__armObj
                 bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=True)
 
                 target_bone = self.__armObj.pose.bones[self.__boneTable[rigid.bone]]
@@ -293,6 +293,7 @@ class PMXImporter:
                 const = target_bone.constraints.new('DAMPED_TRACK')
                 const.target = empty
             else:
+                obj.parent = self.__armObj
                 bpy.ops.object.select_all(action='DESELECT')
                 obj.select = True
 
@@ -324,13 +325,14 @@ class PMXImporter:
                                rotation=rot
                                )
             obj = bpy.context.selected_objects[0]
-            obj.name = joint.name
+            obj.name = 'J.'+joint.name
             obj.empty_draw_size = 0.5 * self.__scale
             obj.empty_draw_type = 'ARROWS'
             obj.hide_render = True
             obj.is_mmd_joint = True
             bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
             rbc = obj.rigid_body_constraint
+            #rbc.disable_collisions = False
             rbc.object1 = self.__rigidTable[joint.src_rigid]
             rbc.object2 = self.__rigidTable[joint.dest_rigid]
             rbc.use_limit_ang_x = True
@@ -435,6 +437,15 @@ class PMXImporter:
                 offset = mathutils.Vector(md.offset) * self.TO_BLE_MATRIX
                 shapeKeyPoint.co = shapeKeyPoint.co + offset * self.__scale
 
+    def __hideRigidsAndJoints(self, obj):
+        if obj.is_mmd_rigid:
+            obj.hide = True
+        elif obj.is_mmd_joint:
+            obj.hide = True
+
+        for i in obj.children:
+            self.__hideRigidsAndJoints(i)
+
     def __addArmatureModifier(self, meshObj, armObj):
         armModifier = meshObj.modifiers.new(name='Armature', type='ARMATURE')
         armModifier.object = armObj
@@ -473,4 +484,6 @@ class PMXImporter:
         self.__meshObj.data.update()
 
         bpy.types.Object.pmx_import_scale = bpy.props.FloatProperty(name='pmx_import_scale')
+        if args.get('hide_rigids', False):
+            self.__hideRigidsAndJoints(self.__root)
         self.__armObj.pmx_import_scale = self.__scale

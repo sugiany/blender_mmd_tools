@@ -284,5 +284,5 @@ class VMDImporter:
             obj = mmd_lamp.MMDLamp.convertToMMDLamp(obj)
             self.__assignToLamp(obj.object(), action_name+'_lamp')
         else:
-            raise ValueError('unsupport object type: %s'%obj.type)
+            pass
 

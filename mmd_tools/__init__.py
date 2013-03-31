@@ -53,6 +53,7 @@ class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     scale = bpy.props.FloatProperty(name='scale', default=0.2)
     renameBones = bpy.props.BoolProperty(name='rename bones', default=True)
     deleteTipBones = bpy.props.BoolProperty(name='delete tip bones', default=False)
+    hide_rigids = bpy.props.BoolProperty(name='hide rigid bodies and joints', default=True)
 
     def execute(self, context):
         importer = import_pmx.PMXImporter()
@@ -60,7 +61,8 @@ class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
             filepath=self.filepath,
             scale=self.scale,
             rename_LR_bones=self.renameBones,
-            delete_tip_bones=self.deleteTipBones
+            delete_tip_bones=self.deleteTipBones,
+            hide_rigids=self.hide_rigids
             )
         return {'FINISHED'}
 
@@ -155,7 +157,8 @@ class MMDToolsObjectPanel(bpy.types.Panel):
         if active_obj is not None and active_obj.type == 'MESH':
             self.layout.operator('mmd_tools.separate_by_materials', text='separate by materials')
             self.layout.operator('mmd_tools.convert_to_cycles_shader', text='to cycles')
-        self.layout.operator('mmd_tools.auto_scene_setup', text='auto setup')
+        sub.label('Scene:')
+        self.layout.operator('mmd_tools.auto_scene_setup', text='auto scene setup')
 
 
 def register():
