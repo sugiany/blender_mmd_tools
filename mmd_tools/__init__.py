@@ -168,6 +168,8 @@ def register():
     bpy.types.Object.mmd_camera_angle = bpy.props.FloatProperty(name='mmd_camera_angle')
     bpy.types.Object.mmd_camera_persp = bpy.props.BoolProperty(name='mmd_camera_persp')
     bpy.types.Object.is_mmd_lamp = bpy.props.BoolProperty(name='is_mmd_lamp', default=False)
+    bpy.types.Object.is_mmd_rigid = bpy.props.BoolProperty(name='is_mmd_rigid', default=False)
+    bpy.types.Object.is_mmd_joint = bpy.props.BoolProperty(name='is_mmd_joint', default=False)
 
 def unregister():
     del bpy.types.Object.is_mmd_camera
@@ -177,6 +179,8 @@ def unregister():
     del bpy.types.Object.mmd_camera_angle
     del bpy.types.Object.mmd_camera_persp
     del bpy.types.Object.is_mmd_lamp
+    del bpy.types.Object.is_mmd_rigid
+    del bpy.types.Object.is_mmd_joint
 
     bpy.utils.unregister_module(__name__)
 

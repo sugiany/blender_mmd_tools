@@ -256,6 +256,7 @@ class PMXImporter:
             obj.scale = size * self.__scale
             obj.hide_render = True
             obj.draw_type = 'WIRE'
+            obj.is_mmd_rigid = True
             utils.selectAObject(obj)
             bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
             obj.location = loc
@@ -282,6 +283,8 @@ class PMXImporter:
 
                 bpy.context.scene.objects.active = obj
                 bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=False)
+
+                empty.hide = True
 
 
                 for i in target_bone.constraints:
@@ -325,6 +328,7 @@ class PMXImporter:
             obj.empty_draw_size = 0.5 * self.__scale
             obj.empty_draw_type = 'ARROWS'
             obj.hide_render = True
+            obj.is_mmd_joint = True
             bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
             rbc = obj.rigid_body_constraint
             rbc.object1 = self.__rigidTable[joint.src_rigid]
