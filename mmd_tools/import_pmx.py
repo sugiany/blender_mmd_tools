@@ -181,7 +181,7 @@ class PMXImporter:
                     ikConst.target = self.__armObj
                     ikConst.subtarget = p_bone.name
                     if p_bone.isRotatable and not p_bone.isMovable :
-                        ikConst.use_location = p_bone.isMovable 
+                        ikConst.use_location = p_bone.isMovable
                         ikConst.use_rotation = p_bone.isRotatable
                     for i in p_bone.ik_links:
                         if i.maximumAngle is not None:
@@ -204,7 +204,7 @@ class PMXImporter:
                 b.lock_location = [True, True, True]
                 b.lock_scale = [True, True, True]
                 b.bone.hide = True
-                    
+
         else:
             utils.enterEditMode(self.__armObj)
             try:
@@ -283,6 +283,10 @@ class PMXImporter:
                 bpy.context.scene.objects.active = obj
                 bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=False)
 
+
+                for i in target_bone.constraints:
+                    if i.type == 'IK':
+                        i.influence = 0
                 const = target_bone.constraints.new('DAMPED_TRACK')
                 const.target = empty
             else:
