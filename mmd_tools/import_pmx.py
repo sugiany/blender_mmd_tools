@@ -143,7 +143,7 @@ class PMXImporter:
                     else:
                         b_bone.tail = b_bone.head
                 else:
-                    loc = mathutils.Vector(m_bone.displayConnection) * self.TO_BLE_MATRIX
+                    loc = mathutils.Vector(m_bone.displayConnection) * self.TO_BLE_MATRIX * self.__scale
                     b_bone.tail = b_bone.head + loc
 
             for b_bone in editBoneTable:
