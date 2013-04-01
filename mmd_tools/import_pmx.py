@@ -271,7 +271,7 @@ class PMXImporter:
             elif rigid.bone is not None:
                 bpy.ops.object.select_all(action='DESELECT')
                 obj.select = True
-                bpy.context.scene.objects.active = self.__armObj
+                bpy.context.scene.objects.active = self.__root
                 bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=True)
 
                 target_bone = self.__armObj.pose.bones[self.__boneTable[rigid.bone]]
