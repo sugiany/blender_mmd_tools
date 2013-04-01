@@ -338,9 +338,15 @@ class PMXImporter:
             obj.is_mmd_joint = True
             bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
             rbc = obj.rigid_body_constraint
-            #rbc.disable_collisions = False
-            rbc.object1 = self.__rigidTable[joint.src_rigid]
-            rbc.object2 = self.__rigidTable[joint.dest_rigid]
+
+            rigid1 = self.__rigidTable[joint.src_rigid]
+            rigid2 = self.__rigidTable[joint.dest_rigid]
+            rbc.object1 = rigid1
+            rbc.object2 = rigid2
+
+            if rigid1.rigid_body.kinematic and not rigid2.rigid_body.kinematic or not rigid1.rigid_body.kinematic and rigid2.rigid_body.kinematic:
+                rbc.disable_collisions = False
+
             rbc.use_limit_ang_x = True
             rbc.use_limit_ang_y = True
             rbc.use_limit_ang_z = True
