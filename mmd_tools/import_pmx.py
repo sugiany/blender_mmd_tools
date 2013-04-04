@@ -32,6 +32,7 @@ class PMXImporter:
         self.__textureTable = None
 
         self.__rigidTable = []
+        self.__nonCollisionJointTable = None
         self.__jointTable = []
 
         self.__materialFaceCountTable = None
@@ -220,6 +221,8 @@ class PMXImporter:
 
     def __importRigids(self):
         self.__rigidTable = []
+        self.__nonCollisionJointTable = {}
+        collisionTable = []
         for rigid in self.__pmxFile.model.rigids:
             if self.__onlyCollisions and rigid.mode != pmx.Rigid.MODE_STATIC:
                 continue
@@ -303,10 +306,10 @@ class PMXImporter:
 
             obj.rigid_body.collision_shape = rigid_type
             group_flags = []
-            for i in range(20):
-                group_flags.append(i==rigid.collision_group_number or (rigid.collision_group_mask & (1<<i) != 0))
+            # for i in range(20):
+            #     group_flags.append(rigid.collision_group_mask & (1<<i) != 0)
             rb = obj.rigid_body
-            rb.collision_groups = group_flags
+            # rb.collision_groups = group_flags
             rb.friction = rigid.friction
             rb.mass = rigid.mass
             rb.angular_damping = rigid.rotation_attenuation
@@ -315,7 +318,28 @@ class PMXImporter:
             if rigid.mode == pmx.Rigid.MODE_STATIC:
                 rb.kinematic = True
 
+            for r_obj, gn in collisionTable:
+                if rigid.collision_group_mask & (1<<(gn)) == 0:
+                    bpy.ops.object.add(type='EMPTY',
+                               view_align=False,
+                               enter_editmode=False,
+                               location=loc,
+                               rotation=rot
+                               )
+                    t = bpy.context.selected_objects[0]
+                    t.empty_draw_size = 0.5 * self.__scale
+                    t.empty_draw_type = 'ARROWS'
+                    t.hide_render = True
+                    #t.parent = self.__root
+                    bpy.ops.rigidbody.constraint_add(type='GENERIC')
+                    rb = t.rigid_body_constraint
+                    rb.disable_collisions = True
+                    rb.object1 = obj
+                    rb.object2 = r_obj
+                    self.__nonCollisionJointTable[frozenset((r_obj, obj))] = t
+
             self.__rigidTable.append(obj)
+            collisionTable.append((obj, rigid.collision_group_number))
 
     def __importJoints(self):
         if self.__onlyCollisions:
@@ -344,8 +368,18 @@ class PMXImporter:
             rbc.object1 = rigid1
             rbc.object2 = rigid2
 
-            if rigid1.rigid_body.kinematic and not rigid2.rigid_body.kinematic or not rigid1.rigid_body.kinematic and rigid2.rigid_body.kinematic:
+            non_collision_joint = None
+            if joint.src_rigid < joint.dest_rigid:
+                non_collision_joint = self.__nonCollisionJointTable.get(frozenset((rigid1, rigid2)), None)
+            else:
+                non_collision_joint = self.__nonCollisionJointTable.get(frozenset((rigid2, rigid1)), None)
+
+            if non_collision_joint is None:
                 rbc.disable_collisions = False
+            else:
+                utils.selectAObject(non_collision_joint)
+                bpy.ops.object.delete(use_global=False)
+                rbc.disable_collisions = True
 
             rbc.use_limit_ang_x = True
             rbc.use_limit_ang_y = True
