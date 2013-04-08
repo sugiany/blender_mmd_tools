@@ -403,11 +403,11 @@ class PMXImporter:
 
             max_rot = mathutils.Vector(joint.maximum_rotation) * self.TO_BLE_MATRIX
             min_rot = mathutils.Vector(joint.minimum_rotation) * self.TO_BLE_MATRIX
-            rbc.limit_ang_x_upper = max_rot[0]
+            rbc.limit_ang_x_upper = -min_rot[0]
             rbc.limit_ang_y_upper = -min_rot[1]
             rbc.limit_ang_z_upper = -min_rot[2]
 
-            rbc.limit_ang_x_lower = min_rot[0]
+            rbc.limit_ang_x_lower = -max_rot[0]
             rbc.limit_ang_y_lower = -max_rot[1]
             rbc.limit_ang_z_lower = -max_rot[2]
 
