@@ -329,8 +329,9 @@ class PMXImporter:
                     t = bpy.context.selected_objects[0]
                     t.empty_draw_size = 0.5 * self.__scale
                     t.empty_draw_type = 'ARROWS'
+                    t.is_mmd_non_collision_joint = True
                     t.hide_render = True
-                    #t.parent = self.__root
+                    t.parent = self.__root
                     bpy.ops.rigidbody.constraint_add(type='GENERIC')
                     rb = t.rigid_body_constraint
                     rb.disable_collisions = True
@@ -345,6 +346,7 @@ class PMXImporter:
         utils.selectAObject(target)
         bpy.ops.object.duplicate()
         spring_target = bpy.context.scene.objects.active
+        spring_target.is_mmd_spring_goal = True
         spring_target.rigid_body.kinematic = True
         spring_target.rigid_body.collision_groups = (False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, True)
         bpy.context.scene.objects.active = base_obj
@@ -360,6 +362,8 @@ class PMXImporter:
         obj.empty_draw_size = 0.5 * self.__scale
         obj.empty_draw_type = 'ARROWS'
         obj.hide_render = True
+        obj.is_mmd_spring_joint = True
+        obj.parent = self.__root
         bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
         rbc = obj.rigid_body_constraint
         rbc.object1 = target
@@ -392,6 +396,8 @@ class PMXImporter:
             obj.empty_draw_type = 'ARROWS'
             obj.hide_render = True
             obj.is_mmd_joint = True
+            obj.parent = self.__root
+
             bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
             rbc = obj.rigid_body_constraint
 
@@ -524,9 +530,7 @@ class PMXImporter:
                 shapeKeyPoint.co = shapeKeyPoint.co + offset * self.__scale
 
     def __hideRigidsAndJoints(self, obj):
-        if obj.is_mmd_rigid:
-            obj.hide = True
-        elif obj.is_mmd_joint:
+        if obj.is_mmd_rigid or obj.is_mmd_joint or obj.is_mmd_non_collision_joint or obj.is_mmd_spring_joint or obj.is_mmd_spring_goal:
             obj.hide = True
 
         for i in obj.children:
