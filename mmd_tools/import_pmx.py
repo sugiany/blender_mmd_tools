@@ -341,6 +341,38 @@ class PMXImporter:
             self.__rigidTable.append(obj)
             collisionTable.append((obj, rigid.collision_group_number))
 
+    def __makeSpring(self, target, base_obj, spring_stiffness):
+        utils.selectAObject(target)
+        bpy.ops.object.duplicate()
+        spring_target = bpy.context.scene.objects.active
+        spring_target.rigid_body.kinematic = True
+        spring_target.rigid_body.collision_groups = (False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, True)
+        bpy.context.scene.objects.active = base_obj
+        bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=True)
+
+        bpy.ops.object.add(type='EMPTY',
+                           view_align=False,
+                           enter_editmode=False,
+                           location=target.location
+                           )
+        obj = bpy.context.selected_objects[0]
+        obj.name = 'S.'+target.name
+        obj.empty_draw_size = 0.5 * self.__scale
+        obj.empty_draw_type = 'ARROWS'
+        obj.hide_render = True
+        bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
+        rbc = obj.rigid_body_constraint
+        rbc.object1 = target
+        rbc.object2 = spring_target
+
+        rbc.use_spring_x = True
+        rbc.use_spring_y = True
+        rbc.use_spring_z = True
+
+        rbc.spring_stiffness_x = spring_stiffness[0]
+        rbc.spring_stiffness_y = spring_stiffness[1]
+        rbc.spring_stiffness_z = spring_stiffness[2]
+
     def __importJoints(self):
         if self.__onlyCollisions:
             return
@@ -416,16 +448,24 @@ class PMXImporter:
             # rbc.spring_damping_y = spring_damp[1]
             # rbc.spring_damping_z = spring_damp[2]
 
-            # spring_stiff = mathutils.Vector()
-            # rbc.spring_stiffness_x = spring_stiff[0]
-            # rbc.spring_stiffness_y = spring_stiff[1]
-            # rbc.spring_stiffness_z = spring_stiff[2]
-
             self.__jointTable.append(obj)
             bpy.ops.object.select_all(action='DESELECT')
             obj.select = True
             bpy.context.scene.objects.active = self.__armObj
             bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=True)
+
+            # spring_stiff = mathutils.Vector()
+            # rbc.spring_stiffness_x = spring_stiff[0]
+            # rbc.spring_stiffness_y = spring_stiff[1]
+            # rbc.spring_stiffness_z = spring_stiff[2]
+
+            if rigid1.rigid_body.kinematic:
+                self.__makeSpring(rigid2, rigid1, mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX)
+            if rigid2.rigid_body.kinematic:
+                self.__makeSpring(rigid1, rigid2, mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX)
+
+
+
 
 
     def __importMaterials(self):
