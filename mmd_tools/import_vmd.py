@@ -97,11 +97,17 @@ class VMDImporter:
             utils.selectAObject(armObj)
             bpy.context.scene.frame_current = 1
             bpy.ops.object.mode_set(mode='POSE')
+            hiddenBones = []
             for i in armObj.data.bones:
+                if i.hide:
+                    hiddenBones.append(i)
+                    i.hide = False
                 i.select = True
             bpy.ops.pose.transforms_clear()
             bpy.ops.anim.keyframe_insert_menu(type='LocRotScale', confirm_success=False, always_prompt=False)
             bpy.ops.object.mode_set(mode='OBJECT')
+            for i in hiddenBones:
+                i.hide = True
             
         boneAnim = self.__vmdFile.boneAnimation
 
@@ -143,6 +149,8 @@ class VMDImporter:
                     idx = 3
                 frames = list(fcurve.keyframe_points)
                 frames.sort(key=lambda kp:kp.co.x)
+                if self.__frame_margin > 1:
+                    del frames[0]
                 for i in range(1, len(keyFrames)):
                     self.__setInterpolation(keyFrames[i].interp[idx:16:4], frames[i - 1], frames[i])
 
