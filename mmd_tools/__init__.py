@@ -55,6 +55,7 @@ class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     deleteTipBones = bpy.props.BoolProperty(name='delete tip bones', default=False)
     hide_rigids = bpy.props.BoolProperty(name='hide rigid bodies and joints', default=True)
     only_collisions = bpy.props.BoolProperty(name='import only non dynamics rigid bodies', default=False)
+    ignore_non_collision_groups = bpy.props.BoolProperty(name='ignore  non collision groups', default=False)
 
     def execute(self, context):
         importer = import_pmx.PMXImporter()
@@ -64,7 +65,8 @@ class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
             rename_LR_bones=self.renameBones,
             delete_tip_bones=self.deleteTipBones,
             hide_rigids=self.hide_rigids,
-            only_collisions=self.only_collisions
+            only_collisions=self.only_collisions,
+            ignore_non_collision_groups=self.ignore_non_collision_groups
             )
         return {'FINISHED'}
 

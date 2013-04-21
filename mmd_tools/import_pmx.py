@@ -319,7 +319,7 @@ class PMXImporter:
                 rb.kinematic = True
 
             for r_obj, gn in collisionTable:
-                if rigid.collision_group_mask & (1<<(gn)) == 0:
+                if not self.__ignoreNonCollisionGroups and rigid.collision_group_mask & (1<<(gn)) == 0:
                     bpy.ops.object.add(type='EMPTY',
                                view_align=False,
                                enter_editmode=False,
@@ -406,18 +406,21 @@ class PMXImporter:
             rbc.object1 = rigid1
             rbc.object2 = rigid2
 
-            non_collision_joint = None
-            if joint.src_rigid < joint.dest_rigid:
-                non_collision_joint = self.__nonCollisionJointTable.get(frozenset((rigid1, rigid2)), None)
-            else:
-                non_collision_joint = self.__nonCollisionJointTable.get(frozenset((rigid2, rigid1)), None)
+            if not self.__ignoreNonCollisionGroups:
+                non_collision_joint = None
+                if joint.src_rigid < joint.dest_rigid:
+                    non_collision_joint = self.__nonCollisionJointTable.get(frozenset((rigid1, rigid2)), None)
+                else:
+                    non_collision_joint = self.__nonCollisionJointTable.get(frozenset((rigid2, rigid1)), None)
 
-            if non_collision_joint is None:
+                if non_collision_joint is None:
+                    rbc.disable_collisions = False
+                else:
+                    utils.selectAObject(non_collision_joint)
+                    bpy.ops.object.delete(use_global=False)
+                    rbc.disable_collisions = True
+            elif rigid1.rigid_body.kinematic and not rigid2.rigid_body.kinematic or not rigid1.rigid_body.kinematic and rigid2.rigid_body.kinematic:
                 rbc.disable_collisions = False
-            else:
-                utils.selectAObject(non_collision_joint)
-                bpy.ops.object.delete(use_global=False)
-                rbc.disable_collisions = True
 
             rbc.use_limit_ang_x = True
             rbc.use_limit_ang_y = True
@@ -556,6 +559,7 @@ class PMXImporter:
         renameLRBones = args.get('rename_LR_bones', False)
         self.__deleteTipBones = args.get('delete_tip_bones', False)
         self.__onlyCollisions = args.get('only_collisions', False)
+        self.__ignoreNonCollisionGroups = args.get('ignore_non_collision_groups', True)
 
         self.__createObjects()
 
