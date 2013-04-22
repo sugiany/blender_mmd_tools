@@ -7,7 +7,7 @@ import math
 import bpy
 import os
 import mathutils
-
+import collections
 
 class PMXImporter:
     TO_BLE_MATRIX = mathutils.Matrix([
@@ -222,7 +222,7 @@ class PMXImporter:
     def __importRigids(self):
         self.__rigidTable = []
         self.__nonCollisionJointTable = {}
-        collisionTable = []
+        collisionGroups = collections.defaultdict(list)
         for rigid in self.__pmxFile.model.rigids:
             if self.__onlyCollisions and rigid.mode != pmx.Rigid.MODE_STATIC:
                 continue
@@ -306,10 +306,7 @@ class PMXImporter:
 
             obj.rigid_body.collision_shape = rigid_type
             group_flags = []
-            # for i in range(20):
-            #     group_flags.append(rigid.collision_group_mask & (1<<i) != 0)
             rb = obj.rigid_body
-            # rb.collision_groups = group_flags
             rb.friction = rigid.friction
             rb.mass = rigid.mass
             rb.angular_damping = rigid.rotation_attenuation
@@ -318,29 +315,36 @@ class PMXImporter:
             if rigid.mode == pmx.Rigid.MODE_STATIC:
                 rb.kinematic = True
 
-            for r_obj, gn in collisionTable:
-                if not self.__ignoreNonCollisionGroups and rigid.collision_group_mask & (1<<(gn)) == 0:
-                    bpy.ops.object.add(type='EMPTY',
-                               view_align=False,
-                               enter_editmode=False,
-                               location=loc,
-                               rotation=rot
-                               )
-                    t = bpy.context.selected_objects[0]
-                    t.empty_draw_size = 0.5 * self.__scale
-                    t.empty_draw_type = 'ARROWS'
-                    t.is_mmd_non_collision_joint = True
-                    t.hide_render = True
-                    t.parent = self.__root
-                    bpy.ops.rigidbody.constraint_add(type='GENERIC')
-                    rb = t.rigid_body_constraint
-                    rb.disable_collisions = True
-                    rb.object1 = obj
-                    rb.object2 = r_obj
-                    self.__nonCollisionJointTable[frozenset((r_obj, obj))] = t
+            for i in range(16):
+                if rigid.collision_group_mask & (1<<i) == 0:
+                    for j in collisionGroups[i]:
+                        self.__makeNonCollisionConstraint(obj, j)
 
+            collisionGroups[rigid.collision_group_number].append(obj)
             self.__rigidTable.append(obj)
-            collisionTable.append((obj, rigid.collision_group_number))
+            print(len(self.__rigidTable))
+
+
+    def __makeNonCollisionConstraint(self, obj_a, obj_b):
+        if (mathutils.Vector(obj_a.location) - mathutils.Vector(obj_b.location)).length > self.__distance_of_ignore_collisions:
+            return
+        bpy.ops.object.add(type='EMPTY',
+                   view_align=False,
+                   enter_editmode=False,
+                   location=[0, 0, 0]
+                   )
+        t = bpy.context.selected_objects[0]
+        t.empty_draw_size = 0.5 * self.__scale
+        t.empty_draw_type = 'ARROWS'
+        t.is_mmd_non_collision_joint = True
+        t.hide_render = True
+        t.parent = self.__root
+        bpy.ops.rigidbody.constraint_add(type='GENERIC')
+        rb = t.rigid_body_constraint
+        rb.disable_collisions = True
+        rb.object1 = obj_a
+        rb.object2 = obj_b
+        self.__nonCollisionJointTable[frozenset((obj_a, obj_b))] = t
 
     def __makeSpring(self, target, base_obj, spring_stiffness):
         utils.selectAObject(target)
@@ -407,12 +411,7 @@ class PMXImporter:
             rbc.object2 = rigid2
 
             if not self.__ignoreNonCollisionGroups:
-                non_collision_joint = None
-                if joint.src_rigid < joint.dest_rigid:
-                    non_collision_joint = self.__nonCollisionJointTable.get(frozenset((rigid1, rigid2)), None)
-                else:
-                    non_collision_joint = self.__nonCollisionJointTable.get(frozenset((rigid2, rigid1)), None)
-
+                non_collision_joint = self.__nonCollisionJointTable.get(frozenset((rigid1, rigid2)), None)
                 if non_collision_joint is None:
                     rbc.disable_collisions = False
                 else:
@@ -560,6 +559,7 @@ class PMXImporter:
         self.__deleteTipBones = args.get('delete_tip_bones', False)
         self.__onlyCollisions = args.get('only_collisions', False)
         self.__ignoreNonCollisionGroups = args.get('ignore_non_collision_groups', True)
+        self.__distance_of_ignore_collisions = args.get('distance_of_ignore_collisions', 1) # 衝突を考慮しない距離（非衝突グループ設定を無視する距離）
 
         self.__createObjects()
 
