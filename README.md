@@ -30,6 +30,7 @@ mmd_toolsディレクトリをaddonディレクトリにコピーしてくださ
 1. あらかじめ読み込んでおいたモデルのMeshとArmature、Cameraを選択してください。(選択していない項目はインポートされません)
 2. MMD Toolsパネルの"import vmd"ボタンを選択してください。
 3. ファイル選択画面でvmdファイルを選択すると選択中のオブジェクトへモーションをインポートします。
+4. 「auto scene setup」ボタンを押してください。剛体シミュレーションの範囲およびFrameRangeを自動設定します。
 
 ### その他の機能
 #### separate by materials
