@@ -123,7 +123,7 @@ class FileWriteStream(FileStream):
 
     def __writeIndex(self, index, size, typedict):
         if size in typedict :
-            self.__fout.write(struct.pack(typedict[size], index))
+            self.__fout.write(struct.pack(typedict[size], int(index)))
         else:
             raise ValueError('invalid data size %s'%str(size))
         return
@@ -133,7 +133,7 @@ class FileWriteStream(FileStream):
 
     def __writeUnsignedIndex(self, index, size):
         return self.__writeIndex(index, size, { 1 :"<B", 2 :"<H", 4 :"<I"})
-    
+
     # WRITE methods for indexes
     def writeVertexIndex(self, index):
         return self.__writeUnsignedIndex(index, self.header().vertex_index_size)
@@ -163,8 +163,10 @@ class FileWriteStream(FileStream):
     def writeUnsignedShort(self, v):
         self.__fout.write(struct.pack('<H', int(v)))
 
-    def writeStr(self):
-        pass
+    def writeStr(self, v):
+        data = v.encode(self.header().encoding.charset)
+        self.writeInt(len(data))
+        self.__fout.write(data)
 
     def writeFloat(self, v):
         self.__fout.write(struct.pack('<f', float(v)))
@@ -174,16 +176,16 @@ class FileWriteStream(FileStream):
         fmt = '<'
         for i in range(l):
             fmt += 'f'
-        self.__fout.write(struct.pack(fmt, self.__fout.read(4*l)))
+        self.__fout.write(struct.pack(fmt, *v))
 
     def writeByte(self, v):
-        self.__fout.write(struct.pack('<B', float(v)))
+        self.__fout.write(struct.pack('<B', int(v)))
 
     def writeBytes(self, v):
         self.__fout.write(v)
 
     def writeSignedByte(self, v):
-        self.__fout.write(struct.pack('<b', float(v)))
+        self.__fout.write(struct.pack('<b', int(v)))
 
 class Encoding:
     _MAP = [
@@ -221,18 +223,42 @@ class Coordinate:
 class Header:
     PMX_SIGN = b'PMX '
     VERSION = 2.0
-    def __init__(self, filepath):
+    def __init__(self, model=None):
         self.sign = self.PMX_SIGN
         self.version = 0
 
-        self.encoding = None
+        self.encoding = Encoding('utf-8')
         self.additional_uvs = 0
 
+        self.vertex_index_size = 1
         self.vertex_index_size = 1
         self.material_index_size = 1
         self.bone_index_size = 1
         self.morph_index_size = 1
         self.rigid_index_size = 1
+
+        if model is not None:
+            self.updateIndexSizes(model)
+
+    def updateIndexSizes(self, model):
+        self.vertex_index_size = self.__getIndexSize(len(model.vertices), False)
+        self.texture_index_size = self.__getIndexSize(len(model.textures), True)
+        self.material_index_size = self.__getIndexSize(len(model.materials), True)
+        self.bone_index_size = self.__getIndexSize(len(model.bones), True)
+        self.morph_index_size = self.__getIndexSize(len(model.morphs), True)
+        self.rigid_index_size = self.__getIndexSize(len(model.rigids), True)
+
+    @staticmethod
+    def __getIndexSize(num, signed):
+        s = 1
+        if signed:
+            s = 2
+        if (1<<8)/s > num:
+            return 1
+        elif (1<<16)/s > num:
+            return 2
+        else:
+            return 4
 
     def load(self, fs):
         logging.info('loading pmx header information...')
@@ -428,6 +454,89 @@ comment(english):
         logging.info('finished importing joints.')
         logging.info('finished importing the model.')
 
+    def save(self, fs):
+        fs.writeStr(self.name)
+        fs.writeStr(self.name_e)
+
+        fs.writeStr(self.comment)
+        fs.writeStr(self.comment_e)
+
+        logging.info('''exportings pmx model data...
+name: %s
+name(english): %s
+comment:
+%s
+comment(english):
+%s
+''', self.name, self.name_e, self.comment, self.comment_e)
+
+        logging.info('exporting vertices...')
+        fs.writeInt(len(self.vertices))
+        for i in self.vertices:
+            i.save(fs)
+        logging.info('the number of vetices: %d', len(self.vertices))
+        logging.info('finished exporting vertices.')
+
+        logging.info('exporting faces...')
+        fs.writeInt(len(self.faces)*3)
+        for f3, f2, f1 in self.faces:
+            fs.writeVertexIndex(f1)
+            fs.writeVertexIndex(f2)
+            fs.writeVertexIndex(f3)
+        logging.info('the number of faces: %d', len(self.faces))
+        logging.info('finished exporting faces.')
+
+        logging.info('exporting textures...')
+        fs.writeInt(len(self.textures))
+        for i in self.textures:
+            i.save(fs)
+        logging.info('the number of textures: %d', len(self.textures))
+        logging.info('finished exporting textures.')
+
+        logging.info('exporting materials...')
+        fs.writeInt(len(self.materials))
+        for i in self.materials:
+            i.save(fs)
+        logging.info('the number of materials: %d', len(self.materials))
+        logging.info('finished exporting materials.')
+
+        logging.info('exporting bones...')
+        fs.writeInt(len(self.bones))
+        for i in self.bones:
+            i.save(fs)
+        logging.info('the number of bones: %d', len(self.bones))
+        logging.info('finished exporting bones.')
+
+        logging.info('exporting morphs...')
+        fs.writeInt(len(self.morphs))
+        for i in self.morphs:
+            i.save(fs)
+        logging.info('the number of morphs: %d', len(self.morphs))
+        logging.info('finished exporting morphs.')
+
+        logging.info('exporting display items...')
+        fs.writeInt(len(self.display))
+        for i in self.display:
+            i.save(fs)
+        logging.info('the number of display items: %d', len(self.display))
+        logging.info('finished exporting display items.')
+
+        logging.info('exporting rigid bodies...')
+        fs.writeInt(len(self.rigids))
+        for i in self.rigids:
+            i.save(fs)
+        logging.info('the number of rigid bodies: %d', len(self.display))
+        logging.info('finished exporting rigid bodies.')
+
+        logging.info('exporting joints...')
+        fs.writeInt(len(self.joints))
+        for i in self.joints:
+            i.save(fs)
+        logging.info('the number of joints: %d', len(self.display))
+        logging.info('finished exporting joints.')
+        logging.info('finished exporting the model.')
+
+
     def __repr__(self):
         return '<Model name %s, name_e %s, comment %s, comment_e %s, textures %s>'%(
             self.name,
@@ -471,10 +580,10 @@ class Vertex:
         fs.writeVector(self.co)
         fs.writeVector(self.normal)
         fs.writeVector(self.uv)
-        for i in fs.additional_uvs:
+        for i in self.additional_uvs:
             fs.writeVector(i)
         self.weight.save(fs)
-        self.writeFloat(self.edge_scale)
+        fs.writeFloat(self.edge_scale)
 
 class BoneWeightSDEF:
     def __init__(self, weight=0, c=None, r0=None, r1=None):
@@ -580,7 +689,7 @@ class Texture:
             self.path = os.path.normpath(os.path.join(os.path.dirname(fs.path()), self.path))
 
     def save(self, fs):
-        fs.write(self.path)
+        fs.writeStr(self.path)
 
 class SharedTexture(Texture):
     def __init__(self):
@@ -641,17 +750,18 @@ class Material:
     def load(self, fs):
         self.name = fs.readStr()
         self.name_e = fs.readStr()
+        logging.info('material: %s', self.name)
 
         self.diffuse = fs.readVector(4)
         self.specular = fs.readVector(4)
         self.ambient = fs.readVector(3)
 
         flags = fs.readByte()
-        self.is_doulbe_sided = flags & 1
-        self.enabled_drop_shadow = flags & 2
-        self.enabled_self_shadow_map = flags & 4
-        self.enabled_self_shadow = flags & 8
-        self.enabled_toon_edge = flags & 16
+        self.is_doulbe_sided = bool(flags & 1)
+        self.enabled_drop_shadow = bool(flags & 2)
+        self.enabled_self_shadow_map = bool(flags & 4)
+        self.enabled_self_shadow = bool(flags & 8)
+        self.enabled_toon_edge = bool(flags & 16)
 
         self.edge_color = fs.readVector(4)
         self.edge_size = fs.readFloat()
@@ -669,6 +779,39 @@ class Material:
 
         self.comment = fs.readStr()
         self.vertex_count = fs.readInt()
+
+    def save(self, fs):
+        fs.writeStr(self.name)
+        fs.writeStr(self.name)
+
+        fs.writeVector(self.diffuse)
+        fs.writeVector(self.specular)
+        fs.writeVector(self.ambient)
+
+        flags = 0
+        flags |= int(self.is_doulbe_sided)
+        flags |= int(self.enabled_drop_shadow) << 1
+        flags |= int(self.enabled_self_shadow_map) << 2
+        flags |= int(self.enabled_self_shadow) << 3
+        flags |= int(self.enabled_toon_edge) << 4
+        fs.writeByte(flags)
+
+        fs.writeVector(self.edge_color)
+        fs.writeFloat(self.edge_size)
+
+        fs.writeTextureIndex(self.texture)
+        fs.writeTextureIndex(self.sphere_texture)
+        fs.writeSignedByte(self.sphere_texture_mode)
+
+        fs.writeSignedByte(int(self.is_shared_toon_texture))
+        if self.is_shared_toon_texture:
+            fs.writeSignedByte(self.toon_texture)
+        else:
+            fs.writeTextureIndex(self.toon_texture)
+
+        fs.writeStr(self.comment)
+        fs.writeInt(self.vertex_count)
+
 
 class Bone:
     def __init__(self):
@@ -728,6 +871,7 @@ class Bone:
     def load(self, fs):
         self.name = fs.readStr()
         self.name_e = fs.readStr()
+        logging.debug('bone: %s', self.name)
 
         self.location = fs.readVector(3)
         self.parent = fs.readBoneIndex()
@@ -787,6 +931,60 @@ class Bone:
                 link.load(fs)
                 self.ik_links.append(link)
 
+    def save(self, fs):
+        fs.writeStr(self.name)
+        fs.writeStr(self.name_e)
+
+        fs.writeVector(self.location)
+        fs.writeBoneIndex(self.parent)
+        fs.writeInt(self.depth)
+
+        flags = 0
+        flags |= int(isinstance(self.displayConnection, int))
+        flags |= int(self.isRotatable) << 1
+        flags |= int(self.isMovable) << 2
+        flags |= int(self.visible) << 3
+        flags |= int(self.isControllable) << 4
+        flags |= int(self.isIK) << 5
+
+        flags |= int(self.hasAdditionalRotate) << 8
+        flags |= int(self.hasAdditionalLocation) << 9
+        flags |= int(self.axis is not None) << 10
+        flags |= int(self.localCoordinate is not None) << 11
+
+        flags |= int(self.externalTransKey is not None) << 13
+
+        fs.writeShort(flags)
+
+        if flags & 0x0001:
+            fs.writeBoneIndex(self.displayConnection)
+        else:
+            fs.writeVector(self.displayConnection)
+
+        if self.hasAdditionalRotate or self.hasAdditionalLocation:
+            fs.writeBoneIndex(self.additionalTransform[0])
+            fs.writeFloat(self.additionalTransform[1])
+
+        if flags & 0x0400:
+            fs.writeVector(self.axis)
+
+        if flags & 0x0800:
+            fs.writeVector(self.localCoordinate.x_axis)
+            fs.writeVector(self.localCoordinate.z_axis)
+
+        if flags & 0x2000:
+            fs.writeInt(self.externalTransKey)
+
+        if self.isIK:
+            fs.writeBoneIndex(self.target)
+            fs.writeInt(self.loopCount)
+            fs.writeFloat(self.rotationConstraint)
+
+            fs.writeInt(len(self.ik_links))
+            for i in self.ik_links:
+                i.save(fs)
+
+
 class IKLink:
     def __init__(self):
         self.target = None
@@ -806,24 +1004,34 @@ class IKLink:
             self.minimumAngle = None
             self.maximumAngle = None
 
+    def save(self, fs):
+        fs.writeBoneIndex(self.target)
+        if isinstance(self.minimumAngle, list) and isinstance(self.maximumAngle, list):
+            fs.writeByte(1)
+            fs.writeVector(self.minimumAngle)
+            fs.writeVector(self.maximumAngle)
+        else:
+            fs.writeByte(0)
+
 class Morph:
-    """ """
     CATEGORY_SYSTEM = 0
     CATEGORY_EYEBROW = 1
     CATEGORY_EYE = 2
     CATEGORY_MOUTH = 3
     CATEGORY_OHTER = 4
 
-    def __init__(self, name, name_e):
+    def __init__(self, name, name_e, category, **kwargs):
+        self.offsets = []
         self.name = name
         self.name_e = name_e
+        self.category = category
 
     def __repr__(self):
         return '<Morph name %s, name_e %s>'%(self.name, self.name_e)
 
     @staticmethod
-    def getClass(typeIndex):
-        CLASSES = {
+    def create(fs):
+        _CLASSES = {
             0: GroupMorph,
             1: VertexMorph,
             2: BoneMorph,
@@ -834,62 +1042,138 @@ class Morph:
             7: UVMorph,
             8: MaterialMorph,
             }
-        return CLASSES[typeIndex]
 
-    @staticmethod
-    def create(fs):
         name = fs.readStr()
         name_e = fs.readStr()
+        logging.debug('morph: %s', name)
         category = fs.readSignedByte()
         typeIndex = fs.readSignedByte()
-        morph = Morph.getClass(typeIndex)(name, name_e, category)
-        morph.load(fs)
-        return morph
+        ret = _CLASSES[typeIndex](name, name_e, category, type_index = typeIndex)
+        ret.load(fs)
+        return ret
+
+    def load(self, fs):
+        """ Implement for loading morph data.
+        """
+        raise NotImplementedError
+
+    def save(self, fs):
+        fs.writeStr(self.name)
+        fs.writeStr(self.name_e)
+        fs.writeSignedByte(self.category)
+        fs.writeSignedByte(self.type_index())
+        fs.writeInt(len(self.offsets))
+        for i in self.offsets:
+            i.save(fs)
+
+class VertexMorph(Morph):
+    def __init__(self, *args, **kwargs):
+        Morph.__init__(self, *args, **kwargs)
+
+    def type_index(self):
+        return 1
 
     def load(self, fs):
         num = fs.readInt()
-        cls = self.dataClass()
-        self.data = []
         for i in range(num):
-            d = cls()
-            d.load(fs)
-            self.data.append(d)
+            t = VertexMorphOffset()
+            t.load(fs)
+            self.offsets.append(t)
 
-class VertexMorphData:
+class VertexMorphOffset:
     def __init__(self):
-        self.vertex = None
+        self.index = 0
         self.offset = []
 
     def load(self, fs):
-        self.vertex = fs.readVertexIndex()
+        self.index = fs.readVertexIndex()
         self.offset = fs.readVector(3)
 
-class UVMorphData:
+    def save(self, fs):
+        fs.writeVertexIndex(self.index)
+        fs.writeVector(self.offset)
+
+class UVMorph(Morph):
+    def __init__(self, *args, **kwargs):
+        self.uv_index = kwargs.get('type_index', 3) - 3
+        Morph.__init__(self, *args, **kwargs)
+
+    def type_index(self):
+        return self.uv_index + 3
+
+    def load(self, fs):
+        self.offsets = []
+        num = fs.readInt()
+        for i in range(num):
+            t = UVMorphOffset()
+            t.load(fs)
+            self.offsets.append(t)
+
+class UVMorphOffset:
     def __init__(self):
-        self.vertex = None
+        self.index = 0
         self.offset = []
 
     def load(self, fs):
-        self.vertex = fs.readVertexIndex()
+        self.index = fs.readVertexIndex()
         self.offset = fs.readVector(4)
 
-class BoneMorphData:
+    def save(self, fs):
+        fs.writeVertexIndex(self.index)
+        fs.writeVector(self.offset)
+
+class BoneMorph(Morph):
+    def __init__(self, *args, **kwargs):
+        Morph.__init__(self, *args, **kwargs)
+
+    def type_index(self):
+        return 2
+
+    def load(self, fs):
+        self.offsets = []
+        num = fs.readInt()
+        for i in range(num):
+            t = BoneMorphOffset()
+            t.load(fs)
+            self.offsets.append(t)
+
+class BoneMorphOffset:
     def __init__(self):
-        self.bone = None
+        self.index = None
         self.location_offset = []
         self.rotation_offset = []
 
     def load(self, fs):
-        self.bone = header.readBoneIndex()
+        self.index = fs.readBoneIndex()
         self.location_offset = fs.readVector(3)
         self.rotation_offset = fs.readVector(4)
 
-class MaterialMorphData:
+    def save(self, fs):
+        fs.writeBoneIndex(self.index)
+        fs.writeVector(self.location_offset)
+        fs.writeVector(self.rotation_offset)
+
+class MaterialMorph:
+    def __init__(self, *args, **kwargs):
+        Morph.__init__(self, *args, **kwargs)
+
+    def type_index(self):
+        return 8
+
+    def load(self, fs):
+        self.offsets = []
+        num = fs.readInt()
+        for i in range(num):
+            t = MaterialMorphOffset()
+            t.load(fs)
+            self.offsets.append(t)
+
+class MaterialMorphOffset:
     TYPE_MULT = 0
     TYPE_ADD = 1
 
     def __init__(self):
-        self.material = None
+        self.index = 0
         self.offset_type = 0
         self.diffuse_offset = []
         self.specular_offset = []
@@ -901,7 +1185,7 @@ class MaterialMorphData:
         self.toon_texture_factor = []
 
     def load(self, fs):
-        self.material = fs.readMaterialIndex()
+        self.index = fs.readMaterialIndex()
         self.offset_type = fs.readSignedByte()
         self.diffuse_offset = fs.readVector(4)
         self.specular_offset = fs.readVector(4)
@@ -912,7 +1196,34 @@ class MaterialMorphData:
         self.sphere_texture_factor = fs.readVector(4)
         self.toon_texture_factor = fs.readVector(4)
 
-class GroupMorphData:
+    def save(self, fs):
+        fs.writeMaterialIndex(self.index)
+        fs.writeSignedByte(self.offset_type)
+        fs.writeVector(self.diffuse_offset)
+        fs.writeVector(self.specular_offset)
+        fs.writeVector(self.ambient_offset)
+        fs.writeVector(self.edge_color_offset)
+        fs.writeFloat(self.edge_size_offset)
+        fs.writeVector(self.texture_factor)
+        fs.writeVector(self.sphere_texture_factor)
+        fs.writeVector(self.toon_texture_factor)
+
+class GroupMorph(Morph):
+    def __init__(self, *args, **kwargs):
+        Morph.__init__(self, *args, **kwargs)
+
+    def type_index(self):
+        return 0
+
+    def load(self, fs):
+        self.offsets = []
+        num = fs.readInt()
+        for i in range(num):
+            t = GroupMorphOffset()
+            t.load(fs)
+            self.offsets.append(t)
+
+class GroupMorphOffset:
     def __init__(self):
         self.morph = None
         self.factor = 0.0
@@ -921,46 +1232,10 @@ class GroupMorphData:
         self.morph = fs.readMorphIndex()
         self.factor = fs.readFloat()
 
-class VertexMorph(Morph):
-    def __init__(self, name, name_e, category):
-        Morph.__init__(self, name, name_e)
+    def save(self, fs):
+        fs.writeMorphIndex(self.morph)
+        fs.writeFloat(self.factor)
 
-    def dataClass(self):
-        return VertexMorphData
-
-class UVMorph(Morph):
-    def __init__(self, name, name_e, category):
-        Morph.__init__(self, name, name_e)
-
-        # 追加UVの判別インデックス
-        # 0: UV
-        # 1-4: それぞれ追加UV1-4に対応
-        self.uv_index = category - 3
-
-    def dataClass(self):
-        return UVMorphData
-
-class BoneMorph(Morph):
-    def __init__(self, name, name_e, category):
-        Morph.__init__(self, name, name_e)
-
-    def dataClass(self):
-        return BoneMorphData
-
-
-class MaterialMorph(Morph):
-    def __init__(self, name, name_e, category):
-        Morph.__init__(self, name, name_e)
-
-    def dataClass(self):
-        return MaterialMorphData
-
-class GroupMorph(Morph):
-    def __init__(self, name, name_e, category):
-        Morph.__init__(self, name, name_e)
-
-    def dataClass(self):
-        return GroupMorphData
 
 class Display:
     def __init__(self):
@@ -981,7 +1256,7 @@ class Display:
         self.name = fs.readStr()
         self.name_e = fs.readStr()
 
-        logging.info('''importing display item...
+        logging.debug('''importing display item...
 name: %s
 name(english): %s''', self.name, self.name_e)
 
@@ -998,6 +1273,23 @@ name(english): %s''', self.name, self.name_e)
             else:
                 raise Exception('invalid value.')
             self.data.append((disp_type, index))
+        logging.debug('the number of display elements: %d', len(self.data))
+
+    def save(self, fs):
+        fs.writeStr(self.name)
+        fs.writeStr(self.name_e)
+
+        fs.writeByte(int(self.isSpecial))
+        fs.writeInt(len(self.data))
+
+        for disp_type, index in self.data:
+            fs.writeByte(disp_type)
+            if disp_type == 0:
+                fs.writeBoneIndex(index)
+            elif disp_type == 1:
+                fs.writeMorphIndex(index)
+            else:
+                raise Exception('invalid value.')
 
 class Rigid:
     TYPE_SPHERE = 0
@@ -1062,6 +1354,32 @@ class Rigid:
 
         self.mode = fs.readSignedByte()
 
+    def save(self, fs):
+        fs.writeStr(self.name)
+        fs.writeStr(self.name_e)
+
+        if self.bone is None:
+            fs.writeBoneIndex(-1)
+        else:
+            fs.writeBoneIndex(self.bone)
+
+        fs.writeSignedByte(self.collision_group_number)
+        fs.writeUnsignedShort(self.collision_group_mask)
+
+        fs.writeSignedByte(self.type)
+        fs.writeVector(self.size)
+
+        fs.writeVector(self.location)
+        fs.writeVector(self.rotation)
+
+        fs.writeFloat(self.mass)
+        fs.writeFloat(self.velocity_attenuation)
+        fs.writeFloat(self.rotation_attenuation)
+        fs.writeFloat(self.bounce)
+        fs.writeFloat(self.friction)
+
+        fs.writeSignedByte(self.mode)
+
 class Joint:
     MODE_SPRING6DOF = 0
     def __init__(self):
@@ -1108,17 +1426,46 @@ class Joint:
         self.spring_constant = fs.readVector(3)
         self.spring_rotation_constant = fs.readVector(3)
 
-class File:
-    def __init__(self):
-        self.header = None
-        self.model = None
+    def save(self, fs):
+        fs.writeStr(self.name)
+        fs.writeStr(self.name_e)
 
-    def load(self, path):
-        with FileReadStream(path) as fs:
-            print(fs)
-            self.header = Header(path)
-            self.header.load(fs)
-            fs.setHeader(self.header)
-            self.model = Model()
-            self.model.load(fs)
+        fs.writeSignedByte(self.mode)
 
+        if self.src_rigid is not None:
+            fs.writeRigidIndex(self.src_rigid)
+        else:
+            fs.writeRigidIndex(-1)
+        if self.dest_rigid is not None:
+            fs.writeRigidIndex(self.dest_rigid)
+        else:
+            fs.writeRigidIndex(-1)
+
+        fs.writeVector(self.location)
+        fs.writeVector(self.rotation)
+
+        fs.writeVector(self.minimum_location)
+        fs.writeVector(self.maximum_location)
+        fs.writeVector(self.minimum_rotation)
+        fs.writeVector(self.maximum_rotation)
+
+        fs.writeVector(self.spring_constant)
+        fs.writeVector(self.spring_rotation_constant)
+
+
+
+def load(path):
+    with FileReadStream(path) as fs:
+        header = Header()
+        header.load(fs)
+        fs.setHeader(header)
+        model = Model()
+        model.load(fs)
+        return model
+
+def save(path, model):
+    with FileWriteStream(path) as fs:
+        header = Header(model)
+        header.save(fs)
+        fs.setHeader(header)
+        model.save(fs)

@@ -17,7 +17,7 @@ class PMXImporter:
         [0.0, 0.0, 0.0, 1.0]])
 
     def __init__(self):
-        self.__pmxFile = None
+        self.__model = None
         self.__targetScene = bpy.context.scene
 
         self.__scale = None
@@ -52,7 +52,7 @@ class PMXImporter:
 
     ## 必要なオブジェクトを生成し、ターゲットシーンにリンク
     def __createObjects(self):
-        pmxModel = self.__pmxFile.model
+        pmxModel = self.__model
 
         self.__root = bpy.data.objects.new(name=pmxModel.name, object_data=None)
         self.__targetScene.objects.link(self.__root)
@@ -71,16 +71,16 @@ class PMXImporter:
 
     def __importVertexGroup(self):
         self.__vertexGroupTable = []
-        for i in self.__pmxFile.model.bones:
+        for i in self.__model.bones:
             self.__vertexGroupTable.append(self.__meshObj.vertex_groups.new(name=i.name))
 
     def __importVertices(self):
         self.__importVertexGroup()
 
-        pmxModel = self.__pmxFile.model
+        pmxModel = self.__model
         mesh = self.__meshObj.data
 
-        mesh.vertices.add(count=len(self.__pmxFile.model.vertices))
+        mesh.vertices.add(count=len(self.__model.vertices))
         for i, pv in enumerate(pmxModel.vertices):
             bv = mesh.vertices[i]
 
@@ -104,7 +104,7 @@ class PMXImporter:
                 raise Exception('unkown bone weight type.')
 
     def __importTextures(self):
-        pmxModel = self.__pmxFile.model
+        pmxModel = self.__model
 
         self.__textureTable = []
         for i in pmxModel.textures:
@@ -119,7 +119,7 @@ class PMXImporter:
 
     def __importBones(self):
 
-        pmxModel = self.__pmxFile.model
+        pmxModel = self.__model
 
         utils.enterEditMode(self.__armObj)
         try:
@@ -264,7 +264,7 @@ class PMXImporter:
         self.__rigidTable = []
         self.__nonCollisionJointTable = {}
         collisionGroups = collections.defaultdict(list)
-        for rigid in self.__pmxFile.model.rigids:
+        for rigid in self.__model.rigids:
             if self.__onlyCollisions and rigid.mode != pmx.Rigid.MODE_STATIC:
                 continue
 
@@ -426,7 +426,7 @@ class PMXImporter:
         if self.__onlyCollisions:
             return
         self.__jointTable = []
-        for joint in self.__pmxFile.model.joints:
+        for joint in self.__model.joints:
             loc = mathutils.Vector(joint.location) * self.TO_BLE_MATRIX * self.__scale
             rot = mathutils.Vector(joint.rotation) * self.TO_BLE_MATRIX * -1
             bpy.ops.object.add(type='EMPTY',
@@ -521,7 +521,7 @@ class PMXImporter:
         self.__importTextures()
         bpy.types.Material.ambient_color = bpy.props.FloatVectorProperty(name='ambient color')
 
-        pmxModel = self.__pmxFile.model
+        pmxModel = self.__model
 
         self.__materialTable = []
         self.__materialFaceCountTable = []
@@ -546,7 +546,7 @@ class PMXImporter:
 
 
     def __importFaces(self):
-        pmxModel = self.__pmxFile.model
+        pmxModel = self.__model
         mesh = self.__meshObj.data
 
         mesh.tessfaces.add(len(pmxModel.faces))
@@ -565,15 +565,15 @@ class PMXImporter:
 
 
     def __importVertexMorphs(self):
-        pmxModel = self.__pmxFile.model
+        pmxModel = self.__model
 
         utils.selectAObject(self.__meshObj)
         bpy.ops.object.shape_key_add()
 
         for morph in filter(lambda x: isinstance(x, pmx.VertexMorph), pmxModel.morphs):
             shapeKey = self.__meshObj.shape_key_add(morph.name)
-            for md in morph.data:
-                shapeKeyPoint = shapeKey.data[md.vertex]
+            for md in morph.offsets:
+                shapeKeyPoint = shapeKey.data[md.index]
                 offset = mathutils.Vector(md.offset) * self.TO_BLE_MATRIX
                 shapeKeyPoint.co = shapeKeyPoint.co + offset * self.__scale
 
@@ -597,8 +597,7 @@ class PMXImporter:
             self.__meshObj.vertex_groups[i.name_j].name = i.name
 
     def execute(self, **args):
-        self.__pmxFile = pmx.File()
-        self.__pmxFile.load(args['filepath'])
+        self.__model = pmx.load(args['filepath'])
 
         self.__scale = args.get('scale', 1.0)
         renameLRBones = args.get('rename_LR_bones', False)

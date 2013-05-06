@@ -8,7 +8,6 @@ from . import import_vmd
 from . import mmd_camera
 from . import utils
 from . import cycles_converter
-from . import test
 from . import auto_scene_setup
 
 bl_info= {
