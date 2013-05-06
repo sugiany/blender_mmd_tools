@@ -1,11 +1,189 @@
 # -*- coding: utf-8 -*-
 import struct
 import os
+import logging
 
 class InvalidFileError(Exception):
     pass
 class UnsupportedVersionError(Exception):
     pass
+
+class FileStream:
+    def __init__(self, path, file_obj, pmx_header):
+        self.__path = path
+        self.__file_obj = file_obj
+        self.__header = pmx_header
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+
+    def path(self):
+        return self.__path
+
+    def header(self):
+        if self.__header is None:
+            raise Exception
+        return self.__header
+
+    def setHeader(self, pmx_header):
+        self.__header = pmx_header
+
+    def close(self):
+        if self.__file_obj is not None:
+            logging.debug('close the file("%s")', self.__path)
+            self.__file_obj.close()
+            self.__file_obj = None
+
+class FileReadStream(FileStream):
+    def __init__(self, path, pmx_header=None):
+        self.__fin = open(path, 'rb')
+        FileStream.__init__(self, path, self.__fin, pmx_header)
+
+    def __readIndex(self, size, typedict):
+        index = None
+        if size in typedict :
+            index, = struct.unpack(typedict[size], self.__fin.read(size))
+        else:
+            raise ValueError('invalid data size %s'%str(size))
+        return index
+
+    def __readSignedIndex(self, size):
+        return self.__readIndex(size, { 1 :"<b", 2 :"<h", 4 :"<i"})
+
+    def __readUnsignedIndex(self, size):
+        return self.__readIndex(size, { 1 :"<B", 2 :"<H", 4 :"<I"})
+
+
+    # READ methods for indexes
+    def readVertexIndex(self):
+        return self.__readUnsignedIndex(self.header().vertex_index_size)
+
+    def readBoneIndex(self):
+        return self.__readSignedIndex(self.header().bone_index_size)
+
+    def readTextureIndex(self):
+        return self.__readSignedIndex(self.header().texture_index_size)
+
+    def readMorphIndex(self):
+        return self.__readSignedIndex(self.header().morph_index_size)
+
+    def readRigidIndex(self):
+        return self.__readSignedIndex(self.header().rigid_index_size)
+
+    def readMaterialIndex(self):
+        return self.__readSignedIndex(self.header().material_index_size)
+
+    # READ / WRITE methods for general types
+    def readInt(self):
+        v, = struct.unpack('<i', self.__fin.read(4))
+        return v
+
+    def readShort(self):
+        v, = struct.unpack('<h', self.__fin.read(2))
+        return v
+
+    def readUnsignedShort(self):
+        v, = struct.unpack('<H', self.__fin.read(2))
+        return v
+
+    def readStr(self):
+        length = self.readInt()
+        fmt = '<' + str(length) + 's'
+        buf, = struct.unpack(fmt, self.__fin.read(length))
+        return str(buf, self.header().encoding.charset)
+
+    def readFloat(self):
+        v, = struct.unpack('<f', self.__fin.read(4))
+        return v
+
+    def readVector(self, size):
+        fmt = '<'
+        for i in range(size):
+            fmt += 'f'
+        return list(struct.unpack(fmt, self.__fin.read(4*size)))
+
+    def readByte(self):
+        v, = struct.unpack('<B', self.__fin.read(1))
+        return v
+
+    def readBytes(self, length):
+        return self.__fin.read(length)
+
+    def readSignedByte(self):
+        v, = struct.unpack('<b', self.__fin.read(1))
+        return v
+
+class FileWriteStream(FileStream):
+    def __init__(self, path, pmx_header=None):
+        self.__fout = open(path, 'wb')
+        FileStream.__init__(self, path, self.__fout, pmx_header)
+
+    def __writeIndex(self, index, size, typedict):
+        if size in typedict :
+            self.__fout.write(struct.pack(typedict[size], index))
+        else:
+            raise ValueError('invalid data size %s'%str(size))
+        return
+
+    def __writeSignedIndex(self, index, size):
+        return self.__writeIndex(index, size, { 1 :"<b", 2 :"<h", 4 :"<i"})
+
+    def __writeUnsignedIndex(self, index, size):
+        return self.__writeIndex(index, size, { 1 :"<B", 2 :"<H", 4 :"<I"})
+    
+    # WRITE methods for indexes
+    def writeVertexIndex(self, index):
+        return self.__writeUnsignedIndex(index, self.header().vertex_index_size)
+
+    def writeBoneIndex(self, index):
+        return self.__writeSignedIndex(index, self.header().bone_index_size)
+
+    def writeTextureIndex(self, index):
+        return self.__writeSignedIndex(index, self.header().texture_index_size)
+
+    def writeMorphIndex(self, index):
+        return self.__writeSignedIndex(index, self.header().morph_index_size)
+
+    def writeRigidIndex(self, index):
+        return self.__writeSignedIndex(index, self.header().rigid_index_size)
+
+    def writeMaterialIndex(self, index):
+        return self.__writeSignedIndex(index, self.header().material_index_size)
+
+
+    def writeInt(self, v):
+        self.__fout.write(struct.pack('<i', int(v)))
+
+    def writeShort(self, v):
+        self.__fout.write(struct.pack('<h', int(v)))
+
+    def writeUnsignedShort(self, v):
+        self.__fout.write(struct.pack('<H', int(v)))
+
+    def writeStr(self):
+        pass
+
+    def writeFloat(self, v):
+        self.__fout.write(struct.pack('<f', float(v)))
+
+    def writeVector(self, v):
+        l = len(v)
+        fmt = '<'
+        for i in range(l):
+            fmt += 'f'
+        self.__fout.write(struct.pack(fmt, self.__fout.read(4*l)))
+
+    def writeByte(self, v):
+        self.__fout.write(struct.pack('<B', float(v)))
+
+    def writeBytes(self, v):
+        self.__fout.write(v)
+
+    def writeSignedByte(self, v):
+        self.__fout.write(struct.pack('<b', float(v)))
 
 class Encoding:
     _MAP = [
@@ -41,9 +219,10 @@ class Coordinate:
         self.z_axis = zAxis
 
 class Header:
+    PMX_SIGN = b'PMX '
+    VERSION = 2.0
     def __init__(self, filepath):
-        self.filepath = filepath
-        self.sign = ''
+        self.sign = self.PMX_SIGN
         self.version = 0
 
         self.encoding = None
@@ -55,24 +234,59 @@ class Header:
         self.morph_index_size = 1
         self.rigid_index_size = 1
 
-    def load(self, fin):
-        self.sign = str(fin.read(4), 'ascii')
-        if self.sign != 'PMX ':
-            raise InvalidFileError
-        self.version, = struct.unpack('<f', fin.read(4))
-        if self.version != 2.0:
+    def load(self, fs):
+        logging.info('loading pmx header information...')
+        self.sign = fs.readBytes(4)
+        logging.debug('File signature is %s', self.sign)
+        if self.sign != self.PMX_SIGN:
+            raise InvalidFileError('File signature is invalid.')
+        self.version = fs.readFloat()
+        if self.version != self.VERSION:
             raise UnsupportedVersionError('unsupported version: %f'%self.version)
-        num, = struct.unpack('<B', fin.read(1))
-        if num != 8:
+        if fs.readByte() != 8:
             raise InvalidFileError
-        self.encoding = Encoding(struct.unpack('<B', fin.read(1))[0])
-        self.additional_uvs, = struct.unpack('<B', fin.read(1))
-        self.vertex_index_size, = struct.unpack('<B', fin.read(1))
-        self.texture_index_size, = struct.unpack('<B', fin.read(1))
-        self.material_index_size, = struct.unpack('<B', fin.read(1))
-        self.bone_index_size, = struct.unpack('<B', fin.read(1))
-        self.morph_index_size, = struct.unpack('<B', fin.read(1))
-        self.rigid_index_size, = struct.unpack('<B', fin.read(1))
+        self.encoding = Encoding(fs.readByte())
+        self.additional_uvs = fs.readByte()
+        self.vertex_index_size = fs.readByte()
+        self.texture_index_size = fs.readByte()
+        self.material_index_size = fs.readByte()
+        self.bone_index_size = fs.readByte()
+        self.morph_index_size = fs.readByte()
+        self.rigid_index_size = fs.readByte()
+
+        logging.info('''pmx header information:
+pmx version: %.1f
+encoding: %s
+number of uvs: %d
+type sizes of index:
+  vertex index: %d
+  texture index: %d
+  material index: %d
+  bone index: %d
+  morph index: %d
+  rigid index: %d''',
+                     self.version,
+                     str(self.encoding),
+                     self.additional_uvs,
+                     self.vertex_index_size,
+                     self.texture_index_size,
+                     self.material_index_size,
+                     self.bone_index_size,
+                     self.morph_index_size,
+                     self.rigid_index_size)
+
+    def save(self, fs):
+        fs.writeBytes(self.PMX_SIGN)
+        fs.writeFloat(self.VERSION)
+        fs.writeByte(8)
+        fs.writeByte(self.encoding.index)
+        fs.writeByte(self.additional_uvs)
+        fs.writeByte(self.vertex_index_size)
+        fs.writeByte(self.texture_index_size)
+        fs.writeByte(self.material_index_size)
+        fs.writeByte(self.bone_index_size)
+        fs.writeByte(self.morph_index_size)
+        fs.writeByte(self.rigid_index_size)
 
     def __repr__(self):
         return '<Header encoding %s, uvs %d, vtx %d, tex %d, mat %d, bone %d, morph %d, rigid %d>'%(
@@ -85,40 +299,6 @@ class Header:
             self.morph_index_size,
             self.rigid_index_size,
             )
-
-    def readStr(self, fin):
-        length, = struct.unpack('<i', fin.read(4))
-        format = '<%ds'%length
-        buf, = struct.unpack(format, fin.read(length))
-        return str(buf, self.encoding.charset)
-
-    def readIndex(self, fin, size, typedict = { 1 :"<b", 2 :"<h", 4 :"<i"} ):
-        index = None
-        if size in typedict :
-            index, = struct.unpack(typedict[size], fin.read(size))
-        else:
-            raise ValueError('invalid data size %s'%str(size))
-        return index
-
-    def readVertexIndex(self, fin):
-        typedict = { 1 :"<B", 2 :"<H", 4 :"<i" }
-        return self.readIndex(fin, self.vertex_index_size, typedict)
-
-    def readBoneIndex(self, fin):   
-        return self.readIndex(fin, self.bone_index_size)
-
-    def readTextureIndex(self, fin):
-        return self.readIndex(fin, self.texture_index_size)
-
-    def readMorphIndex(self, fin):
-        return self.readIndex(fin, self.morph_index_size)
-
-    def readRigidIndex(self, fin):
-        return self.readIndex(fin, self.rigid_index_size)
-
-    def readMaterialIndex(self, fin):
-        return self.readIndex(fin, self.material_index_size)
-
 
 class Model:
     def __init__(self):
@@ -141,75 +321,112 @@ class Model:
         self.rigids = []
         self.joints = []
 
-    def load(self, header, fin):
-        self.name = header.readStr(fin)
-        self.name_e = header.readStr(fin)
+    def load(self, fs):
+        self.name = fs.readStr()
+        self.name_e = fs.readStr()
 
-        self.comment = header.readStr(fin)
-        self.comment_e = header.readStr(fin)
+        self.comment = fs.readStr()
+        self.comment_e = fs.readStr()
 
-        num_vertices, = struct.unpack('<i', fin.read(4))
+        logging.info('''importing pmx model data...
+name: %s
+name(english): %s
+comment:
+%s
+comment(english):
+%s
+''', self.name, self.name_e, self.comment, self.comment_e)
+
+        logging.info('importing vertices...')
+        num_vertices = fs.readInt()
         self.vertices = []
         for i in range(num_vertices):
             v = Vertex()
-            v.load(header, fin)
+            v.load(fs)
             self.vertices.append(v)
+        logging.info('the number of vetices: %d', len(self.vertices))
+        logging.info('finished importing vertices.')
 
-        num_faces, = struct.unpack('<i', fin.read(4))
+        logging.info('importing faces...')
+        num_faces = fs.readInt()
         self.faces = []
         for i in range(int(num_faces/3)):
-            f1 = header.readVertexIndex(fin)
-            f2 = header.readVertexIndex(fin)
-            f3 = header.readVertexIndex(fin)
+            f1 = fs.readVertexIndex()
+            f2 = fs.readVertexIndex()
+            f3 = fs.readVertexIndex()
             self.faces.append((f3, f2, f1))
+        logging.info('the number of faces: %d', len(self.faces))
+        logging.info('finished importing faces.')
 
-        num_textures, = struct.unpack('<i', fin.read(4))
+        logging.info('importing textures...')
+        num_textures = fs.readInt()
         self.textures = []
         for i in range(num_textures):
             t = Texture()
-            t.load(header, fin)
+            t.load(fs)
             self.textures.append(t)
+        logging.info('the number of textures: %d', len(self.textures))
+        logging.info('finished importing textures.')
 
-        num_materials, = struct.unpack('<i', fin.read(4))
+        logging.info('importing materials...')
+        num_materials = fs.readInt()
         self.materials = []
         for i in range(num_materials):
             m = Material()
-            m.load(header, fin)
+            m.load(fs)
             self.materials.append(m)
+        logging.info('the number of materials: %d', len(self.materials))
+        logging.info('finished importing materials.')
 
-        num_bones, = struct.unpack('<i', fin.read(4))
+        logging.info('importing bones...')
+        num_bones = fs.readInt()
         self.bones = []
         for i in range(num_bones):
             b = Bone()
-            b.load(header, fin)
+            b.load(fs)
             self.bones.append(b)
+        logging.info('the number of bones: %d', len(self.bones))
+        logging.info('finished importing bones.')
 
-        num_morph, = struct.unpack('<i', fin.read(4))
+        logging.info('importing morphs...')
+        num_morph = fs.readInt()
         self.morphs = []
         for i in range(num_morph):
-            m = Morph.create(header, fin)
+            m = Morph.create(fs)
             self.morphs.append(m)
+        logging.info('the number of morphs: %d', len(self.morphs))
+        logging.info('finished importing morphs.')
 
-        num_disp, = struct.unpack('<i', fin.read(4))
+        logging.info('importing display items...')
+        num_disp = fs.readInt()
         self.display = []
         for i in range(num_disp):
             d = Display()
-            d.load(header, fin)
+            d.load(fs)
             self.display.append(d)
+        logging.info('the number of display items: %d', len(self.display))
+        logging.info('finished importing display items.')
 
-        num_rigid, = struct.unpack('<i', fin.read(4))
+        logging.info('importing rigid bodies...')
+        num_rigid = fs.readInt()
         self.rigids = []
         for i in range(num_rigid):
             r = Rigid()
-            r.load(header, fin)
+            r.load(fs)
             self.rigids.append(r)
+        logging.info('the number of rigid bodies: %d', len(self.display))
+        logging.info('finished importing rigid bodies.')
 
-        num_joints, = struct.unpack('<i', fin.read(4))
+        logging.info('importing joints...')
+        num_joints = fs.readInt()
         self.joints = []
         for i in range(num_joints):
             j = Joint()
-            j.load(header, fin)
+            j.load(fs)
             self.joints.append(j)
+        logging.info('the number of joints: %d', len(self.display))
+        logging.info('finished importing joints.')
+        logging.info('finished importing the model.')
 
     def __repr__(self):
         return '<Model name %s, name_e %s, comment %s, comment_e %s, textures %s>'%(
@@ -239,16 +456,25 @@ class Vertex:
             str(self.edge_scale),
             )
 
-    def load(self, header, fin):
-        self.co = list(struct.unpack('<fff', fin.read(4*3)))
-        self.normal = list(struct.unpack('<fff', fin.read(4*3)))
-        self.uv = list(struct.unpack('<ff', fin.read(4*2)))
+    def load(self, fs):
+        self.co = fs.readVector(3)
+        self.normal = fs.readVector(3)
+        self.uv = fs.readVector(2)
         self.additional_uvs = []
-        for i in range(header.additional_uvs):
-            self.additional_uvs.append(list(struct.unpack('<ffff', fin.read(4*4))))
+        for i in range(fs.header().additional_uvs):
+            self.additional_uvs.append(fs.readVector(4))
         self.weight = BoneWeight()
-        self.weight.load(header, fin)
-        self.edge_scale, = struct.unpack('<f', fin.read(4))
+        self.weight.load(fs)
+        self.edge_scale = fs.readFloat()
+
+    def save(self, fs):
+        fs.writeVector(self.co)
+        fs.writeVector(self.normal)
+        fs.writeVector(self.uv)
+        for i in fs.additional_uvs:
+            fs.writeVector(i)
+        self.weight.save(fs)
+        self.writeFloat(self.edge_scale)
 
 class BoneWeightSDEF:
     def __init__(self, weight=0, c=None, r0=None, r1=None):
@@ -288,32 +514,58 @@ class BoneWeight:
         else:
             return None
 
-    def load(self, header, fin):
-        self.type, = struct.unpack('<B', fin.read(1))
+    def load(self, fs):
+        self.type = fs.readByte()
         self.bones = []
         self.weights = []
+
         if self.type == self.BDEF1:
-            self.bones.append(header.readBoneIndex(fin))
+            self.bones.append(fs.readBoneIndex())
         elif self.type == self.BDEF2:
-            self.bones.append(header.readBoneIndex(fin))
-            self.bones.append(header.readBoneIndex(fin))
-            self.weights.append(struct.unpack('<f', fin.read(4))[0])
+            self.bones.append(fs.readBoneIndex())
+            self.bones.append(fs.readBoneIndex())
+            self.weights.append(fs.readFloat())
         elif self.type == self.BDEF4:
-            self.bones.append(header.readBoneIndex(fin))
-            self.bones.append(header.readBoneIndex(fin))
-            self.bones.append(header.readBoneIndex(fin))
-            self.bones.append(header.readBoneIndex(fin))
-            self.weights = list(struct.unpack('<ffff', fin.read(4*4)))
+            self.bones.append(fs.readBoneIndex())
+            self.bones.append(fs.readBoneIndex())
+            self.bones.append(fs.readBoneIndex())
+            self.bones.append(fs.readBoneIndex())
+            self.weights = fs.readVector(4)
         elif self.type == self.SDEF:
-            self.bones.append(header.readBoneIndex(fin))
-            self.bones.append(header.readBoneIndex(fin))
+            self.bones.append(fs.readBoneIndex())
+            self.bones.append(fs.readBoneIndex())
             self.weights = BoneWeightSDEF()
-            self.weights.weight, = struct.unpack('<f', fin.read(4))
-            self.weights.c = list(struct.unpack('<fff', fin.read(4*3)))
-            self.weights.r0 = list(struct.unpack('<fff', fin.read(4*3)))
-            self.weights.r1 = list(struct.unpack('<fff', fin.read(4*3)))
+            self.weights.weight = fs.readFloat()
+            self.weights.c = fs.readVector(3)
+            self.weights.r0 = fs.readVector(3)
+            self.weights.r1 = fs.readVector(3)
         else:
             raise ValueError('invalid weight type %s'%str(self.type))
+
+    def save(self, fs):
+        fs.writeByte(self.type)
+        if self.type == self.BDEF1:
+            fs.writeBoneIndex(self.bones[0])
+        elif self.type == self.BDEF2:
+            for i in range(2):
+                fs.writeBoneIndex(self.bones[i])
+            fs.writeFloat(self.weights[0])
+        elif self.type == self.BDEF4:
+            for i in range(4):
+                fs.writeBoneIndex(self.bones[i])
+            fs.writeFloat(self.weights[0])
+        elif self.type == self.SDEF:
+            for i in range(2):
+                fs.writeBoneIndex(self.bones[i])
+            if not isinstance(self.weights, BoneWeightSDEF):
+                raise ValueError
+            fs.writeFloat(self.weights.weight)
+            fs.writeVector(self.weight.c)
+            fs.writeVector(self.weight.r0)
+            fs.writeVector(self.weight.r1)
+        else:
+            raise ValueError('invalid weight type %s'%str(self.type))
+
 
 class Texture:
     def __init__(self):
@@ -322,10 +574,13 @@ class Texture:
     def __repr__(self):
         return '<Texture path %s>'%str(self.path)
 
-    def load(self, header, fin):
-        self.path = header.readStr(fin)
+    def load(self, fs):
+        self.path = fs.readStr()
         if not os.path.isabs(self.path):
-            self.path = os.path.normpath(os.path.join(os.path.dirname(header.filepath), self.path))
+            self.path = os.path.normpath(os.path.join(os.path.dirname(fs.path()), self.path))
+
+    def save(self, fs):
+        fs.write(self.path)
 
 class SharedTexture(Texture):
     def __init__(self):
@@ -383,37 +638,37 @@ class Material:
             str(self.toon_texture),
             str(self.comment),)
 
-    def load(self, header, fin):
-        self.name = header.readStr(fin)
-        self.name_e = header.readStr(fin)
+    def load(self, fs):
+        self.name = fs.readStr()
+        self.name_e = fs.readStr()
 
-        self.diffuse = list(struct.unpack('<ffff', fin.read(4*4)))
-        self.specular = list(struct.unpack('<ffff', fin.read(4*4)))
-        self.ambient = list(struct.unpack('<fff', fin.read(4*3)))
+        self.diffuse = fs.readVector(4)
+        self.specular = fs.readVector(4)
+        self.ambient = fs.readVector(3)
 
-        flags, = struct.unpack('<b', fin.read(1))
+        flags = fs.readByte()
         self.is_doulbe_sided = flags & 1
         self.enabled_drop_shadow = flags & 2
         self.enabled_self_shadow_map = flags & 4
         self.enabled_self_shadow = flags & 8
         self.enabled_toon_edge = flags & 16
 
-        self.edge_color = list(struct.unpack('<ffff', fin.read(4*4)))
-        self.edge_size, = struct.unpack('<f', fin.read(4))
+        self.edge_color = fs.readVector(4)
+        self.edge_size = fs.readFloat()
 
-        self.texture = header.readTextureIndex(fin)
-        self.sphere_texture = header.readTextureIndex(fin)
-        self.sphere_texture_mode, = struct.unpack('<b', fin.read(1))
+        self.texture = fs.readTextureIndex()
+        self.sphere_texture = fs.readTextureIndex()
+        self.sphere_texture_mode = fs.readSignedByte()
 
-        self.is_shared_toon_texture, = struct.unpack('<b', fin.read(1))
+        self.is_shared_toon_texture = fs.readSignedByte()
         self.is_shared_toon_texture = (self.is_shared_toon_texture == 1)
         if self.is_shared_toon_texture:
-            self.toon_texture, = struct.unpack('<b', fin.read(1))
+            self.toon_texture = fs.readSignedByte()
         else:
-            self.toon_texture = header.readTextureIndex(fin)
+            self.toon_texture = fs.readTextureIndex()
 
-        self.comment = header.readStr(fin)
-        self.vertex_count, = struct.unpack('<i', fin.read(4))
+        self.comment = fs.readStr()
+        self.vertex_count = fs.readInt()
 
 class Bone:
     def __init__(self):
@@ -470,19 +725,19 @@ class Bone:
             self.name,
             self.name_e,)
 
-    def load(self, header, fin):
-        self.name = header.readStr(fin)
-        self.name_e = header.readStr(fin)
+    def load(self, fs):
+        self.name = fs.readStr()
+        self.name_e = fs.readStr()
 
-        self.location = list(struct.unpack('<fff', fin.read(4*3)))
-        self.parent = header.readBoneIndex(fin)
-        self.depth, = struct.unpack('<i', fin.read(4))
+        self.location = fs.readVector(3)
+        self.parent = fs.readBoneIndex()
+        self.depth = fs.readInt()
 
-        flags, = struct.unpack('<h', fin.read(2))
+        flags = fs.readShort()
         if flags & 0x0001:
-            self.displayConnection = header.readBoneIndex(fin)
+            self.displayConnection = fs.readBoneIndex()
         else:
-            self.displayConnection = list(struct.unpack('<fff', fin.read(4*3)))
+            self.displayConnection = fs.readVector(3)
 
         self.isRotatable    = ((flags & 0x0002) != 0)
         self.isMovable      = ((flags & 0x0004) != 0)
@@ -494,21 +749,21 @@ class Bone:
         self.hasAdditionalRotate = ((flags & 0x0100) != 0)
         self.hasAdditionalLocation = ((flags & 0x0200) != 0)
         if self.hasAdditionalRotate or self.hasAdditionalLocation:
-            t = header.readBoneIndex(fin)
-            v, = struct.unpack('<f', fin.read(4))
+            t = fs.readBoneIndex()
+            v = fs.readFloat()
             self.additionalTransform = (t, v)
         else:
             self.additionalTransform = None
 
 
         if flags & 0x0400:
-            self.axis = list(struct.unpack('<fff', fin.read(4*3)))
+            self.axis = fs.readVector(3)
         else:
             self.axis = None
 
         if flags & 0x0800:
-            xaxis = list(struct.unpack('<fff', fin.read(4*3)))
-            zaxis = list(struct.unpack('<fff', fin.read(4*3)))
+            xaxis = fs.readVector(3)
+            zaxis = fs.readVector(3)
             self.localCoordinate = Coordinate(xaxis, zaxis)
         else:
             self.localCoordinate = None
@@ -516,20 +771,20 @@ class Bone:
         self.transAfterPhis = ((flags & 0x1000) != 0)
 
         if flags & 0x2000:
-            self.externalTransKey, = struct.unpack('<i', fin.read(4))
+            self.externalTransKey = fs.readInt()
         else:
             self.externalTransKey = None
 
         if self.isIK:
-            self.target = header.readBoneIndex(fin)
-            self.loopCount, = struct.unpack('<i', fin.read(4))
-            self.rotationConstraint, = struct.unpack('<f', fin.read(4))
+            self.target = fs.readBoneIndex()
+            self.loopCount = fs.readInt()
+            self.rotationConstraint = fs.readFloat()
 
-            iklink_num, = struct.unpack('<i', fin.read(4))
+            iklink_num = fs.readInt()
             self.ik_links = []
             for i in range(iklink_num):
                 link = IKLink()
-                link.load(header, fin)
+                link.load(fs)
                 self.ik_links.append(link)
 
 class IKLink:
@@ -541,12 +796,12 @@ class IKLink:
     def __repr__(self):
         return '<IKLink target %s>'%(str(self.target))
 
-    def load(self, header, fin):
-        self.target = header.readBoneIndex(fin)
-        flag, = struct.unpack('<b', fin.read(1))
+    def load(self, fs):
+        self.target = fs.readBoneIndex()
+        flag = fs.readByte()
         if flag == 1:
-            self.minimumAngle = list(struct.unpack('<fff', fin.read(4*3)))
-            self.maximumAngle = list(struct.unpack('<fff', fin.read(4*3)))
+            self.minimumAngle = fs.readVector(3)
+            self.maximumAngle = fs.readVector(3)
         else:
             self.minimumAngle = None
             self.maximumAngle = None
@@ -582,22 +837,22 @@ class Morph:
         return CLASSES[typeIndex]
 
     @staticmethod
-    def create(header, fin):
-        name = header.readStr(fin)
-        name_e = header.readStr(fin)
-        category, = struct.unpack('<b', fin.read(1))
-        typeIndex, = struct.unpack('<b', fin.read(1))
+    def create(fs):
+        name = fs.readStr()
+        name_e = fs.readStr()
+        category = fs.readSignedByte()
+        typeIndex = fs.readSignedByte()
         morph = Morph.getClass(typeIndex)(name, name_e, category)
-        morph.load(header, fin)
+        morph.load(fs)
         return morph
 
-    def load(self, header, fin):
-        num, = struct.unpack('<i', fin.read(4))
+    def load(self, fs):
+        num = fs.readInt()
         cls = self.dataClass()
         self.data = []
         for i in range(num):
             d = cls()
-            d.load(header, fin)
+            d.load(fs)
             self.data.append(d)
 
 class VertexMorphData:
@@ -605,18 +860,18 @@ class VertexMorphData:
         self.vertex = None
         self.offset = []
 
-    def load(self, header, fin):
-        self.vertex = header.readVertexIndex(fin)
-        self.offset = list(struct.unpack('<fff', fin.read(4*3)))
+    def load(self, fs):
+        self.vertex = fs.readVertexIndex()
+        self.offset = fs.readVector(3)
 
 class UVMorphData:
     def __init__(self):
         self.vertex = None
         self.offset = []
 
-    def load(self, header, fin):
-        self.vertex = header.readVertexIndex(fin)
-        self.offset = list(struct.unpack('<ffff', fin.read(4*4)))
+    def load(self, fs):
+        self.vertex = fs.readVertexIndex()
+        self.offset = fs.readVector(4)
 
 class BoneMorphData:
     def __init__(self):
@@ -624,10 +879,10 @@ class BoneMorphData:
         self.location_offset = []
         self.rotation_offset = []
 
-    def load(self, header, fin):
-        self.bone = header.readBoneIndex(fin)
-        self.location_offset = list(struct.unpack('<fff', fin.read(4*3)))
-        self.rotation_offset = list(struct.unpack('<ffff', fin.read(4*4)))
+    def load(self, fs):
+        self.bone = header.readBoneIndex()
+        self.location_offset = fs.readVector(3)
+        self.rotation_offset = fs.readVector(4)
 
 class MaterialMorphData:
     TYPE_MULT = 0
@@ -645,26 +900,26 @@ class MaterialMorphData:
         self.sphere_texture_factor = []
         self.toon_texture_factor = []
 
-    def load(self, header, fin):
-        self.material = header.readMaterialIndex(fin)
-        self.offset_type, = struct.unpack('<b', fin.read(1))
-        self.diffuse_offset = list(struct.unpack('<ffff', fin.read(4*4)))
-        self.specular_offset = list(struct.unpack('<ffff', fin.read(4*4)))
-        self.ambient_offset = list(struct.unpack('<fff', fin.read(4*3)))
-        self.edge_color_offset = list(struct.unpack('<ffff', fin.read(4*4)))
-        self.edge_size_offset, = struct.unpack('<f', fin.read(4))
-        self.texture_factor = list(struct.unpack('<ffff', fin.read(4*4)))
-        self.sphere_texture_factor = list(struct.unpack('<ffff', fin.read(4*4)))
-        self.toon_texture_factor = list(struct.unpack('<ffff', fin.read(4*4)))
+    def load(self, fs):
+        self.material = fs.readMaterialIndex()
+        self.offset_type = fs.readSignedByte()
+        self.diffuse_offset = fs.readVector(4)
+        self.specular_offset = fs.readVector(4)
+        self.ambient_offset = fs.readVector(3)
+        self.edge_color_offset = fs.readVector(4)
+        self.edge_size_offset = fs.readFloat()
+        self.texture_factor = fs.readVector(4)
+        self.sphere_texture_factor = fs.readVector(4)
+        self.toon_texture_factor = fs.readVector(4)
 
 class GroupMorphData:
     def __init__(self):
         self.morph = None
         self.factor = 0.0
 
-    def load(self, header, fin):
-        self.morph = header.readMorphIndex(fin)
-        self.factor, = struct.unpack('<f', fin.read(4))
+    def load(self, fs):
+        self.morph = fs.readMorphIndex()
+        self.factor = fs.readFloat()
 
 class VertexMorph(Morph):
     def __init__(self, name, name_e, category):
@@ -722,22 +977,26 @@ class Display:
             self.name_e,
             )
 
-    def load(self, header, fin):
-        self.name = header.readStr(fin)
-        self.name_e = header.readStr(fin)
+    def load(self, fs):
+        self.name = fs.readStr()
+        self.name_e = fs.readStr()
 
-        self.isSpecial = (struct.unpack('<b', fin.read(1))[0] == 1)
-        num, = struct.unpack('<i', fin.read(4))
+        logging.info('''importing display item...
+name: %s
+name(english): %s''', self.name, self.name_e)
+
+        self.isSpecial = (fs.readByte() == 1)
+        num = fs.readInt()
         self.data = []
         for i in range(num):
-            disp_type, = struct.unpack('<b', fin.read(1))
+            disp_type = fs.readByte()
             index = None
             if disp_type == 0:
-                index = header.readBoneIndex(fin)
+                index = fs.readBoneIndex()
             elif disp_type == 1:
-                index = header.readMorphIndex(fin)
+                index = fs.readMorphIndex()
             else:
-                raise Error('invalid value.')
+                raise Exception('invalid value.')
             self.data.append((disp_type, index))
 
 class Rigid:
@@ -776,32 +1035,32 @@ class Rigid:
             self.name_e,
             )
 
-    def load(self, header, fin):
-        self.name = header.readStr(fin)
-        self.name_e = header.readStr(fin)
+    def load(self, fs):
+        self.name = fs.readStr()
+        self.name_e = fs.readStr()
 
-        boneIndex = header.readBoneIndex(fin)
+        boneIndex = fs.readBoneIndex()
         if boneIndex != -1:
             self.bone = boneIndex
         else:
             self.bone = None
 
-        self.collision_group_number, = struct.unpack('<b', fin.read(1))
-        self.collision_group_mask, = struct.unpack('<H', fin.read(2))
+        self.collision_group_number = fs.readSignedByte()
+        self.collision_group_mask = fs.readUnsignedShort()
 
-        self.type, = struct.unpack('<b', fin.read(1))
-        self.size = list(struct.unpack('<fff', fin.read(4*3)))
+        self.type = fs.readSignedByte()
+        self.size = fs.readVector(3)
 
-        self.location = list(struct.unpack('<fff', fin.read(4*3)))
-        self.rotation = list(struct.unpack('<fff', fin.read(4*3)))
+        self.location = fs.readVector(3)
+        self.rotation = fs.readVector(3)
 
-        self.mass, = struct.unpack('<f', fin.read(4))
-        self.velocity_attenuation, = struct.unpack('<f', fin.read(4))
-        self.rotation_attenuation, = struct.unpack('<f', fin.read(4))
-        self.bounce, = struct.unpack('<f', fin.read(4))
-        self.friction, = struct.unpack('<f', fin.read(4))
+        self.mass = fs.readFloat()
+        self.velocity_attenuation = fs.readFloat()
+        self.rotation_attenuation = fs.readFloat()
+        self.bounce = fs.readFloat()
+        self.friction = fs.readFloat()
 
-        self.mode, = struct.unpack('<b', fin.read(1))
+        self.mode = fs.readSignedByte()
 
 class Joint:
     MODE_SPRING6DOF = 0
@@ -825,29 +1084,29 @@ class Joint:
         self.spring_constant = []
         self.spring_rotation_constant = []
 
-    def load(self, header, fin):
-        self.name = header.readStr(fin)
-        self.name_e = header.readStr(fin)
+    def load(self, fs):
+        self.name = fs.readStr()
+        self.name_e = fs.readStr()
 
-        self.mode, = struct.unpack('<b', fin.read(1))
+        self.mode = fs.readSignedByte()
 
-        self.src_rigid = header.readRigidIndex(fin)
-        self.dest_rigid = header.readRigidIndex(fin)
+        self.src_rigid = fs.readRigidIndex()
+        self.dest_rigid = fs.readRigidIndex()
         if self.src_rigid == -1:
             self.src_rigid = None
         if self.dest_rigid == -1:
             self.dest_rigid = None
 
-        self.location = list(struct.unpack('<fff', fin.read(4*3)))
-        self.rotation = list(struct.unpack('<fff', fin.read(4*3)))
+        self.location = fs.readVector(3)
+        self.rotation = fs.readVector(3)
 
-        self.minimum_location = list(struct.unpack('<fff', fin.read(4*3)))
-        self.maximum_location = list(struct.unpack('<fff', fin.read(4*3)))
-        self.minimum_rotation = list(struct.unpack('<fff', fin.read(4*3)))
-        self.maximum_rotation = list(struct.unpack('<fff', fin.read(4*3)))
+        self.minimum_location = fs.readVector(3)
+        self.maximum_location = fs.readVector(3)
+        self.minimum_rotation = fs.readVector(3)
+        self.maximum_rotation = fs.readVector(3)
 
-        self.spring_constant = list(struct.unpack('<fff', fin.read(4*3)))
-        self.spring_rotation_constant = list(struct.unpack('<fff', fin.read(4*3)))
+        self.spring_constant = fs.readVector(3)
+        self.spring_rotation_constant = fs.readVector(3)
 
 class File:
     def __init__(self):
@@ -855,9 +1114,11 @@ class File:
         self.model = None
 
     def load(self, path):
-        with open(path, 'rb') as fin:
+        with FileReadStream(path) as fs:
+            print(fs)
             self.header = Header(path)
-            self.header.load(fin)
+            self.header.load(fs)
+            fs.setHeader(self.header)
             self.model = Model()
-            self.model.load(self.header, fin)
+            self.model.load(fs)
 
