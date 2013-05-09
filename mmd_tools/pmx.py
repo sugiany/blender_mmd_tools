@@ -343,6 +343,16 @@ class Model:
         self.morphs = []
 
         self.display = []
+        dsp_root = Display()
+        dsp_root.isSpecial = True
+        dsp_root.name = 'Root'
+        dsp_root.name_e = 'Root'
+        self.display.append(dsp_root)
+        dsp_face = Display()
+        dsp_face.isSpecial = True
+        dsp_face.name = '表情'
+        dsp_face.name_e = ''
+        self.display.append(dsp_face)
 
         self.rigids = []
         self.joints = []
@@ -719,11 +729,11 @@ class Material:
         self.edge_color = []
         self.edge_size = 1
 
-        self.texture = None
-        self.sphere_texture = None
+        self.texture = -1
+        self.sphere_texture = -1
         self.sphere_texture_mode = 0
         self.is_shared_toon_texture = True
-        self.toon_texture = None
+        self.toon_texture = 0
 
         self.comment = ''
         self.vertex_count = 0
