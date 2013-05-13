@@ -834,7 +834,7 @@ class Bone:
 
         # 接続先表示方法
         # 座標オフセット(float3)または、boneIndex(int)
-        self.displayConnection = None
+        self.displayConnection = -1
 
         self.isRotatable = True
         self.isMovable = True
@@ -946,7 +946,7 @@ class Bone:
         fs.writeStr(self.name_e)
 
         fs.writeVector(self.location)
-        fs.writeBoneIndex(self.parent)
+        fs.writeBoneIndex(self.parent or -1)
         fs.writeInt(self.depth)
 
         flags = 0

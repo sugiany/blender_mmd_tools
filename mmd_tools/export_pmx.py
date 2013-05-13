@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from . import pmx
+from . import utils
 
 import collections
 
@@ -7,6 +8,7 @@ import mathutils
 import bpy
 import bmesh
 import copy
+
 
 class PmxExporter:
     TO_PMX_MATRIX = mathutils.Matrix([
@@ -126,6 +128,33 @@ class PmxExporter:
                 p_mat.texture = index
             self.__model.materials.append(p_mat)
 
+    def __exportBones(self):
+        arm = self.__armature
+        utils.enterEditMode(arm)
+        boneMap = {}
+        pmx_bones = []
+        for bone in arm.data.edit_bones:
+            pmx_bone = pmx.Bone()
+            pmx_bone.name = bone.name
+            pmx_bone.location = mathutils.Vector(bone.head) * self.__scale * self.TO_PMX_MATRIX
+            pmx_bone.parent = bone.parent
+            pmx_bones.append(pmx_bone)
+            boneMap[bone] = pmx_bone
+
+            if len(bone.children) == 0 and not bone.is_mmd_tip_bone:
+                pmx_tip_bone = pmx.Bone()
+                pmx_tip_bone.name = 'tip_' + bone.name
+                pmx_tip_bone.location =  mathutils.Vector(bone.tail) * self.__scale * self.TO_PMX_MATRIX
+                pmx_tip_bone.parent = bone
+                pmx_bones.append(pmx_tip_bone)
+
+        for i in filter(lambda x: x.parent is not None, pmx_bones):
+            i.parent = pmx_bones.index(boneMap[i.parent])
+
+        self.__model.bones = pmx_bones
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+
     @staticmethod
     def __triangulate(mesh):
         bm = bmesh.new()
@@ -141,12 +170,13 @@ class PmxExporter:
 
         self.__model.comment = 'exported by mmd_tools'
 
-        target = args['object']
-        self.__scale = args.get('scale', 1.0)
+        target = args['mesh']
+        self.__armature = args['armature']
+        self.__scale = 1.0/float(args.get('scale', 1.0))
 
 
         mesh = target.to_mesh(bpy.context.scene, True, 'PREVIEW', False)
-        mesh.transform(self.TO_PMX_MATRIX*(1.0/self.__scale))
+        mesh.transform(self.TO_PMX_MATRIX*self.__scale)
         self.__triangulate(mesh)
         mesh.update(calc_tessface=True)
 
@@ -156,4 +186,5 @@ class PmxExporter:
 
         self.__exportFaces()
         self.__exportMaterials()
+        self.__exportBones()
         pmx.save(outpath, self.__model)
