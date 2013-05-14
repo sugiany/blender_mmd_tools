@@ -133,23 +133,37 @@ class PmxExporter:
         utils.enterEditMode(arm)
         boneMap = {}
         pmx_bones = []
+        pose_bones = arm.pose.bones
         for bone in arm.data.edit_bones:
             pmx_bone = pmx.Bone()
-            pmx_bone.name = bone.name
+            p_bone = pose_bones[bone.name]
+            if p_bone.mmd_bone_name_j != '':
+                pmx_bone.name = p_bone.mmd_bone_name_j
+            else:
+                pmx_bone.name = bone.name
+            pmx_bone_e = p_bone.mmd_bone_name_e or ''
             pmx_bone.location = mathutils.Vector(bone.head) * self.__scale * self.TO_PMX_MATRIX
             pmx_bone.parent = bone.parent
             pmx_bones.append(pmx_bone)
             boneMap[bone] = pmx_bone
 
-            if len(bone.children) == 0 and not bone.is_mmd_tip_bone:
+            if len(bone.children) == 0 and not p_bone.is_mmd_tip_bone:
                 pmx_tip_bone = pmx.Bone()
                 pmx_tip_bone.name = 'tip_' + bone.name
                 pmx_tip_bone.location =  mathutils.Vector(bone.tail) * self.__scale * self.TO_PMX_MATRIX
                 pmx_tip_bone.parent = bone
                 pmx_bones.append(pmx_tip_bone)
+                pmx_bone.displayConnection = pmx_tip_bone
+            elif len(bone.children) > 0:
+                pmx_bone.displayConnection = sorted(bone.children, key=lambda x: 1 if pose_bones[x.name].is_mmd_tip_bone else 0)[0]
 
-        for i in filter(lambda x: x.parent is not None, pmx_bones):
-            i.parent = pmx_bones.index(boneMap[i.parent])
+        for i in pmx_bones:
+            if i.parent is not None:
+                i.parent = pmx_bones.index(boneMap[i.parent])
+            if isinstance(i.displayConnection, pmx.Bone):
+                i.displayConnection = pmx_bones.index(i.displayConnection)
+            elif isinstance(i.displayConnection, bpy.types.EditBone):
+                i.displayConnection = pmx_bones.index(boneMap[i.displayConnection])
 
         self.__model.bones = pmx_bones
         bpy.ops.object.mode_set(mode='OBJECT')

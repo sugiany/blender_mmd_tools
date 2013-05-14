@@ -227,7 +227,7 @@ class Header:
         self.sign = self.PMX_SIGN
         self.version = 0
 
-        self.encoding = Encoding('utf-8')
+        self.encoding = Encoding('utf-16-le')
         self.additional_uvs = 0
 
         self.vertex_index_size = 1
