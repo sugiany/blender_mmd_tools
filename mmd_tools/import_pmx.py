@@ -560,6 +560,7 @@ class PMXImporter:
         self.__onlyCollisions = args.get('only_collisions', False)
         self.__ignoreNonCollisionGroups = args.get('ignore_non_collision_groups', True)
         self.__distance_of_ignore_collisions = args.get('distance_of_ignore_collisions', 1) # 衝突を考慮しない距離（非衝突グループ設定を無視する距離）
+        self.__distance_of_ignore_collisions *= self.__scale
 
         self.__createObjects()
 
@@ -582,3 +583,5 @@ class PMXImporter:
         if args.get('hide_rigids', False):
             self.__hideRigidsAndJoints(self.__root)
         self.__armObj.pmx_import_scale = self.__scale
+
+        bpy.context.scene.gravity[2] = -9.81 * 5 * self.__scale

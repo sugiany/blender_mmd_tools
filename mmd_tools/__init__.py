@@ -56,7 +56,7 @@ class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     hide_rigids = bpy.props.BoolProperty(name='hide rigid bodies and joints', default=True)
     only_collisions = bpy.props.BoolProperty(name='import only non dynamics rigid bodies', default=False)
     ignore_non_collision_groups = bpy.props.BoolProperty(name='ignore  non collision groups', default=False)
-    distance_of_ignore_collisions = bpy.props.FloatProperty(name='distance of ignore collisions', default=1.0)
+    distance_of_ignore_collisions = bpy.props.FloatProperty(name='distance of ignore collisions', default=5.0)
 
     def execute(self, context):
         importer = import_pmx.PMXImporter()
