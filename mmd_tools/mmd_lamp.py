@@ -56,11 +56,11 @@ class MMDLamp:
         if MMDLamp.isMMDLamp(lampObj):
             return MMDLamp(lampObj)
 
-        name = lampObj.name + '_mmd_target'
+        name = 'MMD_' + lampObj.name + '_target'
         empty = bpy.data.objects.new(name=name, object_data=None)
         bpy.context.scene.objects.link(empty)
 
-        name = lampObj.name + '_mmd_source'
+        name = 'MMD_' + lampObj.name + '_source'
         armature = bpy.data.armatures.new(name=name)
         armatureObj = bpy.data.objects.new(name=name, object_data=armature)
         bpy.context.scene.objects.link(armatureObj)
