@@ -197,6 +197,27 @@ class PMXImporter:
                             bone.ik_min_y = i.minimumAngle[1]
                             bone.ik_min_z = i.minimumAngle[2]
 
+            if p_bone.hasAdditionalRotate or p_bone.hasAdditionalLocation:
+                if p_bone.additionalTransform is not None:
+                    bone_index, inful = p_bone.additionalTransform
+                    bone = pose_bones[self.__boneTable[bone_index]]
+                    c = b_bone.constraints.new('CHILD_OF')
+                    c.target = self.__armObj
+                    c.subtarget = bone.name
+                    c.use_location_x = p_bone.hasAdditionalLocation
+                    c.use_location_y = p_bone.hasAdditionalLocation
+                    c.use_location_z = p_bone.hasAdditionalLocation
+                    c.use_rotation_x = p_bone.hasAdditionalRotate
+                    c.use_rotation_y = p_bone.hasAdditionalRotate
+                    c.use_rotation_z = p_bone.hasAdditionalRotate
+                    c.use_scale_x = False
+                    c.use_scale_y = False
+                    c.use_scale_z = False
+                    self.__armObj.data.bones[b_bone.name].use_inherit_rotation = False
+                    c.inverse_matrix = mathutils.Matrix(bone.matrix).inverted()
+                    #bpy.ops.constraint.childof_set_inverse(constraint="ChildOf", owner='BONE')
+
+
         if not self.__deleteTipBones:
             for i in tipBones:
                 b = pose_bones[i]
