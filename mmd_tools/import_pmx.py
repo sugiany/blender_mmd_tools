@@ -213,6 +213,7 @@ class PMXImporter:
                     c.use_scale_x = False
                     c.use_scale_y = False
                     c.use_scale_z = False
+                    c.influence = inful
                     self.__armObj.data.bones[b_bone.name].use_inherit_rotation = False
                     c.inverse_matrix = mathutils.Matrix(bone.matrix).inverted()
                     #bpy.ops.constraint.childof_set_inverse(constraint="ChildOf", owner='BONE')
