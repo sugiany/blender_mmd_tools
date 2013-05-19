@@ -199,25 +199,39 @@ class PMXImporter:
 
             if p_bone.hasAdditionalRotate or p_bone.hasAdditionalLocation:
                 if p_bone.additionalTransform is not None:
-                    bone_index, inful = p_bone.additionalTransform
+                    bone_index, inf = p_bone.additionalTransform
                     bone = pose_bones[self.__boneTable[bone_index]]
-                    c = b_bone.constraints.new('CHILD_OF')
+                    c = b_bone.constraints.new('TRANSFORM')
                     c.target = self.__armObj
                     c.subtarget = bone.name
-                    c.use_location_x = p_bone.hasAdditionalLocation
-                    c.use_location_y = p_bone.hasAdditionalLocation
-                    c.use_location_z = p_bone.hasAdditionalLocation
-                    c.use_rotation_x = p_bone.hasAdditionalRotate
-                    c.use_rotation_y = p_bone.hasAdditionalRotate
-                    c.use_rotation_z = p_bone.hasAdditionalRotate
-                    c.use_scale_x = False
-                    c.use_scale_y = False
-                    c.use_scale_z = False
-                    c.influence = inful
-                    self.__armObj.data.bones[b_bone.name].use_inherit_rotation = False
-                    c.inverse_matrix = mathutils.Matrix(bone.matrix).inverted()
-                    #bpy.ops.constraint.childof_set_inverse(constraint="ChildOf", owner='BONE')
+                    c.map_from = 'ROTATION'
+                    c.from_min_x = -1000
+                    c.from_max_x = 1000
+                    c.from_min_y = -1000
+                    c.from_max_y = 1000
+                    c.from_min_z = -1000
+                    c.from_max_z = 1000
 
+                    c.map_to = 'ROTATION'
+                    c.target_space = 'LOCAL'
+                    c.owner_space = 'LOCAL'
+
+                    if inf > 0:
+                        c.to_min_x = -1000
+                        c.to_max_x = 1000
+                        c.to_min_y = 1000
+                        c.to_max_y = -1000
+                        c.to_min_z = 1000
+                        c.to_max_z = -1000
+                        c.influence = inf
+                    else:
+                        c.to_min_x = 1000
+                        c.to_max_x = -1000
+                        c.to_min_y = -1000
+                        c.to_max_y = 1000
+                        c.to_min_z = -1000
+                        c.to_max_z = 1000
+                        c.influence = -inf
 
         if not self.__deleteTipBones:
             for i in tipBones:
