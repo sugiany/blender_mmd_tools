@@ -12,11 +12,11 @@ from . import test
 from . import auto_scene_setup
 
 bl_info= {
-    "name": "MMD Tools",
+    "name": "mmd_tools",
     "author": "sugiany",
-    "version": (0, 2, 0),
+    "version": (0, 3, 0),
     "blender": (2, 6, 6),
-    "location": "View3D > Tool Shelf > MMD Tools Panel",
+    "location": "View3D > Tool Shelf > mmd_tools Panel",
     "description": "Utility tools for MMD model editing.",
     "warning": "",
     "wiki_url": "",
@@ -147,7 +147,7 @@ class AutoSceneSetup_Op(bpy.types.Operator):
 ## Main Panel
 class MMDToolsObjectPanel(bpy.types.Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_object'
-    bl_label = 'MMD Tools'
+    bl_label = 'mmd_tools'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'TOOLS'
     bl_context = ''
