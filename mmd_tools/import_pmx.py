@@ -233,6 +233,11 @@ class PMXImporter:
                         c.to_max_z = 1000
                         c.influence = -inf
 
+            if p_bone.localCoordinate is not None:
+                b_bone.mmd_enabled_local_axis = True
+                b_bone.mmd_local_axis_x = p_bone.localCoordinate.x_axis
+                b_bone.mmd_local_axis_z = p_bone.localCoordinate.z_axis
+
         if not self.__deleteTipBones:
             for i in tipBones:
                 b = pose_bones[i]

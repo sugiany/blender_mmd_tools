@@ -182,6 +182,9 @@ def register():
     bpy.types.Object.is_mmd_non_collision_joint = bpy.props.BoolProperty(name='is_mmd_non_collision_joint', default=False)
     bpy.types.Object.is_mmd_spring_joint = bpy.props.BoolProperty(name='is_mmd_spring_joint', default=False)
     bpy.types.Object.is_mmd_spring_goal = bpy.props.BoolProperty(name='is_mmd_spring_goal', default=False)
+    bpy.types.PoseBone.mmd_enabled_local_axis = bpy.props.BoolProperty(name='mmd_enabled_local_axis', default=False)
+    bpy.types.PoseBone.mmd_local_axis_x = bpy.props.FloatVectorProperty(name='mmd_local_axis_x')
+    bpy.types.PoseBone.mmd_local_axis_z = bpy.props.FloatVectorProperty(name='mmd_local_axis_z')
 
 def unregister():
     del bpy.types.Object.is_mmd_camera
@@ -196,6 +199,9 @@ def unregister():
     del bpy.types.Object.is_mmd_non_collision_joint
     del bpy.types.Object.is_mmd_spring_joint
     del bpy.types.Object.is_mmd_spring_goal
+    del bpy.types.PoseBone.mmd_enabled_local_axis
+    del bpy.types.PoseBone.mmd_local_axis_x
+    del bpy.types.PoseBone.mmd_local_axis_z
 
     bpy.utils.unregister_module(__name__)
 
