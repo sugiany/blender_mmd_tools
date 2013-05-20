@@ -136,15 +136,14 @@ class ConvertToCyclesShader_Op(bpy.types.Operator):
         cycles_converter.convertToCyclesShader(obj)
         return {'FINISHED'}
 
-class AutoSceneSetup_Op(bpy.types.Operator):
-    bl_idname = 'mmd_tools.auto_scene_setup'
-    bl_label = 'auto setup'
-    bl_description = 'set basic parameters for test renderings.'
+class SetFrameRange_Op(bpy.types.Operator):
+    bl_idname = 'mmd_tools.set_frame_range'
+    bl_label = 'set range'
+    bl_description = 'set the frame range to best values to play the animation from start to finish. And set the frame rate to 30.0.'
     bl_options = {'PRESET'}
 
     def execute(self, context):
         auto_scene_setup.setupFrameRanges()
-        auto_scene_setup.setupLighting()
         auto_scene_setup.setupFps()
         return {'FINISHED'}
 
@@ -171,7 +170,7 @@ class MMDToolsObjectPanel(bpy.types.Panel):
         col = layout.column(align=True)
         col.label('Scene:')
         c = col.column(align=True)
-        c.operator('mmd_tools.auto_scene_setup', text='auto scene setup')
+        c.operator('mmd_tools.set_frame_range', text='set frame range')
 
         if active_obj is not None and active_obj.type == 'MESH':
             col = layout.column(align=True)
