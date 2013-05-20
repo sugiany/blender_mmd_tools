@@ -26,4 +26,3 @@ def setupGLSLView(area):
     area.spaces[0].viewport_shade='TEXTURED'
     bpy.context.scene.game_settings.material_mode = 'GLSL'
     bpy.ops.object.lamp_add(type='HEMI', view_align=False, location=(0, 0, 0), rotation=(0, 0, 0), layers=(True, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
-

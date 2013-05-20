@@ -153,4 +153,3 @@ def makeCapsule(segment=16, ring_count=8, radius=1.0, height=1.0, target_scene=N
     mesh.from_pydata(vertices, [], faces)
     target_scene.objects.link(meshObj)
     return meshObj
-

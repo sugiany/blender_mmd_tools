@@ -157,6 +157,18 @@ class SetGLSLShading_Op(bpy.types.Operator):
         auto_scene_setup.setupGLSLView(context.area)
         return {'FINISHED'}
 
+class SetShadelessMaterials_Op(bpy.types.Operator):
+    bl_idname = 'mmd_tools.set_shadeless_materials'
+    bl_label = 'GLSL View'
+    bl_description = 'set the materials of selected objects to shadeless.'
+    bl_options = {'PRESET'}
+
+    def execute(self, context):
+        for i in context.selected_objects:
+            for s in i.material_slots:
+                s.material.use_shadeless = True
+        return {'FINISHED'}
+
 
 ## Main Panel
 class MMDToolsObjectPanel(bpy.types.Panel):
@@ -192,6 +204,7 @@ class MMDToolsObjectPanel(bpy.types.Panel):
             col = layout.column(align=True)
             col.label('Material:')
             c = col.column()
+            c.operator('mmd_tools.set_shadeless_materials', text='Shadeless')
             c.operator('mmd_tools.convert_to_cycles_shader', text='To cycles')
 
 
