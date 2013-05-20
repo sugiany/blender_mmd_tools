@@ -155,16 +155,29 @@ class MMDToolsObjectPanel(bpy.types.Panel):
     def draw(self, context):
         active_obj = context.active_object
 
-        sub = self.layout.column(True)
-        sub.label('Import-Export:')
-        sub.operator('mmd_tools.import_pmx', text='import pmx')
-        sub.operator('mmd_tools.import_vmd', text='import vmd')
-        self.layout.separator()
+        layout = self.layout
+
+        col = layout.column(align=True)
+        col.label('Import-Export:')
+        c = col.column()
+        c.operator('mmd_tools.import_pmx', text='import pmx')
+        c.operator('mmd_tools.import_vmd', text='import vmd')
+
+        col = layout.column(align=True)
+        col.label('Scene:')
+        c = col.column(align=True)
+        c.operator('mmd_tools.auto_scene_setup', text='auto scene setup')
+
         if active_obj is not None and active_obj.type == 'MESH':
-            self.layout.operator('mmd_tools.separate_by_materials', text='separate by materials')
-            self.layout.operator('mmd_tools.convert_to_cycles_shader', text='to cycles')
-        sub.label('Scene:')
-        self.layout.operator('mmd_tools.auto_scene_setup', text='auto scene setup')
+            col = layout.column(align=True)
+            col.label('Mesh:')
+            c = col.column()
+            c.operator('mmd_tools.separate_by_materials', text='separate by materials')
+        if active_obj is not None and active_obj.type == 'MESH':
+            col = layout.column(align=True)
+            col.label('Material:')
+            c = col.column()
+            c.operator('mmd_tools.convert_to_cycles_shader', text='to cycles')
 
 
 def register():
