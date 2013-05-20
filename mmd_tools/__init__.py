@@ -89,11 +89,16 @@ class ImportVmd_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 
     scale = bpy.props.FloatProperty(name='scale', default=0.2)
     margin = bpy.props.IntProperty(name='margin', default=5, min=0)
+    update_scene_settings = bpy.props.BoolProperty(name='update scene settings', default=True)
 
     def execute(self, context):
         importer = import_vmd.VMDImporter(filepath=self.filepath, scale=self.scale, frame_margin=self.margin)
         for i in context.selected_objects:
             importer.assign(i)
+        if self.update_scene_settings:
+            auto_scene_setup.setupFrameRanges()
+            auto_scene_setup.setupFps()
+
         return {'FINISHED'}
 
     def invoke(self, context, event):
