@@ -164,24 +164,24 @@ class MMDToolsObjectPanel(bpy.types.Panel):
         col = layout.column(align=True)
         col.label('Import-Export:')
         c = col.column()
-        c.operator('mmd_tools.import_pmx', text='import pmx')
-        c.operator('mmd_tools.import_vmd', text='import vmd')
+        c.operator('mmd_tools.import_pmx', text='Import pmx')
+        c.operator('mmd_tools.import_vmd', text='Import vmd')
 
         col = layout.column(align=True)
         col.label('Scene:')
         c = col.column(align=True)
-        c.operator('mmd_tools.set_frame_range', text='set frame range')
+        c.operator('mmd_tools.set_frame_range', text='Set frame range')
 
         if active_obj is not None and active_obj.type == 'MESH':
             col = layout.column(align=True)
             col.label('Mesh:')
             c = col.column()
-            c.operator('mmd_tools.separate_by_materials', text='separate by materials')
+            c.operator('mmd_tools.separate_by_materials', text='Separate by materials')
         if active_obj is not None and active_obj.type == 'MESH':
             col = layout.column(align=True)
             col.label('Material:')
             c = col.column()
-            c.operator('mmd_tools.convert_to_cycles_shader', text='to cycles')
+            c.operator('mmd_tools.convert_to_cycles_shader', text='To cycles')
 
 
 def register():
