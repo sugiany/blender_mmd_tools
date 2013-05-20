@@ -147,6 +147,16 @@ class SetFrameRange_Op(bpy.types.Operator):
         auto_scene_setup.setupFps()
         return {'FINISHED'}
 
+class SetGLSLShading_Op(bpy.types.Operator):
+    bl_idname = 'mmd_tools.set_glsl_shading'
+    bl_label = 'GLSL View'
+    bl_description = ''
+    bl_options = {'PRESET'}
+
+    def execute(self, context):
+        auto_scene_setup.setupGLSLView(context.area)
+        return {'FINISHED'}
+
 
 ## Main Panel
 class MMDToolsObjectPanel(bpy.types.Panel):
@@ -171,6 +181,7 @@ class MMDToolsObjectPanel(bpy.types.Panel):
         col.label('Scene:')
         c = col.column(align=True)
         c.operator('mmd_tools.set_frame_range', text='Set frame range')
+        c.operator('mmd_tools.set_glsl_shading', text='GLSL View')
 
         if active_obj is not None and active_obj.type == 'MESH':
             col = layout.column(align=True)
