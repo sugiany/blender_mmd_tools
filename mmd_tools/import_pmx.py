@@ -131,7 +131,7 @@ class PMXImporter:
                 loc = mathutils.Vector(i.location) * self.__scale * self.TO_BLE_MATRIX
                 bone.head = loc
                 editBoneTable.append(bone)
-                self.__boneTable.append(i.name)
+                self.__boneTable.append(bone.name)
 
             for b_bone, m_bone in zip(editBoneTable, pmxModel.bones):
                 if m_bone.parent != -1:
@@ -166,8 +166,8 @@ class PMXImporter:
         bpy.types.PoseBone.isTipBone = bpy.props.BoolProperty(name='isTipBone', default=False)
         bpy.types.PoseBone.name_j = bpy.props.StringProperty(name='name_j', description='the bone name in japanese.')
         bpy.types.PoseBone.name_e = bpy.props.StringProperty(name='name_e', description='the bone name in english.')
-        for p_bone in pmxModel.bones:
-            b_bone = pose_bones[p_bone.name]
+        for i, p_bone in enumerate(pmxModel.bones):
+            b_bone = pose_bones[self.__boneTable[i]]
             b_bone.name_e = p_bone.name_e
             if not p_bone.isRotatable:
                 b_bone.lock_rotation = [True, True, True]
