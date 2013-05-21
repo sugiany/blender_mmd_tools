@@ -39,15 +39,6 @@ Windows 7 + blender 2.67 64bit
 3. ファイル選択画面でvmdファイルを選択すると選択中のオブジェクトへモーションをインポートします。
 4. 「update scene settings」チェックボックスをオンにしておくと、モーションの読み込み後にフレームレンジ等のシーン設定を自動更新します。
 
-### その他の機能
-
-#### auto scene setup
-pmxインポート後に適当な設定ですぐレンダリングできるよう自動設定を行います。
-
-1. FrameRangeおよびRigid Body Cacheの範囲をシーン上アニメーションのレンジに合わせます。
-2. "Ambient Occlusion"、"Environment Lighting"および"Indirect Lighting"をオンにします。
-3. フレームレートを30fpsに変更します。
-
 各種機能詳細
 -------------------------------
 ### Import pmx
