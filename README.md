@@ -14,13 +14,13 @@ Windows 7 + blender 2.67 64bit
 ---------
 ### ダウンロード
 
-安定版は下記URLから最新版をダウンロードしてください。
-* [Tags](https://github.com/sugiany/blender_mmd_tools/tags)
-開発版はmasterブランチのHEADを取得してください。
-* [master.zip](https://github.com/sugiany/blender_mmd_tools/archive/master.zip)
+* 安定版は下記リンクから最新版をダウンロードしてください。
+    * [Tags](https://github.com/sugiany/blender_mmd_tools/tags)
+* 開発版はmasterブランチのHEADを取得してください。
+    * [master.zip](https://github.com/sugiany/blender_mmd_tools/archive/master.zip)
 
 ### インストール
-mmd_toolsディレクトリをaddonディレクトリにコピーしてください。
+展開したアーカイブ内のmmd_toolsディレクトリをaddonディレクトリにコピーしてください。
 
     .../blender-2.67-windows64/2.67/scripts/addons/
 
