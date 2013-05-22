@@ -630,4 +630,4 @@ class PMXImporter:
             self.__hideRigidsAndJoints(self.__root)
         self.__armObj.pmx_import_scale = self.__scale
 
-        bpy.context.scene.gravity[2] = -9.81 * 5 * self.__scale
+        bpy.context.scene.gravity[2] = -9.81 * 10 * self.__scale
