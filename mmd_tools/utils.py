@@ -98,7 +98,7 @@ def separateByMaterials(meshObj):
 def makePmxBoneMap(armObj):
     boneMap = {}
     for i in armObj.pose.bones:
-        boneMap[i.get('name_j', i.name)] = i
+        boneMap[i.get('mmd_bone_name_j', i.name)] = i
     return boneMap
 
 

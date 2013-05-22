@@ -163,12 +163,9 @@ class PMXImporter:
             bpy.ops.object.mode_set(mode='OBJECT')
 
         pose_bones = self.__armObj.pose.bones
-        bpy.types.PoseBone.isTipBone = bpy.props.BoolProperty(name='isTipBone', default=False)
-        bpy.types.PoseBone.name_j = bpy.props.StringProperty(name='name_j', description='the bone name in japanese.')
-        bpy.types.PoseBone.name_e = bpy.props.StringProperty(name='name_e', description='the bone name in english.')
         for i, p_bone in enumerate(pmxModel.bones):
             b_bone = pose_bones[self.__boneTable[i]]
-            b_bone.name_e = p_bone.name_e
+            b_bone.mmd_bone_name_e = p_bone.name_e
             if not p_bone.isRotatable:
                 b_bone.lock_rotation = [True, True, True]
             if not p_bone.isMovable:
@@ -241,7 +238,7 @@ class PMXImporter:
         if not self.__deleteTipBones:
             for i in tipBones:
                 b = pose_bones[i]
-                b.isTipBone = True
+                b.is_mmd_tip_bone = True
                 b.lock_rotation = [True, True, True]
                 b.lock_location = [True, True, True]
                 b.lock_scale = [True, True, True]
@@ -592,9 +589,9 @@ class PMXImporter:
     def __renameLRBones(self):
         pose_bones = self.__armObj.pose.bones
         for i in pose_bones:
-            i.name_j = i.name
+            i.mmd_bone_name_j = i.name
             i.name = utils.convertNameToLR(i.name)
-            self.__meshObj.vertex_groups[i.name_j].name = i.name
+            self.__meshObj.vertex_groups[i.mmd_bone_name_j].name = i.name
 
     def execute(self, **args):
         self.__model = pmx.load(args['filepath'])

@@ -226,9 +226,9 @@ def register():
     bpy.types.PoseBone.mmd_local_axis_x = bpy.props.FloatVectorProperty(name='mmd_local_axis_x')
     bpy.types.PoseBone.mmd_local_axis_z = bpy.props.FloatVectorProperty(name='mmd_local_axis_z')
 
-    bpy.types.PoseBone.is_mmd_tip_bone = bpy.props.BoolProperty(name='isTipBone', default=False)
-    bpy.types.PoseBone.mmd_bone_name_j = bpy.props.StringProperty(name='name_j', description='the bone name in japanese.')
-    bpy.types.PoseBone.mmd_bone_name_e = bpy.props.StringProperty(name='name_e', description='the bone name in english.')
+    bpy.types.PoseBone.is_mmd_tip_bone = bpy.props.BoolProperty(name='is_mmd_tip_bone', default=False)
+    bpy.types.PoseBone.mmd_bone_name_j = bpy.props.StringProperty(name='mmd_bone_name_j', description='the bone name in japanese.')
+    bpy.types.PoseBone.mmd_bone_name_e = bpy.props.StringProperty(name='mmd_bone_name_e', description='the bone name in english.')
 
 def unregister():
     del bpy.types.Object.is_mmd_camera
