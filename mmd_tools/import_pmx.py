@@ -121,6 +121,14 @@ class PMXImporter:
 
         pmxModel = self.__model
 
+        dependency_cycle_ik_bones = []
+        for i, p_bone in enumerate(pmxModel.bones):
+            if p_bone.isIK:
+                if p_bone.target != -1:
+                    t = pmxModel.bones[p_bone.target]
+                    if p_bone.parent == t.parent:
+                        dependency_cycle_ik_bones.append(i)
+
         utils.enterEditMode(self.__armObj)
         try:
             editBoneTable = []
@@ -133,9 +141,12 @@ class PMXImporter:
                 editBoneTable.append(bone)
                 self.__boneTable.append(bone.name)
 
-            for b_bone, m_bone in zip(editBoneTable, pmxModel.bones):
+            for i, (b_bone, m_bone) in enumerate(zip(editBoneTable, pmxModel.bones)):
                 if m_bone.parent != -1:
-                    b_bone.parent = editBoneTable[m_bone.parent]
+                    if i not in dependency_cycle_ik_bones:
+                        b_bone.parent = editBoneTable[m_bone.parent]
+                    else:
+                        b_bone.parent = editBoneTable[m_bone.parent].parent
 
             for b_bone, m_bone in zip(editBoneTable, pmxModel.bones):
                 if isinstance(m_bone.displayConnection, int):
@@ -177,7 +188,7 @@ class PMXImporter:
                     ikConst = bone.constraints.new('IK')
                     ikConst.chain_count = len(p_bone.ik_links)
                     ikConst.target = self.__armObj
-                    ikConst.subtarget = p_bone.name
+                    ikConst.subtarget = b_bone.name
                     if p_bone.isRotatable and not p_bone.isMovable :
                         ikConst.use_location = p_bone.isMovable
                         ikConst.use_rotation = p_bone.isRotatable
