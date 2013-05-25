@@ -133,7 +133,7 @@ class PMXImporter:
 
         with bpyutils.edit_object(obj):
             for i in pmx_bones:
-                bone = self.__armObj.data.edit_bones.new(name=i.name)
+                bone = obj.data.edit_bones.new(name=i.name)
                 loc = mathutils.Vector(i.location) * self.__scale * self.TO_BLE_MATRIX
                 bone.head = loc
                 editBoneTable.append(bone)
@@ -202,6 +202,88 @@ class PMXImporter:
                 bone.ik_min_y = i.minimumAngle[1]
                 bone.ik_min_z = i.minimumAngle[2]
 
+    def __applyAdditionalTransform(self, obj, src, dest, influence, rotation=False, location=False):
+        if not rotation and not location:
+            return
+        bone_name = None
+        with bpyutils.edit_object(obj):
+            src_bone = obj.data.edit_bones[src.name]
+            s_bone = obj.data.edit_bones.new(name='shadow')
+            s_bone.head = src_bone.head
+            s_bone.tail = src_bone.tail
+            s_bone.parent = src_bone.parent
+            #s_bone.use_connect = src_bone.use_connect
+            s_bone.layers = (False, False, False, False, False, False, False, False, True, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False)
+            s_bone.use_inherit_rotation = False
+            s_bone.use_local_location = True
+            s_bone.use_inherit_scale = False
+            bone_name = s_bone.name
+
+            dest_bone = obj.data.edit_bones[dest.name]
+            dest_bone.use_inherit_rotation = not rotation
+            dest_bone.use_local_location = not location
+
+        p_bone = obj.pose.bones[bone_name]
+        p_bone.is_mmd_shadow_bone = True
+
+        if rotation:
+            c = p_bone.constraints.new('COPY_ROTATION')
+            c.target = obj
+            c.subtarget = src.name
+            c.target_space = 'LOCAL'
+            c.owner_space = 'LOCAL'
+
+            if influence > 0:
+                c.influence = influence
+            else:
+                c.influence = -influence
+                c.invert_x = True
+                c.invert_y = True
+                c.invert_z = True
+
+        if location:
+            c = p_bone.constraints.new('COPY_LOCATION')
+            c.target = obj
+            c.subtarget = src
+            c.target_space = 'LOCAL'
+            c.owner_space = 'LOCAL'
+
+            if influence > 0:
+                c.influence = influence
+            else:
+                c.influence = -influence
+                c.invert_x = True
+                c.invert_y = True
+                c.invert_z = True
+
+        c = dest.constraints.new('CHILD_OF')
+
+        c.target = obj
+        c.subtarget = p_bone.name
+        c.use_location_x = location
+        c.use_location_y = location
+        c.use_location_z = location
+        c.use_rotation_x = rotation
+        c.use_rotation_y = rotation
+        c.use_rotation_z = rotation
+        c.use_scale_x = False
+        c.use_scale_y = False
+        c.use_scale_z = False
+        c.inverse_matrix = mathutils.Matrix(src.matrix).inverted()
+
+        if dest.parent is not None:
+            parent = dest.parent
+            c = dest.constraints.new('CHILD_OF')
+            c.target = obj
+            c.subtarget = parent.name
+            c.use_location_x = False
+            c.use_location_y = False
+            c.use_location_z = False
+            c.use_scale_x = False
+            c.use_scale_y = False
+            c.use_scale_z = False
+            c.inverse_matrix = mathutils.Matrix(parent.matrix).inverted()
+
     def __importBones(self):
         pmxModel = self.__model
 
@@ -223,7 +305,8 @@ class PMXImporter:
                     self.__applyIk(i, p_bone, pose_bones)
 
             if p_bone.hasAdditionalRotate or p_bone.hasAdditionalLocation:
-                pass
+                bone_index, influ = p_bone.additionalTransform
+                self.__applyAdditionalTransform(self.__armObj, pose_bones[bone_index], b_bone, influ, p_bone.hasAdditionalRotate, p_bone.hasAdditionalLocation)
 
             if p_bone.localCoordinate is not None:
                 b_bone.mmd_enabled_local_axis = True
@@ -569,6 +652,8 @@ class PMXImporter:
     def __renameLRBones(self):
         pose_bones = self.__armObj.pose.bones
         for i in pose_bones:
+            if i.is_mmd_shadow_bone : 
+                continue
             i.mmd_bone_name_j = i.name
             i.name = utils.convertNameToLR(i.name)
             self.__meshObj.vertex_groups[i.mmd_bone_name_j].name = i.name
