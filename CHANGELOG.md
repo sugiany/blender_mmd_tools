@@ -1,7 +1,7 @@
 変更履歴
 ========
 
-v0.3.0
+HEAD
 -------
 ### 変更
 * Blender addon名を"mmd_tools"に変更
