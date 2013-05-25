@@ -22,7 +22,6 @@ class PMXImporter:
         self.__targetScene = bpy.context.scene
 
         self.__scale = None
-        self.__deleteTipBones = False
 
         self.__root = None
         self.__armObj = None
@@ -580,7 +579,6 @@ class PMXImporter:
 
         self.__scale = args.get('scale', 1.0)
         renameLRBones = args.get('rename_LR_bones', False)
-        self.__deleteTipBones = args.get('delete_tip_bones', False)
         self.__onlyCollisions = args.get('only_collisions', False)
         self.__ignoreNonCollisionGroups = args.get('ignore_non_collision_groups', True)
         self.__distance_of_ignore_collisions = args.get('distance_of_ignore_collisions', 1) # 衝突を考慮しない距離（非衝突グループ設定を無視する距離）

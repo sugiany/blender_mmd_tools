@@ -51,7 +51,6 @@ class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 
     scale = bpy.props.FloatProperty(name='scale', default=0.2)
     renameBones = bpy.props.BoolProperty(name='rename bones', default=True)
-    deleteTipBones = bpy.props.BoolProperty(name='delete tip bones', default=False)
     hide_rigids = bpy.props.BoolProperty(name='hide rigid bodies and joints', default=True)
     only_collisions = bpy.props.BoolProperty(name='import only non dynamics rigid bodies', default=False)
     ignore_non_collision_groups = bpy.props.BoolProperty(name='ignore  non collision groups', default=False)
@@ -63,7 +62,6 @@ class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
             filepath=self.filepath,
             scale=self.scale,
             rename_LR_bones=self.renameBones,
-            delete_tip_bones=self.deleteTipBones,
             hide_rigids=self.hide_rigids,
             only_collisions=self.only_collisions,
             ignore_non_collision_groups=self.ignore_non_collision_groups,
