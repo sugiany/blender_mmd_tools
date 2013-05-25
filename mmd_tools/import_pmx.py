@@ -123,6 +123,14 @@ class PMXImporter:
         """
         editBoneTable = []
         nameTable = []
+        dependency_cycle_ik_bones = []
+        for i, p_bone in enumerate(pmx_bones):
+            if p_bone.isIK:
+                if p_bone.target != -1:
+                    t = pmx_bones[p_bone.target]
+                    if p_bone.parent == t.parent:
+                        dependency_cycle_ik_bones.append(i)
+
         with bpyutils.edit_object(obj):
             for i in pmx_bones:
                 bone = self.__armObj.data.edit_bones.new(name=i.name)
@@ -133,10 +141,10 @@ class PMXImporter:
 
             for i, (b_bone, m_bone) in enumerate(zip(editBoneTable, pmx_bones)):
                 if m_bone.parent != -1:
-                    # if i not in dependency_cycle_ik_bones:
-                    b_bone.parent = editBoneTable[m_bone.parent]
-                    # else:
-                    #     b_bone.parent = editBoneTable[m_bone.parent].parent
+                    if i not in dependency_cycle_ik_bones:
+                        b_bone.parent = editBoneTable[m_bone.parent]
+                    else:
+                        b_bone.parent = editBoneTable[m_bone.parent].parent
 
             for b_bone, m_bone in zip(editBoneTable, pmx_bones):
                 if isinstance(m_bone.displayConnection, int):
@@ -195,16 +203,7 @@ class PMXImporter:
                 bone.ik_min_z = i.minimumAngle[2]
 
     def __importBones(self):
-
         pmxModel = self.__model
-
-        dependency_cycle_ik_bones = []
-        for i, p_bone in enumerate(pmxModel.bones):
-            if p_bone.isIK:
-                if p_bone.target != -1:
-                    t = pmxModel.bones[p_bone.target]
-                    if p_bone.parent == t.parent:
-                        dependency_cycle_ik_bones.append(i)
 
         boneNameTable = self.__createEditBones(self.__armObj, pmxModel.bones)
         pose_bones = self.__sortPoseBonesByBoneIndex(self.__armObj.pose.bones, boneNameTable)
