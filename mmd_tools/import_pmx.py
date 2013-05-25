@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from . import pmx
 from . import utils
+from . import bpyutils
 
 import math
 
@@ -31,6 +32,7 @@ class PMXImporter:
         self.__vertexGroupTable = None
         self.__textureTable = None
 
+        self.__boneTable = []
         self.__rigidTable = []
         self.__nonCollisionJointTable = None
         self.__jointTable = []
@@ -116,6 +118,82 @@ class PMXImporter:
                 print('WARNING: failed to load %s'%str(i.path))
             self.__textureTable.append(tex)
 
+    def __createEditBones(self, obj, pmx_bones):
+        """ create EditBones from pmx file data.
+        @return the list of bone names which can be accessed by the bone index of pmx data.
+        """
+        editBoneTable = []
+        nameTable = []
+        with bpyutils.edit_object(obj):
+            for i in pmx_bones:
+                bone = self.__armObj.data.edit_bones.new(name=i.name)
+                loc = mathutils.Vector(i.location) * self.__scale * self.TO_BLE_MATRIX
+                bone.head = loc
+                editBoneTable.append(bone)
+                nameTable.append(bone.name)
+
+            for i, (b_bone, m_bone) in enumerate(zip(editBoneTable, pmx_bones)):
+                if m_bone.parent != -1:
+                    # if i not in dependency_cycle_ik_bones:
+                    b_bone.parent = editBoneTable[m_bone.parent]
+                    # else:
+                    #     b_bone.parent = editBoneTable[m_bone.parent].parent
+
+            for b_bone, m_bone in zip(editBoneTable, pmx_bones):
+                if isinstance(m_bone.displayConnection, int):
+                    if m_bone.displayConnection != -1:
+                        b_bone.tail = editBoneTable[m_bone.displayConnection].head
+                    else:
+                        b_bone.tail = b_bone.head
+                else:
+                    loc = mathutils.Vector(m_bone.displayConnection) * self.TO_BLE_MATRIX * self.__scale
+                    b_bone.tail = b_bone.head + loc
+
+            for b_bone in editBoneTable:
+                # Set the length of too short bones to 1 because Blender delete them.
+                if b_bone.length  < 0.001:
+                    loc = mathutils.Vector([0, 0, 1]) * self.__scale
+                    b_bone.tail = b_bone.head + loc
+
+            for b_bone, m_bone in zip(editBoneTable, pmx_bones):
+                if b_bone.parent is not None and b_bone.parent.tail == b_bone.head:
+                    if not m_bone.isMovable:
+                        b_bone.use_connect = True
+
+        return nameTable
+
+    def __sortPoseBonesByBoneIndex(self, pose_bones, bone_names):
+        r = []
+        for i in bone_names:
+            r.append(pose_bones[i])
+        return r
+
+    def __applyIk(self, index, pmx_bone, pose_bones):
+        """ create a IK bone constraint
+         @param index the bone index
+         @param pmx_bone pmx.Bone
+         @param pose_bones the list of PoseBones sorted by the bone index
+        """
+        bone = pose_bones[pmx_bone.target].parent
+        ikConst = bone.constraints.new('IK')
+        ikConst.chain_count = len(pmx_bone.ik_links)
+        ikConst.target = self.__armObj
+        ikConst.subtarget = pose_bones[index].name
+        if pmx_bone.isRotatable and not pmx_bone.isMovable :
+            ikConst.use_location = pmx_bone.isMovable
+            ikConst.use_rotation = pmx_bone.isRotatable
+        for i in pmx_bone.ik_links:
+            if i.maximumAngle is not None:
+                bone = pose_bones[i.target]
+                bone.use_ik_limit_x = True
+                bone.use_ik_limit_y = True
+                bone.use_ik_limit_z = True
+                bone.ik_max_x = -i.minimumAngle[0]
+                bone.ik_max_y = i.maximumAngle[1]
+                bone.ik_max_z = i.maximumAngle[2]
+                bone.ik_min_x = -i.maximumAngle[0]
+                bone.ik_min_y = i.minimumAngle[1]
+                bone.ik_min_z = i.minimumAngle[2]
 
     def __importBones(self):
 
@@ -129,144 +207,37 @@ class PMXImporter:
                     if p_bone.parent == t.parent:
                         dependency_cycle_ik_bones.append(i)
 
-        utils.enterEditMode(self.__armObj)
-        try:
-            editBoneTable = []
-            tipBones = []
-            self.__boneTable = []
-            for i in pmxModel.bones:
-                bone = self.__armObj.data.edit_bones.new(name=i.name)
-                loc = mathutils.Vector(i.location) * self.__scale * self.TO_BLE_MATRIX
-                bone.head = loc
-                editBoneTable.append(bone)
-                self.__boneTable.append(bone.name)
-
-            for i, (b_bone, m_bone) in enumerate(zip(editBoneTable, pmxModel.bones)):
-                if m_bone.parent != -1:
-                    if i not in dependency_cycle_ik_bones:
-                        b_bone.parent = editBoneTable[m_bone.parent]
-                    else:
-                        b_bone.parent = editBoneTable[m_bone.parent].parent
-
-            for b_bone, m_bone in zip(editBoneTable, pmxModel.bones):
-                if isinstance(m_bone.displayConnection, int):
-                    if m_bone.displayConnection != -1:
-                        b_bone.tail = editBoneTable[m_bone.displayConnection].head
-                    else:
-                        b_bone.tail = b_bone.head
-                else:
-                    loc = mathutils.Vector(m_bone.displayConnection) * self.TO_BLE_MATRIX * self.__scale
-                    b_bone.tail = b_bone.head + loc
-
-            for b_bone in editBoneTable:
-                if b_bone.length  < 0.001:
-                    loc = mathutils.Vector([0, 0, 1]) * self.__scale
-                    b_bone.tail = b_bone.head + loc
-                    if len(b_bone.children) == 0:
-                        tipBones.append(b_bone.name)
-
-            for b_bone, m_bone in zip(editBoneTable, pmxModel.bones):
-                if b_bone.parent is not None and b_bone.parent.tail == b_bone.head:
-                    if not m_bone.isMovable:
-                        b_bone.use_connect = True
-
-        finally:
-            bpy.ops.object.mode_set(mode='OBJECT')
-
-        pose_bones = self.__armObj.pose.bones
+        boneNameTable = self.__createEditBones(self.__armObj, pmxModel.bones)
+        pose_bones = self.__sortPoseBonesByBoneIndex(self.__armObj.pose.bones, boneNameTable)
+        self.__boneTable = pose_bones
         for i, p_bone in enumerate(pmxModel.bones):
-            b_bone = pose_bones[self.__boneTable[i]]
+            b_bone = pose_bones[i]
             b_bone.mmd_bone_name_e = p_bone.name_e
+
             if not p_bone.isRotatable:
                 b_bone.lock_rotation = [True, True, True]
+
             if not p_bone.isMovable:
                 b_bone.lock_location =[True, True, True]
 
             if p_bone.isIK:
                 if p_bone.target != -1:
-                    bone = pose_bones[self.__boneTable[p_bone.target]].parent
-                    ikConst = bone.constraints.new('IK')
-                    ikConst.chain_count = len(p_bone.ik_links)
-                    ikConst.target = self.__armObj
-                    ikConst.subtarget = b_bone.name
-                    if p_bone.isRotatable and not p_bone.isMovable :
-                        ikConst.use_location = p_bone.isMovable
-                        ikConst.use_rotation = p_bone.isRotatable
-                    for i in p_bone.ik_links:
-                        if i.maximumAngle is not None:
-                            bone = pose_bones[self.__boneTable[i.target]]
-                            bone.use_ik_limit_x = True
-                            bone.use_ik_limit_y = True
-                            bone.use_ik_limit_z = True
-                            bone.ik_max_x = -i.minimumAngle[0]
-                            bone.ik_max_y = i.maximumAngle[1]
-                            bone.ik_max_z = i.maximumAngle[2]
-                            bone.ik_min_x = -i.maximumAngle[0]
-                            bone.ik_min_y = i.minimumAngle[1]
-                            bone.ik_min_z = i.minimumAngle[2]
+                    self.__applyIk(i, p_bone, pose_bones)
 
             if p_bone.hasAdditionalRotate or p_bone.hasAdditionalLocation:
-                if p_bone.additionalTransform is not None:
-                    bone_index, inf = p_bone.additionalTransform
-                    bone = pose_bones[self.__boneTable[bone_index]]
-                    c = b_bone.constraints.new('TRANSFORM')
-                    c.target = self.__armObj
-                    c.subtarget = bone.name
-                    c.map_from = 'ROTATION'
-                    c.from_min_x = -1000
-                    c.from_max_x = 1000
-                    c.from_min_y = -1000
-                    c.from_max_y = 1000
-                    c.from_min_z = -1000
-                    c.from_max_z = 1000
-
-                    c.map_to = 'ROTATION'
-                    c.target_space = 'LOCAL'
-                    c.owner_space = 'LOCAL'
-
-                    if inf > 0:
-                        c.to_min_x = -1000
-                        c.to_max_x = 1000
-                        c.to_min_y = 1000
-                        c.to_max_y = -1000
-                        c.to_min_z = 1000
-                        c.to_max_z = -1000
-                        c.influence = inf
-                    else:
-                        c.to_min_x = 1000
-                        c.to_max_x = -1000
-                        c.to_min_y = -1000
-                        c.to_max_y = 1000
-                        c.to_min_z = -1000
-                        c.to_max_z = 1000
-                        c.influence = -inf
+                pass
 
             if p_bone.localCoordinate is not None:
                 b_bone.mmd_enabled_local_axis = True
                 b_bone.mmd_local_axis_x = p_bone.localCoordinate.x_axis
                 b_bone.mmd_local_axis_z = p_bone.localCoordinate.z_axis
 
-        if not self.__deleteTipBones:
-            for i in tipBones:
-                b = pose_bones[i]
-                b.is_mmd_tip_bone = True
-                b.lock_rotation = [True, True, True]
-                b.lock_location = [True, True, True]
-                b.lock_scale = [True, True, True]
-                b.bone.hide = True
-
-        else:
-            utils.enterEditMode(self.__armObj)
-            try:
-                edit_bones = self.__armObj.data.edit_bones
-                for i in tipBones:
-                    edit_bone = edit_bones[i]
-                    if edit_bone.parent is not None:
-                        utils.mergeVertexGroup(self.__meshObj, edit_bone.name, edit_bone.parent.name)
-                    edit_bones.remove(edit_bone)
-            finally:
-                bpy.ops.object.mode_set(mode='OBJECT')
-
+            if len(b_bone.children) == 0:
+                b_bone.is_mmd_tip_bone = True
+                b_bone.lock_rotation = [True, True, True]
+                b_bone.lock_location = [True, True, True]
+                b_bone.lock_scale = [True, True, True]
+                b_bone.bone.hide = True
 
     def __importRigids(self):
         self.__rigidTable = []
@@ -319,14 +290,14 @@ class PMXImporter:
             bpy.ops.rigidbody.object_add(type='ACTIVE')
             if rigid.mode == pmx.Rigid.MODE_STATIC and rigid.bone is not None:
                 bpy.ops.object.modifier_add(type='COLLISION')
-                utils.setParentToBone(obj, self.__armObj, self.__boneTable[rigid.bone])
+                utils.setParentToBone(obj, self.__armObj, self.__boneTable[rigid.bone].name)
             elif rigid.bone is not None:
                 bpy.ops.object.select_all(action='DESELECT')
                 obj.select = True
                 bpy.context.scene.objects.active = self.__root
                 bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=True)
 
-                target_bone = self.__armObj.pose.bones[self.__boneTable[rigid.bone]]
+                target_bone = self.__boneTable[rigid.bone]
                 bpy.ops.object.add(type='EMPTY',
                                    view_align=False,
                                    enter_editmode=False,

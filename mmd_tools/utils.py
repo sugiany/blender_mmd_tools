@@ -32,13 +32,6 @@ def setParentToBone(obj, parent, bone_name):
     bpy.ops.object.parent_set(type='BONE', xmirror=False, keep_transform=False)
     bpy.ops.object.mode_set(mode='OBJECT')
 
-# def addBoneConstraint(obj, bone_name, constraint_type):
-#     import bpy
-#     selectAObject(obj)
-#     bpy.ops.object.mode_set(mode='POSE')
-#     obj.data.bones.active = parent.data.bones[bone_name]
-#     bpy.ops.pose.constraint_add(type=constraint_type)
-
 
 __CONVERT_NAME_TO_L_REGEXP = re.compile('^(.*)左(.*)$')
 __CONVERT_NAME_TO_R_REGEXP = re.compile('^(.*)右(.*)$')
