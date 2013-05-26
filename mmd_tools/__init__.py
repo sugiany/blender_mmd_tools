@@ -39,6 +39,13 @@ if "bpy" in locals():
     if "test" in locals():
         imp.reload(test)
 
+class MMDToolsPropertyGroup(bpy.types.PropertyGroup):
+    is_shadeless_glsl = bpy.props.BoolProperty(
+        name = 'Shadeless GLSL',
+        description='Convert all models in the current scene to the shadeless material',
+        default = False
+        )
+
 ## Import-Export
 class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     bl_idname = 'mmd_tools.import_pmx'
@@ -170,7 +177,7 @@ class SetShadelessMaterials_Op(bpy.types.Operator):
 ## Main Panel
 class MMDToolsObjectPanel(bpy.types.Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_object'
-    bl_label = 'mmd_tools'
+    bl_label = 'MMD Tools'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'TOOLS'
     bl_context = ''
@@ -181,16 +188,24 @@ class MMDToolsObjectPanel(bpy.types.Panel):
         layout = self.layout
 
         col = layout.column(align=True)
-        col.label('Import-Export:')
+        col.label('Import:')
         c = col.column()
-        c.operator('mmd_tools.import_pmx', text='Import pmx')
-        c.operator('mmd_tools.import_vmd', text='Import vmd')
+        r = c.row()
+        r.operator('mmd_tools.import_pmx', text='Model')
+        r.operator('mmd_tools.import_vmd', text='Motion')
 
         col = layout.column(align=True)
         col.label('Scene:')
         c = col.column(align=True)
         c.operator('mmd_tools.set_frame_range', text='Set frame range')
-        c.operator('mmd_tools.set_glsl_shading', text='GLSL View')
+
+        col = layout.column(align=True)
+        col.label('View:')
+        c = col.column(align=True)
+        r = c.row()
+        r.operator('mmd_tools.set_glsl_shading', text='Reset')
+        r.operator('mmd_tools.set_glsl_shading', text='GLSL')
+        c.prop(context.scene.mmd_tools, 'is_shadeless_glsl', text='Shadeless')
 
         if active_obj is not None and active_obj.type == 'MESH':
             col = layout.column(align=True)
@@ -205,8 +220,16 @@ class MMDToolsObjectPanel(bpy.types.Panel):
             c.operator('mmd_tools.convert_to_cycles_shader', text='To cycles')
 
 
+def menu_func_import(self, context):
+    self.layout.operator(ImportPmx_Op.bl_idname, text="MikuMikuDance model (.pmx)")
+    self.layout.operator(ImportVmd_Op.bl_idname, text="MikuMikuDance motion (.vmd)")
+
+
 def register():
-    bpy.utils.register_module(__name__)
+    bpy.utils.register_class(MMDToolsPropertyGroup)
+    bpy.types.INFO_MT_file_import.append(menu_func_import)
+
+    bpy.types.Scene.mmd_tools = bpy.props.PointerProperty(type=MMDToolsPropertyGroup)
 
     bpy.types.Object.is_mmd_camera = bpy.props.BoolProperty(name='is_mmd_camera', default=False)
     bpy.types.Object.mmd_camera_location = bpy.props.FloatVectorProperty(name='mmd_camera_location')
@@ -230,7 +253,11 @@ def register():
     bpy.types.PoseBone.mmd_bone_name_j = bpy.props.StringProperty(name='mmd_bone_name_j', description='the bone name in japanese.')
     bpy.types.PoseBone.mmd_bone_name_e = bpy.props.StringProperty(name='mmd_bone_name_e', description='the bone name in english.')
 
+    bpy.utils.register_module(__name__)
+
 def unregister():
+    bpy.types.INFO_MT_file_import.remove(menu_func_import)
+
     del bpy.types.Object.is_mmd_camera
     del bpy.types.Object.mmd_camera_location
     del bpy.types.Object.mmd_camera_rotation
