@@ -231,11 +231,6 @@ class MMDToolsObjectPanel(bpy.types.Panel):
         r.operator('mmd_tools.import_vmd', text='Motion')
 
         col = layout.column(align=True)
-        col.label('Scene:')
-        c = col.column(align=True)
-        c.operator('mmd_tools.set_frame_range', text='Set frame range')
-
-        col = layout.column(align=True)
         col.label('View:')
         c = col.column(align=True)
         r = c.row()
@@ -255,6 +250,10 @@ class MMDToolsObjectPanel(bpy.types.Panel):
             c.operator('mmd_tools.set_shadeless_materials', text='Shadeless')
             c.operator('mmd_tools.convert_to_cycles_shader', text='To cycles')
 
+        col = layout.column(align=True)
+        col.label('Scene:')
+        c = col.column(align=True)
+        c.operator('mmd_tools.set_frame_range', text='Set frame range')
 
 def menu_func_import(self, context):
     self.layout.operator(ImportPmx_Op.bl_idname, text="MikuMikuDance model (.pmx)")

@@ -1,31 +1,43 @@
 # -*- coding: utf-8 -*-
 import bpy
 
+def __exposeNodeTreeInput(in_socket, name, default_value, node_input, shader):
+    t = len(node_input.outputs)-1
+    i = node_input.outputs[t]
+    shader.links.new(in_socket, i)
+    if default_value is not None:
+        shader.inputs[t].default_value = default_value
+    shader.inputs[t].name = name
+
+def __exposeNodeTreeOutput(out_socket, name, node_output, shader):
+    t = len(node_output.inputs)-1
+    i = node_output.inputs[t]
+    shader.links.new(i, out_socket)
+    shader.outputs[t].name = name
+
 def create_MMDBasicShader():
     bpy.context.scene.render.engine = 'CYCLES'
 
     if 'MMDBasicShader' in bpy.data.node_groups:
         return bpy.data.node_groups['MMDBasicShader']
 
-    shader = bpy.data.node_groups.new(name='MMDBasicShader', type='SHADER')
+    shader = bpy.data.node_groups.new(name='MMDBasicShader', type='ShaderNodeTree')
 
-    dif = shader.nodes.new('BSDF_DIFFUSE')
-    glo = shader.nodes.new('BSDF_GLOSSY')
-    mix = shader.nodes.new('MIX_SHADER')
+    node_input = shader.nodes.new('NodeGroupInput')
+    node_output = shader.nodes.new('NodeGroupOutput')
+
+    dif = shader.nodes.new('ShaderNodeBsdfDiffuse')
+    glo = shader.nodes.new('ShaderNodeBsdfGlossy')
+    mix = shader.nodes.new('ShaderNodeMixShader')
 
     shader.links.new(mix.inputs[1], dif.outputs['BSDF'])
     shader.links.new(mix.inputs[2], glo.outputs['BSDF'])
 
-    shader.inputs.expose(dif.inputs['Color'], True).name = 'diffuse'
-    shader.inputs.expose(glo.inputs['Color'], True).name = 'glossy'
-    shader.inputs.expose(glo.inputs['Roughness'], True).name = 'glossy_rough'
-    shader.inputs.expose(mix.inputs['Fac'], True).name = 'reflection'
-    shader.outputs.expose(mix.outputs['Shader'], True).name = 'shader'
-
-    shader.inputs['diffuse'].default_value = [1.0, 1.0, 1.0, 1.0]
-    shader.inputs['glossy'].default_value = [1.0, 1.0, 1.0, 1.0]
-    shader.inputs['glossy_rough'].default_value = 0.0
-    shader.inputs['reflection'].default_value = 0.02
+    __exposeNodeTreeInput(dif.inputs['Color'], 'diffuse', [1.0, 1.0, 1.0, 1.0], node_input, shader)
+    __exposeNodeTreeInput(glo.inputs['Color'], 'glossy', [1.0, 1.0, 1.0, 1.0], node_input, shader)
+    __exposeNodeTreeInput(glo.inputs['Roughness'], 'glossy_rough', 0.0, node_input, shader)
+    __exposeNodeTreeInput(mix.inputs['Fac'], 'reflection', 0.02, node_input, shader)
+    __exposeNodeTreeOutput(mix.outputs['Shader'], 'shader', node_output, shader)
 
     return shader
 
@@ -35,15 +47,16 @@ def convertToCyclesShader(obj):
     for i in obj.material_slots:
         i.material.use_nodes = True
         i.material.node_tree.links.clear()
-        shader = i.material.node_tree.nodes.new('GROUP', mmd_basic_shader_grp)
-        i.material.node_tree.links.new(i.material.node_tree.nodes['Material Output'].inputs['Surface'], shader.outputs['shader'])
+        shader = i.material.node_tree.nodes.new('ShaderNodeGroup')
+        shader.node_tree = mmd_basic_shader_grp
+        i.material.node_tree.links.new(i.material.node_tree.nodes['Material Output'].inputs['Surface'], shader.outputs[0])
         texture = None
         for j in i.material.texture_slots:
             if j is not None and isinstance(j.texture, bpy.types.ImageTexture):
-                texture = i.material.node_tree.nodes.new('TEX_IMAGE')
+                texture = i.material.node_tree.nodes.new('ShaderNodeTexImage')
                 texture.image = j.texture.image
         if texture is not None:
-            i.material.node_tree.links.new(shader.inputs['diffuse'], texture.outputs['Color'])
+            i.material.node_tree.links.new(shader.inputs[0], texture.outputs['Color'])
         else:
-            shader.inputs['diffuse'].default_value = list(i.material.diffuse_color) + [1.0]
+            shader.inputs[0].default_value = list(i.material.diffuse_color) + [1.0]
 
