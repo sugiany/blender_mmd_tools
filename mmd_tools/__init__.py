@@ -158,7 +158,43 @@ class SetGLSLShading_Op(bpy.types.Operator):
     bl_options = {'PRESET'}
 
     def execute(self, context):
-        auto_scene_setup.setupGLSLView(context.area)
+        if context.scene.mmd_tools.is_shadeless_glsl:
+            for i in filter(lambda x: x.type == 'MESH', context.scene.objects):
+                for s in i.material_slots:
+                    s.material.use_shadeless = True
+            for i in filter(lambda x: x.is_mmd_glsl_light, context.scene.objects):
+                context.scene.objects.unlink(i)
+        else:
+            for i in filter(lambda x: x.type == 'MESH', context.scene.objects):
+                for s in i.material_slots:
+                    s.material.use_shadeless = False
+            if len(list(filter(lambda x: x.is_mmd_glsl_light, context.scene.objects))) == 0:
+                bpy.ops.object.lamp_add(type='HEMI', view_align=False, location=(0, 0, 0), rotation=(0, 0, 0))
+                light = context.selected_objects[0]
+                light.is_mmd_glsl_light = True
+                light.hide
+
+        context.area.spaces[0].viewport_shade='TEXTURED'
+        bpy.context.scene.game_settings.material_mode = 'GLSL'
+        return {'FINISHED'}
+
+class ResetGLSLShading_Op(bpy.types.Operator):
+    bl_idname = 'mmd_tools.reset_glsl_shading'
+    bl_label = 'Reset View'
+    bl_description = ''
+    bl_options = {'PRESET'}
+
+    def execute(self, context):
+        if context.scene.mmd_tools.is_shadeless_glsl:
+            for i in filter(lambda x: x.type == 'MESH', context.scene.objects):
+                for s in i.material_slots:
+                    s.material.use_shadeless = False
+
+        for i in filter(lambda x: x.is_mmd_glsl_light, context.scene.objects):
+            context.scene.objects.unlink(i)
+
+        context.area.spaces[0].viewport_shade='SOLID'
+        bpy.context.scene.game_settings.material_mode = 'MULTITEXTURE'
         return {'FINISHED'}
 
 class SetShadelessMaterials_Op(bpy.types.Operator):
@@ -203,7 +239,7 @@ class MMDToolsObjectPanel(bpy.types.Panel):
         col.label('View:')
         c = col.column(align=True)
         r = c.row()
-        r.operator('mmd_tools.set_glsl_shading', text='Reset')
+        r.operator('mmd_tools.reset_glsl_shading', text='Reset')
         r.operator('mmd_tools.set_glsl_shading', text='GLSL')
         c.prop(context.scene.mmd_tools, 'is_shadeless_glsl', text='Shadeless')
 
@@ -250,6 +286,8 @@ def register():
     bpy.types.PoseBone.is_mmd_tip_bone = bpy.props.BoolProperty(name='is_mmd_tip_bone', default=False)
     bpy.types.PoseBone.is_mmd_shadow_bone = bpy.props.BoolProperty(name='is_mmd_shadow_bone', default=False)
 
+    bpy.types.Object.is_mmd_glsl_light = bpy.props.BoolProperty(name='is_mmd_glsl_light', default=False)
+
     bpy.types.PoseBone.mmd_bone_name_j = bpy.props.StringProperty(name='mmd_bone_name_j', description='the bone name in japanese.')
     bpy.types.PoseBone.mmd_bone_name_e = bpy.props.StringProperty(name='mmd_bone_name_e', description='the bone name in english.')
 
@@ -276,6 +314,7 @@ def unregister():
 
     del bpy.types.PoseBone.is_mmd_tip_bone
     del bpy.types.PoseBone.mmd_shadow_bone
+    del bpy.types.Object.is_mmd_glsl_light
     del bpy.types.PoseBone.mmd_bone_name_j
     del bpy.types.PoseBone.mmd_bone_name_e
 
