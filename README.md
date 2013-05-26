@@ -5,7 +5,7 @@ mmd_toolsはblender用MMD(MikuMikuDance)モデルデータ(.pmx)およびモー�
 環境
 ----
 ### 対応バージョン
-blender 2.66以降
+blender 2.67以降
 
 ### 動作確認環境
 Windows 7 + blender 2.67 64bit
@@ -14,6 +14,8 @@ Windows 7 + blender 2.67 64bit
 ---------
 ### ダウンロード
 
+* mmd_toolsはGitHubで公開しています。
+    * https://github.com/sugiany/blender_mmd_tools
 * 安定版は下記リンクから最新版をダウンロードしてください。
     * [Tags](https://github.com/sugiany/blender_mmd_tools/tags)
 * 開発版はmasterブランチのHEADを取得してください。
@@ -27,15 +29,15 @@ Windows 7 + blender 2.67 64bit
 ### Addonのロード
 1. User PrefernceのAddonsから"Object: mmd_tools"探してチェックを入れてください。
    (検索ボックスにmmdと入力すると簡単に探せます。)
-2. 3D View左のパネルにmmd_toolsのパネルが表示されます。
+2. 3D View左のパネルにMMD Toolsのパネルが表示されます。
 
 ### MMDモデルデータ読み込み
-1. mmd_toolsパネルの"import pmx"ボタンを選択してください。
+1. mmd_toolsパネルの"import/Model"ボタンを選択してください。
 2. ファイル選択画面でpmxファイルを選択すると、選択されたモデルをインポートします。
 
 ### モーションデータの読み込み
 1. あらかじめ読み込んでおいたモデルのMeshとArmature、Cameraを選択してください。(選択していない項目はインポートされません)
-2. mmd_toolsパネルの"import vmd"ボタンを選択してください。
+2. mmd_toolsパネルの"import/Motion"ボタンを選択してください。
 3. ファイル選択画面でvmdファイルを選択すると選択中のオブジェクトへモーションをインポートします。
 4. 「update scene settings」チェックボックスをオンにしておくと、モーションの読み込み後にフレームレンジ等のシーン設定を自動更新します。
 
@@ -81,11 +83,17 @@ pmxファイルをインポートします。
 また、フレームレートを30fpsに変更します。
 * Import vmdのupdate scene settingsオプションと同じ機能です。
 
-### GLSL View
+### View
+
+#### GLSL
 GLSLモードで表示するための必要設定を自動で行います。
 * ShadingをGLSLに切り替えます。
+* Shadelessチェックボックスがオンの場合、現在のシーン内全てのマテリアルをshadelessにします。
+* shadelessチェックボックスがオフの場合、Hemiライトを追加します。
 * ボタンを押したareaの3DViewのシェーディングをTEXUTEDに変更します。
-* Hemiライトを追加します。
+
+#### Reset
+GLSLボタンで変更した内容を初期状態に戻します。
 
 
 #### Separate by materials
@@ -96,8 +104,6 @@ GLSLモードで表示するための必要設定を自動で行います。
 選択したメッシュオブジェクトのblenderRender用マテリアルをcycles用に変換します。
 * 何の根拠もない適当な変換です。
 * 完了メッセージなどは表示されません。マテリアルパネルから変換されているかどうか確認してください。
-* マテリアルパネルから一部の設定値がドラッグで変更できない不具合があります。(reflectionなど)
-  値を変更する場合は、値を直接入力してください。
 
 
 その他
@@ -120,6 +126,11 @@ GLSLモードで表示するための必要設定を自動で行います。
     * 正確には完全なフリーズではなく、読み込みに異常な時間がかかっているだけです。
     * フリーズするモデルを読み込む場合は、"ignore non collision groups"オプションにチェックを入れてください。
     * 上記オプションをオンにした場合、意図しない剛体同士が干渉し、正常に物理シミュレーションが動作しない可能性があります。
+
+バグ・要望・質問等
+------------------
+GitHubのIssueに登録するか、twitterでどうぞ。  
+[@sugiany](https://twitter.com/sugiany)
 
 変更履歴
 --------

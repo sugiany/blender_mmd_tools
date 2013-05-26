@@ -1,34 +1,39 @@
 変更履歴
 ========
 
-HEAD
+v0.3.0
 -------
 ### 変更
 * Blender addon名を"mmd_tools"に変更
 * pmxインポート時の"delete tip bones"機能を廃止
     * 別機能として実装予定
 * pmxインポート時に自動設定されるgravity値の基準を変更
-* カスタムプロパティ名を変更
+* PoseBoneのカスタムプロパティ名を変更
     * isTipBone -> is\_mmd\_tip\_bone
     * name_j -> mmd\_bone\_name\_j
     * name_e -> mmd\_bone\_name\_e
 
 ### 機能追加
 * "GLSL View"機能を追加
-    * ボタン一つでGLSL表示モードに変更（ただし戻せない）
+    * ボタン一つでGLSL表示モードに変更
+    * Resetボタンで初期状態に復帰
+    * "Shadeless"ボタンでshadeless表示
 * "Set frame range"機能を追加
     * フレームレンジを現在読み込まれているアニメーションの長さに設定
     * フレームレートを30fpsに変更
 * "Shadeless"機能を追加
     * 選択中メッシュのマテリアルを全て"Shadeless"に変更
 * ツールパネルを変更
+    * "Import pmx", "Import vmd"ボタンをそれぞれ"Model", "_Motion"ボタンに変更
     * "auto setup scene"を廃止し、"Set frame range"ボタンを追加
-    * "GLSL View"ボタンを追加
+    * "Reset", "GLSL"ボタンを追加
     * "Shadeless"ボタンを追加
 * vmdインポート機能に"update scne settings"オプションを追加
 * Alpha値を持つテクスチャに対応
 * ボーンの「回転付与」「移動付与」の実現方法を変更（よりMMDに近い結果になるよう変更）
 * IKのtargetが自身の子ボーンだった場合、そのボーンを自身の親に養子に出す処理を追加（DIVA風ミクver105改.pmx対応）
+* "To cycles"機能をblender 2.67に対応
+* blenderの対応バージョンを2.67以降に変更
 
 ### バグ修正
 * ボーン名が重複した場合、正常に「回転付与」「移動付与」が適用されない不具合を修正
