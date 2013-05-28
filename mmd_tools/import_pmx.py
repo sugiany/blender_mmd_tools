@@ -244,7 +244,7 @@ class PMXImporter:
         if location:
             c = p_bone.constraints.new('COPY_LOCATION')
             c.target = obj
-            c.subtarget = src
+            c.subtarget = src.name
             c.target_space = 'LOCAL'
             c.owner_space = 'LOCAL'
 
