@@ -126,20 +126,6 @@ class SeparateByMaterials_Op(bpy.types.Operator):
         utils.separateByMaterials(obj)
         return {'FINISHED'}
 
-class ConvertToCyclesShader_Op(bpy.types.Operator):
-    bl_idname = 'mmd_tools.convert_to_cycles_shader'
-    bl_label = 'to cycles shader'
-    bl_description = 'Convert blender render shader to Cycles shader'
-    bl_options = {'PRESET'}
-
-    def execute(self, context):
-        obj = context.active_object
-        if obj is None or obj.type != 'MESH':
-            return {'FINISHED'}
-
-        cycles_converter.convertToCyclesShader(obj)
-        return {'FINISHED'}
-
 class SetFrameRange_Op(bpy.types.Operator):
     bl_idname = 'mmd_tools.set_frame_range'
     bl_label = 'set range'
@@ -158,6 +144,7 @@ class SetGLSLShading_Op(bpy.types.Operator):
     bl_options = {'PRESET'}
 
     def execute(self, context):
+        bpy.context.scene.render.engine = 'BLENDER_RENDER'
         if context.scene.mmd_tools.is_shadeless_glsl:
             for i in filter(lambda x: x.type == 'MESH', context.scene.objects):
                 for s in i.material_slots:
@@ -178,17 +165,31 @@ class SetGLSLShading_Op(bpy.types.Operator):
         bpy.context.scene.game_settings.material_mode = 'GLSL'
         return {'FINISHED'}
 
-class ResetGLSLShading_Op(bpy.types.Operator):
-    bl_idname = 'mmd_tools.reset_glsl_shading'
+class SetCyclesRendering_Op(bpy.types.Operator):
+    bl_idname = 'mmd_tools.set_cycles_rendering'
+    bl_label = 'Cycles'
+    bl_description = 'Convert blender render shader to Cycles shader'
+    bl_options = {'PRESET'}
+
+    def execute(self, context):
+        bpy.context.scene.render.engine = 'CYCLES'
+        for i in filter(lambda x: x.type == 'MESH', context.scene.objects):
+            cycles_converter.convertToCyclesShader(i)
+        context.area.spaces[0].viewport_shade='MATERIAL'
+        return {'FINISHED'}
+
+class ResetShading_Op(bpy.types.Operator):
+    bl_idname = 'mmd_tools.reset_shading'
     bl_label = 'Reset View'
     bl_description = ''
     bl_options = {'PRESET'}
 
     def execute(self, context):
-        if context.scene.mmd_tools.is_shadeless_glsl:
-            for i in filter(lambda x: x.type == 'MESH', context.scene.objects):
-                for s in i.material_slots:
-                    s.material.use_shadeless = False
+        bpy.context.scene.render.engine = 'BLENDER_RENDER'
+        for i in filter(lambda x: x.type == 'MESH', context.scene.objects):
+            for s in i.material_slots:
+                s.material.use_shadeless = False
+                s.material.use_nodes = False
 
         for i in filter(lambda x: x.is_mmd_glsl_light, context.scene.objects):
             context.scene.objects.unlink(i)
@@ -234,8 +235,10 @@ class MMDToolsObjectPanel(bpy.types.Panel):
         col.label('View:')
         c = col.column(align=True)
         r = c.row()
-        r.operator('mmd_tools.reset_glsl_shading', text='Reset')
         r.operator('mmd_tools.set_glsl_shading', text='GLSL')
+        r.operator('mmd_tools.set_cycles_rendering', text='Cycles')
+        r = c.row()
+        r.operator('mmd_tools.reset_shading', text='Reset')
         c.prop(context.scene.mmd_tools, 'is_shadeless_glsl', text='Shadeless')
 
         if active_obj is not None and active_obj.type == 'MESH':
@@ -248,7 +251,6 @@ class MMDToolsObjectPanel(bpy.types.Panel):
             col.label('Material:')
             c = col.column()
             c.operator('mmd_tools.set_shadeless_materials', text='Shadeless')
-            c.operator('mmd_tools.convert_to_cycles_shader', text='To cycles')
 
         col = layout.column(align=True)
         col.label('Scene:')

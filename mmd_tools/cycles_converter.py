@@ -69,7 +69,17 @@ def convertToCyclesShader(obj):
     mmd_alpha_shader_grp = create_MMDAlphaShader()
 
     for i in obj.material_slots:
+        if i.material.use_nodes:
+            continue
+
         i.material.use_nodes = True
+
+        for j in i.material.node_tree.nodes:
+            print(j)
+        if any(filter(lambda x: isinstance(x, bpy.types.ShaderNodeGroup) and  x.node_tree.name in ['MMDBasicShader', 'MMDAlphaShader'], i.material.node_tree.nodes)):
+            continue
+
+
         i.material.node_tree.links.clear()
         shader = i.material.node_tree.nodes.new('ShaderNodeGroup')
         shader.node_tree = mmd_basic_shader_grp
@@ -90,4 +100,3 @@ def convertToCyclesShader(obj):
         else:
             shader.inputs[0].default_value = list(i.material.diffuse_color) + [1.0]
         i.material.node_tree.links.new(i.material.node_tree.nodes['Material Output'].inputs['Surface'], outplug)
-
