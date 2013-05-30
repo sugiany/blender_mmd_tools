@@ -21,7 +21,7 @@ def create_MMDAlphaShader():
     if 'MMDAlphaShader' in bpy.data.node_groups:
         return bpy.data.node_groups['MMDAlphaShader']
 
-    shader = bpy.data.node_groups.new(name='MMDBasicShader', type='ShaderNodeTree')
+    shader = bpy.data.node_groups.new(name='MMDAlphaShader', type='ShaderNodeTree')
 
     node_input = shader.nodes.new('NodeGroupInput')
     node_output = shader.nodes.new('NodeGroupOutput')
