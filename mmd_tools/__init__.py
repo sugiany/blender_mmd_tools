@@ -277,6 +277,7 @@ def register():
     bpy.types.Object.is_mmd_lamp = bpy.props.BoolProperty(name='is_mmd_lamp', default=False)
     bpy.types.Object.is_mmd_rigid = bpy.props.BoolProperty(name='is_mmd_rigid', default=False)
     bpy.types.Object.is_mmd_joint = bpy.props.BoolProperty(name='is_mmd_joint', default=False)
+    bpy.types.Object.is_mmd_rigid_track_target = bpy.props.BoolProperty(name='is_mmd_rigid_track_target', default=False)
     bpy.types.Object.is_mmd_non_collision_joint = bpy.props.BoolProperty(name='is_mmd_non_collision_joint', default=False)
     bpy.types.Object.is_mmd_spring_joint = bpy.props.BoolProperty(name='is_mmd_spring_joint', default=False)
     bpy.types.Object.is_mmd_spring_goal = bpy.props.BoolProperty(name='is_mmd_spring_goal', default=False)
@@ -306,6 +307,7 @@ def unregister():
     del bpy.types.Object.is_mmd_lamp
     del bpy.types.Object.is_mmd_rigid
     del bpy.types.Object.is_mmd_joint
+    del bpy.types.Object.is_mmd_rigid_track_target
     del bpy.types.Object.is_mmd_non_collision_joint
     del bpy.types.Object.is_mmd_spring_joint
     del bpy.types.Object.is_mmd_spring_goal

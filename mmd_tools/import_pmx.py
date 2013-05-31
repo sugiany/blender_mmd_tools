@@ -388,6 +388,7 @@ class PMXImporter:
                 empty.name = 'mmd_bonetrack'
                 empty.empty_draw_size = 0.5 * self.__scale
                 empty.empty_draw_type = 'ARROWS'
+                empty.is_mmd_rigid_track_target = True
 
                 bpy.context.scene.objects.active = obj
                 bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=False)
