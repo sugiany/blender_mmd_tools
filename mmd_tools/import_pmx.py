@@ -198,15 +198,29 @@ class PMXImporter:
 
     def __applyIk(self, index, pmx_bone, pose_bones):
         """ create a IK bone constraint
+         If the IK bone and the target bone is separated, a dummy IK target bone is created as a child of the IK bone.
          @param index the bone index
          @param pmx_bone pmx.Bone
          @param pose_bones the list of PoseBones sorted by the bone index
         """
-        bone = pose_bones[pmx_bone.target].parent
-        ikConst = bone.constraints.new('IK')
+
+        ik_bone = pose_bones[pmx_bone.target].parent
+        target_bone = pose_bones[index]
+
+        if (mathutils.Vector(ik_bone.tail) - mathutils.Vector(target_bone.head)).length > 0.001:
+            with bpyutils.edit_object(self.__armObj):
+                s_bone = self.__armObj.data.edit_bones.new(name='shadow')
+                s_bone.head = ik_bone.tail
+                s_bone.tail = s_bone.head + mathutils.Vector([0, 0, 1])
+                s_bone.layers = (False, False, False, False, False, False, False, False, True, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False)
+                s_bone.parent = self.__armObj.data.edit_bones[target_bone.name]
+            target_bone = self.__armObj.pose.bones[s_bone.name]
+            target_bone.is_mmd_shadow_bone = True
+
+        ikConst = ik_bone.constraints.new('IK')
         ikConst.chain_count = len(pmx_bone.ik_links)
         ikConst.target = self.__armObj
-        ikConst.subtarget = pose_bones[index].name
+        ikConst.subtarget = target_bone.name
         if pmx_bone.isRotatable and not pmx_bone.isMovable :
             ikConst.use_location = pmx_bone.isMovable
             ikConst.use_rotation = pmx_bone.isRotatable
@@ -681,7 +695,7 @@ class PMXImporter:
     def __renameLRBones(self):
         pose_bones = self.__armObj.pose.bones
         for i in pose_bones:
-            if i.is_mmd_shadow_bone : 
+            if i.is_mmd_shadow_bone:
                 continue
             i.mmd_bone_name_j = i.name
             i.name = utils.convertNameToLR(i.name)
