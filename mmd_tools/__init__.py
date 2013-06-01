@@ -40,11 +40,7 @@ if "bpy" in locals():
         imp.reload(test)
 
 class MMDToolsPropertyGroup(bpy.types.PropertyGroup):
-    is_shadeless_glsl = bpy.props.BoolProperty(
-        name = 'Shadeless GLSL',
-        description='Convert all models in the current scene to the shadeless material',
-        default = False
-        )
+    pass
 
 ## Import-Export
 class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
@@ -146,21 +142,33 @@ class SetGLSLShading_Op(bpy.types.Operator):
     def execute(self, context):
         bpy.ops.mmd_tools.reset_shading()
         bpy.context.scene.render.engine = 'BLENDER_RENDER'
-        if context.scene.mmd_tools.is_shadeless_glsl:
-            for i in filter(lambda x: x.type == 'MESH', context.scene.objects):
-                for s in i.material_slots:
-                    s.material.use_shadeless = True
-            for i in filter(lambda x: x.is_mmd_glsl_light, context.scene.objects):
-                context.scene.objects.unlink(i)
-        else:
-            for i in filter(lambda x: x.type == 'MESH', context.scene.objects):
-                for s in i.material_slots:
-                    s.material.use_shadeless = False
-            if len(list(filter(lambda x: x.is_mmd_glsl_light, context.scene.objects))) == 0:
-                bpy.ops.object.lamp_add(type='HEMI', view_align=False, location=(0, 0, 0), rotation=(0, 0, 0))
-                light = context.selected_objects[0]
-                light.is_mmd_glsl_light = True
-                light.hide = True
+        for i in filter(lambda x: x.type == 'MESH', context.scene.objects):
+            for s in i.material_slots:
+                s.material.use_shadeless = False
+        if len(list(filter(lambda x: x.is_mmd_glsl_light, context.scene.objects))) == 0:
+            bpy.ops.object.lamp_add(type='HEMI', view_align=False, location=(0, 0, 0), rotation=(0, 0, 0))
+            light = context.selected_objects[0]
+            light.is_mmd_glsl_light = True
+            light.hide = True
+
+        context.area.spaces[0].viewport_shade='TEXTURED'
+        bpy.context.scene.game_settings.material_mode = 'GLSL'
+        return {'FINISHED'}
+
+class SetShadelessGLSLShading_Op(bpy.types.Operator):
+    bl_idname = 'mmd_tools.set_shadeless_glsl_shading'
+    bl_label = 'Shadeless GLSL View'
+    bl_description = ''
+    bl_options = {'PRESET'}
+
+    def execute(self, context):
+        bpy.ops.mmd_tools.reset_shading()
+        bpy.context.scene.render.engine = 'BLENDER_RENDER'
+        for i in filter(lambda x: x.type == 'MESH', context.scene.objects):
+            for s in i.material_slots:
+                s.material.use_shadeless = True
+        for i in filter(lambda x: x.is_mmd_glsl_light, context.scene.objects):
+            context.scene.objects.unlink(i)
 
         context.area.spaces[0].viewport_shade='TEXTURED'
         bpy.context.scene.game_settings.material_mode = 'GLSL'
@@ -238,10 +246,10 @@ class MMDToolsObjectPanel(bpy.types.Panel):
         c = col.column(align=True)
         r = c.row()
         r.operator('mmd_tools.set_glsl_shading', text='GLSL')
-        r.operator('mmd_tools.set_cycles_rendering', text='Cycles')
+        r.operator('mmd_tools.set_shadeless_glsl_shading', text='Shadeless')
         r = c.row()
+        r.operator('mmd_tools.set_cycles_rendering', text='Cycles')
         r.operator('mmd_tools.reset_shading', text='Reset')
-        c.prop(context.scene.mmd_tools, 'is_shadeless_glsl', text='Shadeless')
 
         if active_obj is not None and active_obj.type == 'MESH':
             col = layout.column(align=True)
