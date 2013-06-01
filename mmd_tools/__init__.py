@@ -144,6 +144,7 @@ class SetGLSLShading_Op(bpy.types.Operator):
     bl_options = {'PRESET'}
 
     def execute(self, context):
+        bpy.ops.mmd_tools.reset_shading()
         bpy.context.scene.render.engine = 'BLENDER_RENDER'
         if context.scene.mmd_tools.is_shadeless_glsl:
             for i in filter(lambda x: x.type == 'MESH', context.scene.objects):
@@ -172,6 +173,7 @@ class SetCyclesRendering_Op(bpy.types.Operator):
     bl_options = {'PRESET'}
 
     def execute(self, context):
+        bpy.ops.mmd_tools.reset_shading()
         bpy.context.scene.render.engine = 'CYCLES'
         for i in filter(lambda x: x.type == 'MESH', context.scene.objects):
             cycles_converter.convertToCyclesShader(i)
