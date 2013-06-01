@@ -57,8 +57,6 @@ pmxファイルをインポートします。
     * スケールです。Import vmd時のスケールと統一してください。
 * rename bones
     * ボーンの名前をblenderに適した名前にリネームします。（右腕→腕.Lなど）
-* delete tip bones
-    * 試験的な機能です。通常、使用する必要はありません。
 * hide rigid bodies and joints
     *  剛体情報を持つ各種オブジェクトを非表示にします。
 * import only non dynamics rigid bodies
