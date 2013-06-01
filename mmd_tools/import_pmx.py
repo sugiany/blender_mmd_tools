@@ -38,6 +38,13 @@ class PMXImporter:
 
         self.__materialFaceCountTable = None
 
+        # object groups
+        self.__allObjGroup = None    # a group which contains all objects created for the target model by mmd_tools.
+        self.__mainObjGroup = None    # a group which contains armature and mesh objects.
+        self.__rigidObjGroup = None  # a group which contains objects of rigid bodies imported from a pmx model.
+        self.__jointObjGroup = None  # a group which contains objects of joints imported from a pmx model.
+        self.__tempObjGroup = None   # a group which contains temporary objects.
+
     @staticmethod
     def flipUV_V(uv):
         u, v = uv
@@ -69,6 +76,20 @@ class PMXImporter:
         self.__targetScene.objects.link(self.__armObj)
 
         self.__armObj.parent = self.__root
+
+        self.__allObjGroup.objects.link(self.__root)
+        self.__allObjGroup.objects.link(self.__armObj)
+        self.__allObjGroup.objects.link(self.__meshObj)
+        self.__mainObjGroup.objects.link(self.__armObj)
+        self.__mainObjGroup.objects.link(self.__meshObj)
+
+    def __createGroups(self):
+        pmxModel = self.__model
+        self.__mainObjGroup = bpy.data.groups.new(name=pmxModel.name)
+        self.__allObjGroup = bpy.data.groups.new(name=pmxModel.name + '_all')
+        self.__rigidObjGroup = bpy.data.groups.new(name=pmxModel.name + '_rigids')
+        self.__jointObjGroup = bpy.data.groups.new(name=pmxModel.name + '_joints')
+        self.__tempObjGroup = bpy.data.groups.new(name=pmxModel.name + '_temp')
 
     def __importVertexGroup(self):
         self.__vertexGroupTable = []
@@ -364,6 +385,7 @@ class PMXImporter:
             obj.hide_render = True
             obj.draw_type = 'WIRE'
             obj.is_mmd_rigid = True
+            self.__rigidObjGroup.objects.link(obj)
             utils.selectAObject(obj)
             bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
             obj.location = loc
@@ -389,6 +411,7 @@ class PMXImporter:
                 empty.empty_draw_size = 0.5 * self.__scale
                 empty.empty_draw_type = 'ARROWS'
                 empty.is_mmd_rigid_track_target = True
+                self.__tempObjGroup.objects.link(empty)
 
                 bpy.context.scene.objects.active = obj
                 bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=False)
@@ -447,6 +470,7 @@ class PMXImporter:
         rb.object1 = obj_a
         rb.object2 = obj_b
         self.__nonCollisionJointTable[frozenset((obj_a, obj_b))] = t
+        self.__tempObjGroup.objects.link(t)
 
     def __makeSpring(self, target, base_obj, spring_stiffness):
         utils.selectAObject(target)
@@ -457,6 +481,8 @@ class PMXImporter:
         spring_target.rigid_body.collision_groups = (False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, True)
         bpy.context.scene.objects.active = base_obj
         bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=True)
+        self.__rigidObjGroup.objects.unlink(spring_target)
+        self.__tempObjGroup.objects.link(spring_target)
 
         bpy.ops.object.add(type='EMPTY',
                            view_align=False,
@@ -470,6 +496,7 @@ class PMXImporter:
         obj.hide_render = True
         obj.is_mmd_spring_joint = True
         obj.parent = self.__root
+        self.__tempObjGroup.objects.link(obj)
         bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
         rbc = obj.rigid_body_constraint
         rbc.object1 = target
@@ -503,6 +530,7 @@ class PMXImporter:
             obj.hide_render = True
             obj.is_mmd_joint = True
             obj.parent = self.__root
+            self.__jointObjGroup.objects.link(obj)
 
             bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
             rbc = obj.rigid_body_constraint
@@ -669,6 +697,7 @@ class PMXImporter:
         self.__distance_of_ignore_collisions = args.get('distance_of_ignore_collisions', 1) # 衝突を考慮しない距離（非衝突グループ設定を無視する距離）
         self.__distance_of_ignore_collisions *= self.__scale
 
+        self.__createGroups()
         self.__createObjects()
 
         self.__importVertices()
@@ -690,5 +719,9 @@ class PMXImporter:
         if args.get('hide_rigids', False):
             self.__hideRigidsAndJoints(self.__root)
         self.__armObj.pmx_import_scale = self.__scale
+
+        for i in [self.__rigidObjGroup.objects, self.__jointObjGroup.objects, self.__tempObjGroup.objects]:
+            for j in i:
+                self.__allObjGroup.objects.link(j)
 
         bpy.context.scene.gravity[2] = -9.81 * 10 * self.__scale
