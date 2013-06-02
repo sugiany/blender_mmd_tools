@@ -177,6 +177,8 @@ class PmxExporter:
             for bone in data.edit_bones:
                 pmx_bone = pmx.Bone()
                 p_bone = pose_bones[bone.name]
+                if p_bone.is_mmd_shadow_bone:
+                    continue
                 if p_bone.mmd_bone_name_j != '':
                     pmx_bone.name = p_bone.mmd_bone_name_j
                 else:
@@ -196,7 +198,7 @@ class PmxExporter:
                     pmx_bones.append(pmx_tip_bone)
                     pmx_bone.displayConnection = pmx_tip_bone
                 elif len(bone.children) > 0:
-                    pmx_bone.displayConnection = sorted(bone.children, key=lambda x: 1 if pose_bones[x.name].is_mmd_tip_bone else 0)[0]
+                    pmx_bone.displayConnection = list(filter(lambda x: not pose_bones[x.name].is_mmd_shadow_bone, sorted(bone.children, key=lambda x: 1 if pose_bones[x.name].is_mmd_tip_bone else 0)))[0]
 
             for i in pmx_bones:
                 if i.parent is not None:
