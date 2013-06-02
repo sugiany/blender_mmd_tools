@@ -801,7 +801,7 @@ class Texture:
             self.path = os.path.normpath(os.path.join(os.path.dirname(fs.path()), self.path))
 
     def save(self, fs):
-        fs.writeStr(self.path)
+        fs.writeStr(os.path.relpath(self.path, os.path.dirname(fs.path())))
 
 class SharedTexture(Texture):
     def __init__(self):
