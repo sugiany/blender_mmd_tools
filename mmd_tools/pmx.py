@@ -719,6 +719,7 @@ class BoneWeight:
     def __init__(self):
         self.bones = []
         self.weights = []
+        self.type = self.BDEF1
 
     def convertIdToName(self, type_id):
         t = list(filter(lambda x: x[0]==type_id, TYPES))
