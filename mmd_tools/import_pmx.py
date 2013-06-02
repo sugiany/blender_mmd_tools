@@ -159,9 +159,9 @@ class PMXImporter:
                     if p_bone.parent == t.parent:
                         dependency_cycle_ik_bones.append(i)
 
-        with bpyutils.edit_object(obj):
+        with bpyutils.edit_object(obj) as data:
             for i in pmx_bones:
-                bone = obj.data.edit_bones.new(name=i.name)
+                bone = data.edit_bones.new(name=i.name)
                 loc = mathutils.Vector(i.location) * self.__scale * self.TO_BLE_MATRIX
                 bone.head = loc
                 editBoneTable.append(bone)
@@ -216,13 +216,13 @@ class PMXImporter:
 
         if (mathutils.Vector(ik_bone.tail) - mathutils.Vector(target_bone.head)).length > 0.001:
             logging.info('Found a seperated IK constraint: IK: %s, Target: %s', ik_bone.name, target_bone.name)
-            with bpyutils.edit_object(self.__armObj):
-                s_bone = self.__armObj.data.edit_bones.new(name='shadow')
+            with bpyutils.edit_object(self.__armObj) as data:
+                s_bone = data.edit_bones.new(name='shadow')
                 logging.info('  Create a proxy bone: %s', s_bone.name)
                 s_bone.head = ik_bone.tail
                 s_bone.tail = s_bone.head + mathutils.Vector([0, 0, 1])
                 s_bone.layers = (False, False, False, False, False, False, False, False, True, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False)
-                s_bone.parent = self.__armObj.data.edit_bones[target_bone.name]
+                s_bone.parent = data.edit_bones[target_bone.name]
                 logging.info('  Set parent: %s -> %s', target_bone.name, s_bone.name)
                 # Must not access to EditBones from outside of the 'with' section.
                 s_bone_name = s_bone.name
@@ -276,9 +276,9 @@ class PMXImporter:
         # copy the constraint of it to dest.
         src = self.__findNoneAdditionalBone(src, pose_bones)
 
-        with bpyutils.edit_object(obj):
-            src_bone = obj.data.edit_bones[src.name]
-            s_bone = obj.data.edit_bones.new(name='shadow')
+        with bpyutils.edit_object(obj) as data:
+            src_bone = data.edit_bones[src.name]
+            s_bone = data.edit_bones.new(name='shadow')
             s_bone.head = src_bone.head
             s_bone.tail = src_bone.tail
             s_bone.parent = src_bone.parent
@@ -289,7 +289,7 @@ class PMXImporter:
             s_bone.use_inherit_scale = False
             bone_name = s_bone.name
 
-            dest_bone = obj.data.edit_bones[dest.name]
+            dest_bone = data.edit_bones[dest.name]
             dest_bone.use_inherit_rotation = not rotation
             dest_bone.use_local_location = not location
 

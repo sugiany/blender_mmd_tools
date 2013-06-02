@@ -8,16 +8,17 @@ class __EditMode:
         if not isinstance(obj, bpy.types.Object):
             raise ValueError
         self.__prevMode = obj.mode
+        self.__obj = obj
         select_object(obj)
         if obj.mode != 'EIDT':
             bpy.ops.object.mode_set(mode='EDIT')
 
     def __enter__(self):
-        return self
+        return self.__obj.data
 
     def __exit__(self, type, value, traceback):
         bpy.ops.object.mode_set(mode=self.__prevMode)
-    
+
 
 def select_object(obj):
     try:
