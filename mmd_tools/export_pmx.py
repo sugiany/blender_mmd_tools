@@ -102,13 +102,16 @@ class PmxExporter:
                     return i
             n = copy.deepcopy(vertex)
             n.uv = uv
-            cloneVertexMap[vertex].append(n)
+            if vertex not in cloneVertexMap:
+                cloneVertexMap[vertex] = [n]
+            else:
+                cloneVertexMap[vertex].append(n)
             return n
         return vertex
 
     def __exportFaces(self, faceTable):
         materialIndexDict = collections.defaultdict(list)
-        cloneVertexMap = collections.defaultdict(list)
+        cloneVertexMap = {}
         for f, uv, vertices in faceTable:
             vertices[0] = self.__convertFaceUVToVertexUV(vertices[0], self.flipUV_V(uv.uv1), cloneVertexMap)
             vertices[1] = self.__convertFaceUVToVertexUV(vertices[1], self.flipUV_V(uv.uv2), cloneVertexMap)
@@ -119,10 +122,13 @@ class PmxExporter:
             verticesSet.update(set(vertices))
 
         self.__model.vertices = list(verticesSet)
+        invertMap = {}
+        for i, v in enumerate(self.__model.vertices):
+            invertMap[v] = i
         for f, uv, vertices in faceTable:
-            v1 = self.__model.vertices.index(vertices[0])
-            v2 = self.__model.vertices.index(vertices[1])
-            v3 = self.__model.vertices.index(vertices[2])
+            v1 = invertMap[vertices[0]]
+            v2 = invertMap[vertices[1]]
+            v3 = invertMap[vertices[2]]
             materialIndexDict[f.material_index].append([v1, v2, v3])
 
         for i in sorted(materialIndexDict.keys()):
