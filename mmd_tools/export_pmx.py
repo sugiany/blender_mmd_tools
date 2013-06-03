@@ -109,7 +109,7 @@ class PmxExporter:
             return n
         return vertex
 
-    def __exportFaces(self, faceTable):
+    def __exportFaces(self, vertexTable, faceTable):
         materialIndexDict = collections.defaultdict(list)
         cloneVertexMap = {}
         for f, uv, vertices in faceTable:
@@ -131,9 +131,17 @@ class PmxExporter:
             v3 = invertMap[vertices[2]]
             materialIndexDict[f.material_index].append([v1, v2, v3])
 
+        # make the map from vertex indices of Blender to them of pmx.
+        vertexIndexMap = {}
+        for i, v in enumerate(vertexTable):
+            vertexIndexMap[i] = [invertMap[v]]
+            if v in cloneVertexMap:
+                for c in cloneVertexMap[v]:
+                    vertexIndexMap[i].append(invertMap[c])
+
         for i in sorted(materialIndexDict.keys()):
             self.__model.faces.extend(materialIndexDict[i])
-        return materialIndexDict
+        return (materialIndexDict, vertexIndexMap)
 
     def __exportTexture(self, texture):
         if not isinstance(texture, bpy.types.ImageTexture):
@@ -217,6 +225,25 @@ class PmxExporter:
             self.__model.bones = pmx_bones
         return r
 
+    def __exportVertexMorphs(self, obj, vertexIndexMap):
+        """ Export VertexMorphs
+        @param obj the target mesh object
+        @param vertexIndexMap the dictionary to map vertex indices in blender to vertex indices in pmx.
+        """
+        baseShape = obj.data.shape_keys.reference_key
+        for shapeKey in obj.data.shape_keys.key_blocks:
+            morph = pmx.VertexMorph(shapeKey.name, '', 4)
+            for i, v in enumerate(shapeKey.data):
+                offset = (v.co - baseShape.data[i].co)
+                if offset.length > 0.001:
+                    for j in vertexIndexMap[i]:
+                        mo = pmx.VertexMorphOffset()
+                        mo.index = j
+                        mo.offset = offset * self.TO_PMX_MATRIX * self.__scale
+                        morph.offsets.append(mo)
+            self.__model.morphs.append(morph)
+
+
 
     @staticmethod
     def __triangulate(mesh):
@@ -251,6 +278,7 @@ class PmxExporter:
         vgi_to_pbi = self.__getVertexGroupIndexToPmxBoneIndexMap(target, nameMap)
         verticesTable = self.__getVerticesTable(mesh, vgi_to_pbi)
         facesTable = self.__getFaceTable(mesh, verticesTable)
-        materialIndexDict = self.__exportFaces(facesTable)
+        materialIndexDict, vertexIndexMap = self.__exportFaces(verticesTable, facesTable)
+        self.__exportVertexMorphs(target, vertexIndexMap)
         self.__exportMaterials(materialIndexDict)
         pmx.save(outpath, self.__model)
