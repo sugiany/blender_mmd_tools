@@ -10,6 +10,7 @@ import traceback
 
 from . import import_pmx
 from . import import_pmd
+from . import export_pmx
 from . import import_vmd
 from . import mmd_camera
 from . import utils
@@ -32,6 +33,8 @@ if "bpy" in locals():
     import imp
     if "import_pmx" in locals():
         imp.reload(import_pmx)
+    if "export_pmx" in locals():
+        imp.reload(export_pmx)
     if "import_vmd" in locals():
         imp.reload(import_vmd)
     if "mmd_camera" in locals():
@@ -147,6 +150,30 @@ class ImportVmd_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
             auto_scene_setup.setupFrameRanges()
             auto_scene_setup.setupFps()
 
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        wm.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+
+class ExportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
+    bl_idname = 'mmd_tools.export_pmx'
+    bl_label = 'Export PMX file (.pmx)'
+    bl_description = 'Export a PMX file (.pmx)'
+    bl_options = {'PRESET'}
+
+    filename_ext = '.pmx'
+    filter_glob = bpy.props.StringProperty(default='*.pmx', options={'HIDDEN'})
+
+    scale = bpy.props.FloatProperty(name='scale', default=0.2)
+
+    def execute(self, context):
+        export_pmx.export(
+            filepath=self.filepath,
+            scale=self.scale
+            )
         return {'FINISHED'}
 
     def invoke(self, context, event):
@@ -289,6 +316,11 @@ class MMDToolsObjectPanel(bpy.types.Panel):
         r.operator('mmd_tools.import_model', text='Model')
         r.operator('mmd_tools.import_vmd', text='Motion')
 
+        col.label('Export:')
+        c = col.column()
+        r = c.row()
+        r.operator('mmd_tools.export_pmx', text='Model')
+
         col = layout.column(align=True)
         col.label('View:')
         c = col.column(align=True)
@@ -317,8 +349,8 @@ class MMDToolsObjectPanel(bpy.types.Panel):
 
 def menu_func_import(self, context):
     self.layout.operator(ImportPmx_Op.bl_idname, text="MikuMikuDance Model (.pmd, .pmx)")
+    self.layout.operator(ExportPmx_Op.bl_idname, text="MikuMikuDance model (.pmx)")
     self.layout.operator(ImportVmd_Op.bl_idname, text="MikuMikuDance Motion (.vmd)")
-
 
 def register():
     bpy.utils.register_class(MMDToolsPropertyGroup)

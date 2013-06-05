@@ -10,7 +10,7 @@ import bmesh
 import copy
 
 
-class PmxExporter:
+class __PmxExporter:
     TO_PMX_MATRIX = mathutils.Matrix([
         [1.0, 0.0, 0.0, 0.0],
         [0.0, 0.0, 1.0, 0.0],
@@ -253,16 +253,25 @@ class PmxExporter:
         bm.to_mesh(mesh)
         bm.free()
 
-    def execute(self, **args):
+    def execute(self, filepath, **args):
         self.__model = pmx.Model()
         self.__model.name = 'test'
         self.__model.name_e = 'test eng'
 
         self.__model.comment = 'exported by mmd_tools'
 
-        target = args['mesh']
-        self.__armature = args['armature']
-        self.__scale = 1.0/float(args.get('scale', 1.0))
+        target = None
+        arm = None
+        for i in bpy.context.selected_objects:
+            if i.type == 'MESH':
+                target = i
+            elif i.type == 'ARMATURE':
+                arm = i
+
+        target = args.get('mesh', target)
+        self.__armature = args.get('armature', arm)
+        self.__scale = 1.0/float(args.get('scale', 0.2))
+
 
 
         mesh = target.to_mesh(bpy.context.scene, True, 'PREVIEW', False)
@@ -271,7 +280,6 @@ class PmxExporter:
         mesh.update(calc_tessface=True)
 
         self.__targetMesh = mesh
-        outpath = args['path']
 
 
         nameMap = self.__exportBones()
@@ -281,4 +289,8 @@ class PmxExporter:
         materialIndexDict, vertexIndexMap = self.__exportFaces(verticesTable, facesTable)
         self.__exportVertexMorphs(target, vertexIndexMap)
         self.__exportMaterials(materialIndexDict)
-        pmx.save(outpath, self.__model)
+        pmx.save(filepath, self.__model)
+
+def export(filepath, **kwargs):
+    exporter = __PmxExporter()
+    exporter.execute(filepath, **kwargs)
