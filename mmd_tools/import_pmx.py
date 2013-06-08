@@ -237,10 +237,31 @@ class PMXImporter:
                 bone.ik_min_y = i.minimumAngle[1]
                 bone.ik_min_z = i.minimumAngle[2]
 
-    def __applyAdditionalTransform(self, obj, src, dest, influence, rotation=False, location=False):
+    @staticmethod
+    def __findNoneAdditionalBone(target, pose_bones, visited_bones=None):
+        if visited_bones is None:
+            visited_bones = []
+        if target in visited_bones:
+            raise ValueError('Detected cyclic dependency.')
+        for i in filter(lambda x: x.type == 'CHILD_OF', target.constraints):
+            if i.subtarget != target.parent.name:
+                return PMXImporter.__findNoneAdditionalBone(pose_bones[i.subtarget], pose_bones, visited_bones)
+        return target
+
+    def __applyAdditionalTransform(self, obj, src, dest, influence, pose_bones, rotation=False, location=False):
+        """ apply additional transform to the bone.
+         @param obj the object of the target armature
+         @param src the PoseBone that apply the transform to another bone.
+         @param dest the PoseBone that another bone apply the transform to.
+        """
         if not rotation and not location:
             return
         bone_name = None
+
+        # If src has been applied the additional transform by another bone,
+        # copy the constraint of it to dest.
+        src = self.__findNoneAdditionalBone(src, pose_bones)
+
         with bpyutils.edit_object(obj):
             src_bone = obj.data.edit_bones[src.name]
             s_bone = obj.data.edit_bones.new(name='shadow')
@@ -325,7 +346,7 @@ class PMXImporter:
         boneNameTable = self.__createEditBones(self.__armObj, pmxModel.bones)
         pose_bones = self.__sortPoseBonesByBoneIndex(self.__armObj.pose.bones, boneNameTable)
         self.__boneTable = pose_bones
-        for i, p_bone in enumerate(pmxModel.bones):
+        for i, p_bone in sorted(enumerate(pmxModel.bones), key=lambda x: x[1].transform_order):
             b_bone = pose_bones[i]
             b_bone.mmd_bone_name_e = p_bone.name_e
 
@@ -341,7 +362,16 @@ class PMXImporter:
 
             if p_bone.hasAdditionalRotate or p_bone.hasAdditionalLocation:
                 bone_index, influ = p_bone.additionalTransform
-                self.__applyAdditionalTransform(self.__armObj, pose_bones[bone_index], b_bone, influ, p_bone.hasAdditionalRotate, p_bone.hasAdditionalLocation)
+                src_bone = pmxModel.bones[bone_index]
+                self.__applyAdditionalTransform(
+                    self.__armObj,
+                    pose_bones[bone_index],
+                    b_bone,
+                    influ,
+                    self.__armObj.pose.bones,
+                    p_bone.hasAdditionalRotate,
+                    p_bone.hasAdditionalLocation
+                    )
 
             if p_bone.localCoordinate is not None:
                 b_bone.mmd_enabled_local_axis = True

@@ -830,7 +830,7 @@ class Bone:
 
         self.location = []
         self.parent = None
-        self.depth = 0
+        self.transform_order = 0
 
         # 接続先表示方法
         # 座標オフセット(float3)または、boneIndex(int)
@@ -885,7 +885,7 @@ class Bone:
 
         self.location = fs.readVector(3)
         self.parent = fs.readBoneIndex()
-        self.depth = fs.readInt()
+        self.transform_order = fs.readInt()
 
         flags = fs.readShort()
         if flags & 0x0001:
@@ -947,7 +947,7 @@ class Bone:
 
         fs.writeVector(self.location)
         fs.writeBoneIndex(self.parent or -1)
-        fs.writeInt(self.depth)
+        fs.writeInt(self.transform_order)
 
         flags = 0
         flags |= int(isinstance(self.displayConnection, int))
