@@ -10,8 +10,9 @@ def setupFrameRanges():
         e = max(e, te)
     bpy.context.scene.frame_start = s
     bpy.context.scene.frame_end = e
-    bpy.context.scene.rigidbody_world.point_cache.frame_start = s
-    bpy.context.scene.rigidbody_world.point_cache.frame_end = e
+    if bpy.context.scene.rigidbody_world is not None:
+        bpy.context.scene.rigidbody_world.point_cache.frame_start = s
+        bpy.context.scene.rigidbody_world.point_cache.frame_end = e
 
 def setupLighting():
     bpy.context.scene.world.light_settings.use_ambient_occlusion = True
