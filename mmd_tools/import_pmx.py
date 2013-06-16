@@ -732,7 +732,10 @@ class PMXImporter:
             self.__meshObj.vertex_groups[i.mmd_bone_name_j].name = i.name
 
     def execute(self, **args):
-        self.__model = pmx.load(args['filepath'])
+        if 'pmx' in args:
+            self.__model = args['pmx']
+        else:
+            self.__model = pmx.load(args['filepath'])
 
         self.__scale = args.get('scale', 1.0)
         renameLRBones = args.get('rename_LR_bones', False)

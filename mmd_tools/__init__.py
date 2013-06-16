@@ -3,7 +3,10 @@
 import bpy
 import bpy_extras.io_utils
 
+import re
+
 from . import import_pmx
+from . import import_pmd
 from . import import_vmd
 from . import mmd_camera
 from . import utils
@@ -50,7 +53,7 @@ class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     bl_options = {'PRESET'}
 
     filename_ext = '.pmx'
-    filter_glob = bpy.props.StringProperty(default='*.pmx', options={'HIDDEN'})
+    filter_glob = bpy.props.StringProperty(default='*.pmx;*.pmd', options={'HIDDEN'})
 
     scale = bpy.props.FloatProperty(name='scale', default=0.2)
     renameBones = bpy.props.BoolProperty(name='rename bones', default=True)
@@ -60,16 +63,27 @@ class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     distance_of_ignore_collisions = bpy.props.FloatProperty(name='distance of ignore collisions', default=5.0)
 
     def execute(self, context):
-        importer = import_pmx.PMXImporter()
-        importer.execute(
-            filepath=self.filepath,
-            scale=self.scale,
-            rename_LR_bones=self.renameBones,
-            hide_rigids=self.hide_rigids,
-            only_collisions=self.only_collisions,
-            ignore_non_collision_groups=self.ignore_non_collision_groups,
-            distance_of_ignore_collisions=self.distance_of_ignore_collisions
-            )
+        if re.search('\.pmd', self.filepath):
+            import_pmd.import_pmd(
+                filepath=self.filepath,
+                scale=self.scale,
+                rename_LR_bones=self.renameBones,
+                hide_rigids=self.hide_rigids,
+                only_collisions=self.only_collisions,
+                ignore_non_collision_groups=self.ignore_non_collision_groups,
+                distance_of_ignore_collisions=self.distance_of_ignore_collisions
+                )
+        else:
+            importer = import_pmx.PMXImporter()
+            importer.execute(
+                filepath=self.filepath,
+                scale=self.scale,
+                rename_LR_bones=self.renameBones,
+                hide_rigids=self.hide_rigids,
+                only_collisions=self.only_collisions,
+                ignore_non_collision_groups=self.ignore_non_collision_groups,
+                distance_of_ignore_collisions=self.distance_of_ignore_collisions
+                )
         return {'FINISHED'}
 
     def invoke(self, context, event):
