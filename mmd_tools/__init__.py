@@ -16,7 +16,7 @@ from . import auto_scene_setup
 bl_info= {
     "name": "mmd_tools",
     "author": "sugiany",
-    "version": (0, 3, 2),
+    "version": (0, 4, 0),
     "blender": (2, 67, 0),
     "location": "View3D > Tool Shelf > mmd_tools Panel",
     "description": "Utility tools for MMD model editing.",

@@ -3,7 +3,7 @@ mmd_tools
 
 概要
 ----
-mmd_toolsはblender用MMD(MikuMikuDance)モデルデータ(.pmx)およびモーションデータ(.vmd)インポータです。
+mmd_toolsはblender用MMD(MikuMikuDance)モデルデータ(.pmd, .pmx)およびモーションデータ(.vmd)インポータです。
 
 ### 環境
 
@@ -22,7 +22,7 @@ Windows 7 + blender 2.67 64bit
     * https://github.com/sugiany/blender_mmd_tools
 * 安定版は下記リンクから最新版をダウンロードしてください。
     * [Tags](https://github.com/sugiany/blender_mmd_tools/tags)
-* 開発版はmasterブランチのHEADを取得してください。
+* 開発版はmasterブランチのHEADを取得してください。基本的に動作確認済みです。
     * [master.zip](https://github.com/sugiany/blender_mmd_tools/archive/master.zip)
 
 ### インストール
