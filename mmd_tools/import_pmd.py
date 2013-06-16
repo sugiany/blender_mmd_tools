@@ -8,6 +8,7 @@ import mathutils
 
 import os
 import re
+import copy
 import logging
 
 
@@ -79,8 +80,10 @@ def import_pmd(**kwargs):
             pmx_bone.isMovable = False
         elif bone.type == 1:
             pass
+        elif bone.type == 2:
+            pmx_bone.transform_order = 1
         elif bone.type == 4:
-            pmx_bone.isControllable = False
+            pmx_bone.isMovable = False
         elif bone.type == 5:
             pmx_bone.hasAdditionalRotate = True
             pmx_bone.additionalTransform = (bone.ik_bone, 1.0)
@@ -90,16 +93,34 @@ def import_pmd(**kwargs):
             pmx_bone.hasAdditionalRotate = True
             pmx_bone.additionalTransform = (bone.tail_bone, float(bone.ik_bone)/100.0)
 
+        if bone.type >= 4:
+            pmx_bone.transform_order = 2
+
         pmx_model.bones.append(pmx_bone)
 
         if re.search(u'ひざ$', pmx_bone.name):
             logging.info('found knee bone: %s', i)
             knee_bones.append(i)
+
+    for i in pmx_model.bones:
+        if i.parent != -1 and pmd_model.bones[i.parent].type == 2:
+            i.transform_order = 1
     logging.info('finished converting bones: %d', len(pmx_model.bones))
 
     # convert ik
     logging.info('converting IKs...')
+    applied_ik_bones = []
     for ik in pmd_model.iks:
+        if ik.bone in applied_ik_bones:
+            logging.info('found a bone targeted by two or more IK bones.')
+            b = pmx_model.bones[ik.bone]
+            t = copy.deepcopy(b)
+            t.name += '+'
+            t.parent = ik.bone
+            t.ik_links = []
+            pmx_model.bones.append(t)
+            ik.bone = len(pmx_model.bones) - 1
+            logging.info('duplicate the bone: %s -> %s', b.name, t.name)
         pmx_bone = pmx_model.bones[ik.bone]
         logging.debug('add IK settings to bone "%s"', pmx_bone.name)
         pmx_bone.isIK = True
@@ -112,8 +133,9 @@ def import_pmd(**kwargs):
                 ik_link.maximumAngle = [-0.5, 0.0, 0.0]
                 ik_link.minimumAngle = [-180.0, 0.0, 0.0]
                 logging.info('added knee constraints to %s', i)
-            logging.debug(ik_link)
+            logging.debug('IKLink: %d. %s',i , pmx_model.bones[i].name)
             pmx_bone.ik_links.append(ik_link)
+        applied_ik_bones.append(ik.bone)
     logging.info('finished converting IKs: %d', len(pmd_model.iks))
 
     # convert materials
