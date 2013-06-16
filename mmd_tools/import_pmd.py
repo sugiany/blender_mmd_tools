@@ -17,6 +17,12 @@ def import_pmd(**kwargs):
     pmd_model = pmd.load(target_path)
 
     pmx_model = pmx.Model()
+
+    pmx_model.name = pmd_model.name
+    pmd_model.name_e = pmd_model.name_e
+    pmx_model.comment = pmd_model.comment
+    pmd_model.comment_e = pmd_model.comment_e
+
     pmx_model.vertices = []
 
     # convert vertices
@@ -95,6 +101,7 @@ def import_pmd(**kwargs):
             pmx_bone.ik_links.append(ik_link)
 
     # convert materials
+    texture_map = {}
     for i, mat in enumerate(pmd_model.materials):
         pmx_mat = pmx.Material()
         pmx_mat.name = 'Material%d'%i
@@ -103,10 +110,13 @@ def import_pmd(**kwargs):
         pmx_mat.ambient = mat.ambient
         pmx_mat.vertex_count = mat.vertex_count
         if len(mat.texture_path) > 0:
-            tex = pmx.Texture()
-            tex.path = os.path.normpath(os.path.join(os.path.dirname(target_path), mat.texture_path))
-            pmx_model.textures.append(tex)
-            pmx_mat.texture = len(pmx_model.textures) - 1
+            tex_path = mat.texture_path
+            if tex_path not in texture_map:
+                tex = pmx.Texture()
+                tex.path = os.path.normpath(os.path.join(os.path.dirname(target_path), tex_path))
+                pmx_model.textures.append(tex)
+                texture_map[tex_path] = len(pmx_model.textures) - 1
+            pmx_mat.texture = texture_map[tex_path]
         pmx_model.materials.append(pmx_mat)
 
     # convert vertex morphs

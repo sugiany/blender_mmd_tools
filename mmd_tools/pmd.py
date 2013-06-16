@@ -143,6 +143,7 @@ class Material:
         self.edge_flag = 0
         self.vertex_count = 0
         self.texture_path = ''
+        self.sphere_path = ''
 
     def load(self, fs):
         self.diffuse = fs.readVector(4)
@@ -152,8 +153,11 @@ class Material:
         self.toon_index = fs.readByte()
         self.edge_flag = fs.readByte()
         self.vertex_count = fs.readUnsignedInt()
-        self.texture_path = fs.readStr(20)
-        print(self.texture_path)
+        tex_path = fs.readStr(20)
+        t = tex_path.split('*')
+        self.texture_path = t.pop(0)
+        if len(t) > 0:
+            self.sphere_path = t.pop(0)
 
 class Bone:
     def __init__(self):
@@ -305,6 +309,8 @@ class Model:
         self.facial_disp_names = []
         self.bone_disp_names = []
         self.bone_disp_lists = {}
+        self.name = ''
+        self.comment = ''
         self.name_e = ''
         self.comment_e = ''
         self.toon_textures = []
@@ -313,6 +319,12 @@ class Model:
 
 
     def load(self, fs):
+        header = Header()
+        header.load(fs)
+
+        self.name = header.model_name
+        self.comment = header.comment
+
         self.vertices = []
         vert_count = fs.readUnsignedInt()
         for i in range(vert_count):
@@ -418,8 +430,6 @@ class Model:
 
 def load(path):
     with FileReadStream(path) as fs:
-        header = Header()
-        header.load(fs)
         model = Model()
         model.load(fs)
         return model
