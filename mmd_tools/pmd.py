@@ -68,7 +68,13 @@ class  FileReadStream(FileStream):
             t = buf[:index]
             return t.decode('shift-jis')
         except ValueError:
-            return buf.decode('shift-jis')
+            if buf[0] == b'\xfd':
+                return ''
+            try:
+                return buf.decode('shift-jis')
+            except UnicodeDecodeError:
+                logging.warning('found a invalid shift-jis string.')
+                return ''
 
     def readFloat(self):
         v, = struct.unpack('<f', self.__fin.read(4))
@@ -111,9 +117,7 @@ class Header:
             raise InvalidFileError('Not suppored version')
 
         self.model_name = fs.readStr(20)
-        print(self.model_name)
         self.comment = fs.readStr(256)
-        print(self.comment)
 
 class Vertex:
     def __init__(self):
@@ -190,6 +194,15 @@ class IK:
         self.control_weight = 0.0
         self.ik_child_bones = []
 
+    def __str__(self):
+        return '<IK bone: %d, target: %d, chain: %s, iter: %d, weight: %f, ik_children: %s'%(
+            self.bone,
+            self.target_bone,
+            self.ik_chain,
+            self.iterations,
+            self.control_weight,
+            self.ik_child_bones)
+
     def load(self, fs):
         self.bone = fs.readUnsignedShort()
         self.target_bone = fs.readUnsignedShort()
@@ -223,7 +236,6 @@ class VertexMorph:
             t = MorphData()
             t.load(fs)
             self.data.append(t)
-        print(self.name)
 
 class RigidBody:
     def __init__(self):
@@ -250,13 +262,9 @@ class RigidBody:
         self.collision_group_number = fs.readByte()
         self.collision_group_mask = fs.readUnsignedShort()
         self.type = fs.readByte()
-        print('rigid -- %s'%self.name)
         self.size = fs.readVector(3)
-        print(self.size)
         self.location = fs.readVector(3)
-        print(self.location)
         self.rotation = fs.readVector(3)
-        print(self.rotation)
         self.mass = fs.readFloat()
         self.velocity_attenuation = fs.readFloat()
         self.rotation_attenuation = fs.readFloat()
@@ -319,58 +327,80 @@ class Model:
 
 
     def load(self, fs):
+        logging.info('importing pmd model from %s...', fs.path())
+
         header = Header()
         header.load(fs)
 
         self.name = header.model_name
         self.comment = header.comment
 
+        logging.info('model name: %s', self.name)
+        logging.info('comment: %s', self.comment)
+
+        logging.info('importing vertices...')
         self.vertices = []
         vert_count = fs.readUnsignedInt()
         for i in range(vert_count):
             v = Vertex()
             v.load(fs)
             self.vertices.append(v)
-        print(len(self.vertices))
+        logging.info('the number of vetices: %d', len(self.vertices))
+        logging.info('finished importing vertices.')
 
+        logging.info('importing faces...')
         self.faces = []
         face_vert_count = fs.readUnsignedInt()
-        print(face_vert_count)
         for i in range(int(face_vert_count/3)):
             f1 = fs.readUnsignedShort()
             f2 = fs.readUnsignedShort()
             f3 = fs.readUnsignedShort()
             self.faces.append((f3, f2, f1))
-        print('face: %d'%len(self.faces))
+        logging.info('the number of faces: %d', len(self.faces))
+        logging.info('finished importing faces.')
 
+        logging.info('importing materials...')
         self.materials = []
         material_count = fs.readUnsignedInt()
         for i in range(material_count):
             mat = Material()
             mat.load(fs)
             self.materials.append(mat)
+        logging.info('the number of materials: %d', len(self.materials))
+        logging.info('finished importing materials.')
 
+        logging.info('importing bones...')
         self.bones = []
         bone_count = fs.readUnsignedShort()
         for i in range(bone_count):
             bone = Bone()
             bone.load(fs)
             self.bones.append(bone)
+        logging.info('the number of bones: %d', len(self.bones))
+        logging.info('finished importing bones.')
 
+        logging.info('importing IKs...')
         self.iks = []
         ik_count = fs.readUnsignedShort()
         for i in range(ik_count):
             ik = IK()
             ik.load(fs)
+            logging.debug(ik)
             self.iks.append(ik)
+        logging.info('the number of IKs: %d', len(self.iks))
+        logging.info('finished importing IKs.')
 
+        logging.info('importing morphs...')
         self.morphs = []
         morph_count = fs.readUnsignedShort()
         for i in range(morph_count):
             morph = VertexMorph()
             morph.load(fs)
             self.morphs.append(morph)
+        logging.info('the number of morphs: %d', len(self.morphs))
+        logging.info('finished importing morphs.')
 
+        logging.info('importing display items...')
         self.facial_disp_morphs = []
         t = fs.readByte()
         for i in range(t):
@@ -390,43 +420,57 @@ class Model:
             disp_index = fs.readByte()
             self.bone_disp_lists[bone_disps[disp_index-1]].append(bone_index)
 
+        logging.info('try to load extended data sections...')
         # try to load extended data sections.
         try:
             eng_flag = fs.readByte()
         except e:
-            print(str(e))
+            logging.info('found no extended data sections')
+            return
 
-        self.name_e = fs.readStr(20)
-        print(self.name_e)
-        self.comment_e = fs.readStr(256)
-        print(self.comment_e)
-        for i in range(len(self.bones)):
-            self.bones[i].name_e = fs.readStr(20)
+        if eng_flag:
+            logging.info('found a extended data for english.')
+            self.name_e = fs.readStr(20)
+            self.comment_e = fs.readStr(256)
+            for i in range(len(self.bones)):
+                self.bones[i].name_e = fs.readStr(20)
 
-        for i in range(1, len(self.morphs)):
-            self.morphs[i].name_e = print(fs.readStr(20))
+            for i in range(1, len(self.morphs)):
+                self.morphs[i].name_e = fs.readStr(20)
 
-        bone_disps_e = []
-        for i in range(len(bone_disps)):
-            bone_disps_e.append(fs.readStr(50))
+            bone_disps_e = []
+            for i in range(len(bone_disps)):
+                bone_disps_e.append(fs.readStr(50))
+            logging.info('''name_e: %s
+comment_e: %s''', self.name_e, self.comment_e)
 
+        logging.info('importing toon textures...')
         self.toon_textures = []
         for i in range(10):
             self.toon_textures.append(fs.readStr(100))
+        logging.info('the number of joints: %d', len(self.toon_textures))
+        logging.info('finished importing joints.')
 
+        logging.info('importing rigid bodies...')
         rigid_count = fs.readUnsignedInt()
         self.rigid_bodies = []
         for i in range(rigid_count):
             rigid = RigidBody()
             rigid.load(fs)
             self.rigid_bodies.append(rigid)
+        logging.info('the number of rigid bodies: %d', len(self.rigid_bodies))
+        logging.info('finished importing rigid bodies.')
 
+        logging.info('importing joints...')
         joint_count = fs.readUnsignedInt()
         self.joints = []
         for i in range(joint_count):
             joint = Joint()
             joint.load(fs)
             self.joints.append(joint)
+        logging.info('the number of joints: %d', len(self.joints))
+        logging.info('finished importing joints.')
+        logging.info('finished importing the model.')
 
 def load(path):
     with FileReadStream(path) as fs:

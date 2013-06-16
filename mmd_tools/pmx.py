@@ -450,7 +450,7 @@ comment(english):
             r = Rigid()
             r.load(fs)
             self.rigids.append(r)
-        logging.info('the number of rigid bodies: %d', len(self.display))
+        logging.info('the number of rigid bodies: %d', len(self.rigids))
         logging.info('finished importing rigid bodies.')
 
         logging.info('importing joints...')
@@ -460,7 +460,7 @@ comment(english):
             j = Joint()
             j.load(fs)
             self.joints.append(j)
-        logging.info('the number of joints: %d', len(self.display))
+        logging.info('the number of joints: %d', len(self.joints))
         logging.info('finished importing joints.')
         logging.info('finished importing the model.')
 

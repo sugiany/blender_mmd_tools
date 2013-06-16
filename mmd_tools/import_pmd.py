@@ -8,6 +8,7 @@ import mathutils
 
 import os
 import re
+import logging
 
 
 def import_pmd(**kwargs):
@@ -15,6 +16,9 @@ def import_pmd(**kwargs):
     """
     target_path = kwargs['filepath']
     pmd_model = pmd.load(target_path)
+
+
+    logging.info('start converting pmd into pmx...')
 
     pmx_model = pmx.Model()
 
@@ -26,6 +30,7 @@ def import_pmd(**kwargs):
     pmx_model.vertices = []
 
     # convert vertices
+    logging.info('converting vertices...')
     for v in pmd_model.vertices:
         pmx_v = pmx.Vertex()
         pmx_v.co = v.position
@@ -47,13 +52,17 @@ def import_pmd(**kwargs):
         pmx_v.weight = weight
 
         pmx_model.vertices.append(pmx_v)
+    logging.info('finished converting vertices: %d', len(pmx_model.vertices))
 
     # convert faces
+    logging.info('converting faces...')
     for f in pmd_model.faces:
         pmx_model.faces.append(f)
+    logging.info('finished converting faces: %d', len(pmx_model.faces))
 
     knee_bones = []
     # convert bones
+    logging.info('converting bones...')
     for i, bone in enumerate(pmd_model.bones):
         pmx_bone = pmx.Bone()
         pmx_bone.name = bone.name
@@ -65,7 +74,7 @@ def import_pmd(**kwargs):
             pmx_bone.displayConnection = -1
         if pmx_bone.displayConnection <= 0:
             pmx_bone.displayConnection = [0.0, 0.0, 0.0]
-        pmx_bone.isIK = False #(bone.ik_bone != 0)
+        pmx_bone.isIK = False
         if bone.type == 0:
             pmx_bone.isMovable = False
         elif bone.type == 1:
@@ -84,11 +93,15 @@ def import_pmd(**kwargs):
         pmx_model.bones.append(pmx_bone)
 
         if re.search(u'ひざ$', pmx_bone.name):
+            logging.info('found knee bone: %s', i)
             knee_bones.append(i)
+    logging.info('finished converting bones: %d', len(pmx_model.bones))
 
     # convert ik
+    logging.info('converting IKs...')
     for ik in pmd_model.iks:
         pmx_bone = pmx_model.bones[ik.bone]
+        logging.debug('add IK settings to bone "%s"', pmx_bone.name)
         pmx_bone.isIK = True
         pmx_bone.target = ik.target_bone
         pmx_bone.loopCount = ik.ik_chain
@@ -98,7 +111,10 @@ def import_pmd(**kwargs):
             if i in knee_bones:
                 ik_link.maximumAngle = [-0.5, 0.0, 0.0]
                 ik_link.minimumAngle = [-180.0, 0.0, 0.0]
+                logging.info('added knee constraints to %s', i)
+            logging.debug(ik_link)
             pmx_bone.ik_links.append(ik_link)
+    logging.info('finished converting IKs: %d', len(pmd_model.iks))
 
     # convert materials
     texture_map = {}
