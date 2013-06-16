@@ -48,13 +48,13 @@ Windows 7 + blender 2.67 64bit
 
 各種機能詳細
 -------------------------------
-### Import pmx
-pmxファイルをインポートします。
+### Import Model
+MMDモデルデータをインポートします。対応形式はpmdファイルおよびpmx(ver2.0)ファイルです。
 各オプションはデフォルト推薦です。
 剛体情報を読み込みたくない場合は、"import only non dynamics rigid bodies"オプションをオンにしてください。
 
 * scale
-    * スケールです。Import vmd時のスケールと統一してください。
+    * スケールです。Import Motion時のスケールと統一してください。
 * rename bones
     * ボーンの名前をblenderに適した名前にリネームします。（右腕→腕.Lなど）
 * hide rigid bodies and joints
@@ -66,11 +66,11 @@ pmxファイルをインポートします。
 * distance of ignore collisions
     * 非衝突グループの解決範囲を指定します。指定された距離より離れている剛体同士は非衝突グループの設定を適用しません。
 
-### Import vmd
+### Import Motion
 現在選択中のArmature、MeshおよびCameraにvmdファイルのモーションを適用します。
 
 * scale
-    * スケールです。Import pmx時のスケールと統一してください。
+    * スケールです。Import Model時のスケールと統一してください。
 * margin
     * 物理シミュレーション用の余白フレームです。
     * モーションの初期位置が原点から大きく離れている場合、モーション開始時にモデルが瞬間移動してしまうため物理シミュレーションが破綻します。

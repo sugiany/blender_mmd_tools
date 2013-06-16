@@ -47,9 +47,9 @@ class MMDToolsPropertyGroup(bpy.types.PropertyGroup):
 
 ## Import-Export
 class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
-    bl_idname = 'mmd_tools.import_pmx'
+    bl_idname = 'mmd_tools.import_model'
     bl_label = 'Import PMX file (.pmx)'
-    bl_description = 'Import a PMX file (.pmx)'
+    bl_description = 'Import a Model file (.pmd, .pmx)'
     bl_options = {'PRESET'}
 
     filename_ext = '.pmx'
@@ -252,7 +252,7 @@ class MMDToolsObjectPanel(bpy.types.Panel):
         col.label('Import:')
         c = col.column()
         r = c.row()
-        r.operator('mmd_tools.import_pmx', text='Model')
+        r.operator('mmd_tools.import_model', text='Model')
         r.operator('mmd_tools.import_vmd', text='Motion')
 
         col = layout.column(align=True)
@@ -282,8 +282,8 @@ class MMDToolsObjectPanel(bpy.types.Panel):
         c.operator('mmd_tools.set_frame_range', text='Set frame range')
 
 def menu_func_import(self, context):
-    self.layout.operator(ImportPmx_Op.bl_idname, text="MikuMikuDance model (.pmx)")
-    self.layout.operator(ImportVmd_Op.bl_idname, text="MikuMikuDance motion (.vmd)")
+    self.layout.operator(ImportPmx_Op.bl_idname, text="MikuMikuDance Model (.pmd, .pmx)")
+    self.layout.operator(ImportVmd_Op.bl_idname, text="MikuMikuDance Motion (.vmd)")
 
 
 def register():
