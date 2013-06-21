@@ -4,6 +4,9 @@ import bpy
 import bpy_extras.io_utils
 
 import re
+import logging
+import logging.handlers
+import traceback
 
 from . import import_pmx
 from . import import_pmd
@@ -42,6 +45,16 @@ if "bpy" in locals():
     if "test" in locals():
         imp.reload(test)
 
+def log_handler(log_level, filepath=None):
+    if filepath is None:
+        handler = logging.StreamHandler()
+    else:
+        handler = logging.FileHandler(filepath, mode='w', encoding='utf-8')
+    formatter = logging.Formatter('%(message)s')
+    handler.setFormatter(formatter)
+    return handler
+
+
 class MMDToolsPropertyGroup(bpy.types.PropertyGroup):
     pass
 
@@ -61,29 +74,50 @@ class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     only_collisions = bpy.props.BoolProperty(name='import only non dynamics rigid bodies', default=False)
     ignore_non_collision_groups = bpy.props.BoolProperty(name='ignore  non collision groups', default=False)
     distance_of_ignore_collisions = bpy.props.FloatProperty(name='distance of ignore collisions', default=5.0)
+    save_log = bpy.props.BoolProperty(name='create a log file', default=False)
+    log_level = bpy.props.EnumProperty(items=[
+            ('DEBUG', '4. DEBUG', '', 1),
+            ('INFO', '3. INFO', '', 2),
+            ('WARNING', '2. WARNING', '', 3),
+            ('ERROR', '1. ERROR', '', 4),
+            ], name='log level', default='WARNING')
 
     def execute(self, context):
-        if re.search('\.pmd', self.filepath):
-            import_pmd.import_pmd(
-                filepath=self.filepath,
-                scale=self.scale,
-                rename_LR_bones=self.renameBones,
-                hide_rigids=self.hide_rigids,
-                only_collisions=self.only_collisions,
-                ignore_non_collision_groups=self.ignore_non_collision_groups,
-                distance_of_ignore_collisions=self.distance_of_ignore_collisions
-                )
+        logger = logging.getLogger()
+        logger.setLevel(self.log_level)
+        if self.save_log:
+            handler = log_handler(self.log_level, filepath=self.filepath + '.mmd_tools.import.log')
         else:
-            importer = import_pmx.PMXImporter()
-            importer.execute(
-                filepath=self.filepath,
-                scale=self.scale,
-                rename_LR_bones=self.renameBones,
-                hide_rigids=self.hide_rigids,
-                only_collisions=self.only_collisions,
-                ignore_non_collision_groups=self.ignore_non_collision_groups,
-                distance_of_ignore_collisions=self.distance_of_ignore_collisions
-                )
+            handler = log_handler(self.log_level)
+        logger.addHandler(handler)
+        try:
+            if re.search('\.pmd', self.filepath):
+                import_pmd.import_pmd(
+                    filepath=self.filepath,
+                    scale=self.scale,
+                    rename_LR_bones=self.renameBones,
+                    hide_rigids=self.hide_rigids,
+                    only_collisions=self.only_collisions,
+                    ignore_non_collision_groups=self.ignore_non_collision_groups,
+                    distance_of_ignore_collisions=self.distance_of_ignore_collisions
+                    )
+            else:
+                importer = import_pmx.PMXImporter()
+                importer.execute(
+                    filepath=self.filepath,
+                    scale=self.scale,
+                    rename_LR_bones=self.renameBones,
+                    hide_rigids=self.hide_rigids,
+                    only_collisions=self.only_collisions,
+                    ignore_non_collision_groups=self.ignore_non_collision_groups,
+                    distance_of_ignore_collisions=self.distance_of_ignore_collisions
+                    )
+        except Exception as e:
+            logging.error(traceback.format_exc())
+            self.report({'ERROR'}, str(e))
+        finally:
+            logger.removeHandler(handler)
+
         return {'FINISHED'}
 
     def invoke(self, context, event):
