@@ -528,7 +528,7 @@ class Model:
             logging.debug('  Mode: %s', rigid_modes[r.mode])
             if r.bone is not None:
                 logging.debug('  Related bone: %s (index: %d)', self.bones[r.bone].name, r.bone)
-            logging.debug('  Collision group No.: %d', r.collision_group_number)
+            logging.debug('  Collision group: %d', r.collision_group_number)
             logging.debug('  Collision group mask: 0x%x', r.collision_group_mask)
             logging.debug('  Size: (%f, %f, %f)', *r.size)
             logging.debug('  Location: (%f, %f, %f)', *r.location)
@@ -1564,7 +1564,7 @@ def load(path):
         logging.info('****************************************')
         logging.info(' mmd_tools.pmx module')
         logging.info('----------------------------------------')
-        logging.info(' Start load model data form a pmx file')
+        logging.info(' Start to load model data form a pmx file')
         logging.info('            by the mmd_tools.pmx modlue.')
         logging.info('')
         header = Header()

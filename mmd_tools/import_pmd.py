@@ -19,7 +19,13 @@ def import_pmd(**kwargs):
     pmd_model = pmd.load(target_path)
 
 
-    logging.info('start converting pmd into pmx...')
+    logging.info('')
+    logging.info('****************************************')
+    logging.info(' mmd_tools.import_pmd module')
+    logging.info('----------------------------------------')
+    logging.info(' Start to convert pmx data into pmd data')
+    logging.info('              by the mmd_tools.pmd modlue.')
+    logging.info('')
 
     pmx_model = pmx.Model()
 
@@ -31,7 +37,10 @@ def import_pmd(**kwargs):
     pmx_model.vertices = []
 
     # convert vertices
-    logging.info('converting vertices...')
+    logging.info('')
+    logging.info('------------------------------')
+    logging.info(' Convert Vertices')
+    logging.info('------------------------------')
     for v in pmd_model.vertices:
         pmx_v = pmx.Vertex()
         pmx_v.co = v.position
@@ -53,17 +62,22 @@ def import_pmd(**kwargs):
         pmx_v.weight = weight
 
         pmx_model.vertices.append(pmx_v)
-    logging.info('finished converting vertices: %d', len(pmx_model.vertices))
+    logging.info('----- Converted %d vertices', len(pmx_model.vertices))
 
-    # convert faces
-    logging.info('converting faces...')
+    logging.info('')
+    logging.info('------------------------------')
+    logging.info(' Convert Faces')
+    logging.info('------------------------------')
     for f in pmd_model.faces:
         pmx_model.faces.append(f)
-    logging.info('finished converting faces: %d', len(pmx_model.faces))
+    logging.info('----- Converted %d faces', len(pmx_model.faces))
 
     knee_bones = []
-    # convert bones
-    logging.info('converting bones...')
+
+    logging.info('')
+    logging.info('------------------------------')
+    logging.info(' Convert Bones')
+    logging.info('------------------------------')
     for i, bone in enumerate(pmd_model.bones):
         pmx_bone = pmx.Bone()
         pmx_bone.name = bone.name
@@ -99,20 +113,21 @@ def import_pmd(**kwargs):
         pmx_model.bones.append(pmx_bone)
 
         if re.search(u'ひざ$', pmx_bone.name):
-            logging.info('found knee bone: %s', i)
             knee_bones.append(i)
 
     for i in pmx_model.bones:
         if i.parent != -1 and pmd_model.bones[i.parent].type == 2:
             i.transform_order = 1
-    logging.info('finished converting bones: %d', len(pmx_model.bones))
+    logging.info('----- Converted %d boness', len(pmx_model.bones))
 
-    # convert ik
-    logging.info('converting IKs...')
+    logging.info('')
+    logging.info('------------------------------')
+    logging.info(' Convert IKs')
+    logging.info('------------------------------')
     applied_ik_bones = []
     for ik in pmd_model.iks:
         if ik.bone in applied_ik_bones:
-            logging.info('found a bone targeted by two or more IK bones.')
+            logging.info('The bone %s is targeted by two or more IK bones.', pmx_model.bones[ik.bone].name)
             b = pmx_model.bones[ik.bone]
             t = copy.deepcopy(b)
             t.name += '+'
@@ -120,9 +135,9 @@ def import_pmd(**kwargs):
             t.ik_links = []
             pmx_model.bones.append(t)
             ik.bone = len(pmx_model.bones) - 1
-            logging.info('duplicate the bone: %s -> %s', b.name, t.name)
+            logging.info('Duplicate the bone: %s -> %s', b.name, t.name)
         pmx_bone = pmx_model.bones[ik.bone]
-        logging.debug('add IK settings to bone "%s"', pmx_bone.name)
+        logging.debug('Add IK settings to the bone %s', pmx_bone.name)
         pmx_bone.isIK = True
         pmx_bone.target = ik.target_bone
         pmx_bone.loopCount = ik.ik_chain
@@ -132,14 +147,17 @@ def import_pmd(**kwargs):
             if i in knee_bones:
                 ik_link.maximumAngle = [-0.5, 0.0, 0.0]
                 ik_link.minimumAngle = [-180.0, 0.0, 0.0]
-                logging.info('added knee constraints to %s', i)
-            logging.debug('IKLink: %d. %s',i , pmx_model.bones[i].name)
+                logging.info('  Add knee constraints to %s', i)
+            logging.debug('  IKLink: %s(index: %d)', pmx_model.bones[i].name, i)
             pmx_bone.ik_links.append(ik_link)
         applied_ik_bones.append(ik.bone)
-    logging.info('finished converting IKs: %d', len(pmd_model.iks))
+    logging.info('----- Converted %d bones', len(pmd_model.iks))
 
-    # convert materials
     texture_map = {}
+    logging.info('')
+    logging.info('------------------------------')
+    logging.info(' Convert Bones')
+    logging.info('------------------------------')
     for i, mat in enumerate(pmd_model.materials):
         pmx_mat = pmx.Material()
         pmx_mat.name = 'Material%d'%i
@@ -150,33 +168,47 @@ def import_pmd(**kwargs):
         if len(mat.texture_path) > 0:
             tex_path = mat.texture_path
             if tex_path not in texture_map:
+                logging.info('  Create pmx.Texture %s', tex_path)
                 tex = pmx.Texture()
                 tex.path = os.path.normpath(os.path.join(os.path.dirname(target_path), tex_path))
                 pmx_model.textures.append(tex)
                 texture_map[tex_path] = len(pmx_model.textures) - 1
             pmx_mat.texture = texture_map[tex_path]
         pmx_model.materials.append(pmx_mat)
+    logging.info('----- Converted %d materials', len(pmx_model.materials))
 
-    # convert vertex morphs
-    vertex_map = None
-
-    for morph in filter(lambda x: x.type == 0, pmd_model.morphs):
+    logging.info('')
+    logging.info('------------------------------')
+    logging.info(' Convert Morphs')
+    logging.info('------------------------------')
+    t = list(filter(lambda x: x.type == 0, pmd_model.morphs))
+    if len(t) == 0:
+        logging.error('Not found the base morph')
+        logging.error('Skip converting vertex morphs.')
+    else:
+        if len(t) > 1:
+            logging.warning('Found two or more base morphs.')
         vertex_map = []
-        for i in morph.data:
+        for i in t[0].data:
             vertex_map.append(i.index)
 
-    for morph in pmd_model.morphs:
-        if morph.type == 0:
-            continue
-        pmx_morph = pmx.VertexMorph(morph.name, '', morph.type)
-        for i in morph.data:
-            mo = pmx.VertexMorphOffset()
-            mo.index = vertex_map[i.index]
-            mo.offset = i.offset
-            pmx_morph.offsets.append(mo)
-        pmx_model.morphs.append(pmx_morph)
+        for morph in pmd_model.morphs:
+            logging.debug('Vertex Morph: %s', morph.name)
+            if morph.type == 0:
+                continue
+            pmx_morph = pmx.VertexMorph(morph.name, '', morph.type)
+            for i in morph.data:
+                mo = pmx.VertexMorphOffset()
+                mo.index = vertex_map[i.index]
+                mo.offset = i.offset
+                pmx_morph.offsets.append(mo)
+            pmx_model.morphs.append(pmx_morph)
+    logging.info('----- Converted %d morphs', len(pmx_model.morphs))
 
-    # convert rigid bodies
+    logging.info('')
+    logging.info('------------------------------')
+    logging.info(' Convert Rigid bodies')
+    logging.info('------------------------------')
     for rigid in pmd_model.rigid_bodies:
         pmx_rigid = pmx.Rigid()
 
@@ -205,8 +237,12 @@ def import_pmd(**kwargs):
         pmx_rigid.mode = rigid.mode
 
         pmx_model.rigids.append(pmx_rigid)
+    logging.info('----- Converted %d rigid bodies', len(pmx_model.rigids))
 
-    # convert joints
+    logging.info('')
+    logging.info('------------------------------')
+    logging.info(' Convert Joints')
+    logging.info('------------------------------')
     for joint in pmd_model.joints:
         pmx_joint = pmx.Joint()
 
@@ -226,7 +262,12 @@ def import_pmd(**kwargs):
         pmx_joint.spring_rotation_constant = joint.spring_rotation_constant
 
         pmx_model.joints.append(pmx_joint)
+    logging.info('----- Converted %d joints', len(pmx_model.joints))
 
+    logging.info(' Finish converting pmd into pmx.')
+    logging.info('----------------------------------------')
+    logging.info(' mmd_tools.import_pmd module')
+    logging.info('****************************************')
 
     importer = import_pmx.PMXImporter()
     kwargs['pmx'] = pmx_model

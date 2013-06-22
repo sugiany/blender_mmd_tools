@@ -143,7 +143,7 @@ class Material:
         self.specular_intensity = 0.5
         self.specular = []
         self.ambient = []
-        self.toon_inde = 0
+        self.toon_index = 0
         self.edge_flag = 0
         self.vertex_count = 0
         self.texture_path = ''
@@ -335,10 +335,13 @@ class Model:
         self.name = header.model_name
         self.comment = header.comment
 
-        logging.info('model name: %s', self.name)
-        logging.info('comment: %s', self.comment)
+        logging.info('Model name: %s', self.name)
+        logging.info('Comment: %s', self.comment)
 
-        logging.info('importing vertices...')
+        logging.info('')
+        logging.info('------------------------------')
+        logging.info('Load Vertices')
+        logging.info('------------------------------')
         self.vertices = []
         vert_count = fs.readUnsignedInt()
         for i in range(vert_count):
@@ -348,7 +351,10 @@ class Model:
         logging.info('the number of vetices: %d', len(self.vertices))
         logging.info('finished importing vertices.')
 
-        logging.info('importing faces...')
+        logging.info('')
+        logging.info('------------------------------')
+        logging.info(' Load Faces')
+        logging.info('------------------------------')
         self.faces = []
         face_vert_count = fs.readUnsignedInt()
         for i in range(int(face_vert_count/3)):
@@ -359,52 +365,96 @@ class Model:
         logging.info('the number of faces: %d', len(self.faces))
         logging.info('finished importing faces.')
 
-        logging.info('importing materials...')
+        logging.info('')
+        logging.info('------------------------------')
+        logging.info(' Load Materials')
+        logging.info('------------------------------')
         self.materials = []
         material_count = fs.readUnsignedInt()
         for i in range(material_count):
             mat = Material()
             mat.load(fs)
             self.materials.append(mat)
-        logging.info('the number of materials: %d', len(self.materials))
-        logging.info('finished importing materials.')
 
-        logging.info('importing bones...')
+            logging.info('Material %d', i)
+            logging.debug('  Vertex Count: %d', mat.vertex_count)
+            logging.debug('  Diffuse: (%.2f, %.2f, %.2f, %.2f)', *mat.diffuse)
+            logging.debug('  Specular: (%.2f, %.2f, %.2f)', *mat.specular)
+            logging.debug('  Specular Intensity: %f', mat.specular_intensity)
+            logging.debug('  Ambient: (%.2f, %.2f, %.2f)', *mat.ambient)
+            logging.debug('  Toon Index: %d', mat.toon_index)
+            logging.debug('  Edge Type: %d', mat.edge_flag)
+            logging.debug('  Texture Path: %s', str(mat.texture_path))
+            logging.debug('  Sphere Texture Path: %s', str(mat.sphere_path))
+            logging.debug('')
+        logging.info('Loaded %d materials', len(self.materials))
+
+        logging.info('')
+        logging.info('------------------------------')
+        logging.info(' Load Bones')
+        logging.info('------------------------------')
         self.bones = []
         bone_count = fs.readUnsignedShort()
         for i in range(bone_count):
             bone = Bone()
             bone.load(fs)
             self.bones.append(bone)
-        logging.info('the number of bones: %d', len(self.bones))
-        logging.info('finished importing bones.')
 
-        logging.info('importing IKs...')
+            logging.info('Bone %d: %s', i, bone.name)
+            logging.debug('  Name(english): %s', bone.name_e)
+            logging.debug('  Location: (%f, %f, %f)', *bone.position)
+            logging.debug('  Parent: %s', str(bone.parent))
+            logging.debug('  Related Bone: %s', str(bone.tail_bone))
+            logging.debug('  Type: %s', bone.type)
+            logging.debug('  IK bone: %s', str(bone.ik_bone))
+            logging.debug('')
+        logging.info('----- Loaded %d bones', len(self.bones))
+
+        logging.info('')
+        logging.info('------------------------------')
+        logging.info(' Load IKs')
+        logging.info('------------------------------')
         self.iks = []
         ik_count = fs.readUnsignedShort()
         for i in range(ik_count):
             ik = IK()
             ik.load(fs)
-            logging.debug(ik)
             self.iks.append(ik)
-        logging.info('the number of IKs: %d', len(self.iks))
-        logging.info('finished importing IKs.')
 
-        logging.info('importing morphs...')
+            logging.info('IK %d', i)
+            logging.debug('  Bone: %s(index: %d)', self.bones[ik.bone].name, ik.bone)
+            logging.debug('  Target Bone: %s(index: %d)', self.bones[ik.target_bone].name, ik.target_bone)
+            logging.debug('  IK Chain: %d', ik.ik_chain)
+            logging.debug('  IK Iterations: %d', ik.iterations)
+            logging.debug('  Wegiht: %d', ik.control_weight)
+            for j, c in enumerate(ik.ik_child_bones):
+                logging.debug('    Bone %d: %s(index: %d)', j, self.bones[c].name, c)
+            logging.debug('')
+        logging.info('----- Loaded %d IKs', len(self.iks))
+
+        logging.info('')
+        logging.info('------------------------------')
+        logging.info(' Load Morphs')
+        logging.info('------------------------------')
         self.morphs = []
         morph_count = fs.readUnsignedShort()
         for i in range(morph_count):
             morph = VertexMorph()
             morph.load(fs)
             self.morphs.append(morph)
-        logging.info('the number of morphs: %d', len(self.morphs))
-        logging.info('finished importing morphs.')
+            logging.info('Vertex Morph %d: %s', i, morph.name)
+        logging.info('----- Loaded %d materials', len(self.morphs))
 
-        logging.info('importing display items...')
+        logging.info('')
+        logging.info('------------------------------')
+        logging.info(' Load Display Items')
+        logging.info('------------------------------')
         self.facial_disp_morphs = []
         t = fs.readByte()
         for i in range(t):
-            self.facial_disp_morphs.append(fs.readUnsignedShort())
+            u = fs.readUnsignedShort()
+            self.facial_disp_morphs.append(u)
+            logging.info('Facial %d: %s', i, self.morphs[u].name)
 
         self.bone_disp_lists = collections.OrderedDict()
         bone_disps = []
@@ -420,14 +470,31 @@ class Model:
             disp_index = fs.readByte()
             self.bone_disp_lists[bone_disps[disp_index-1]].append(bone_index)
 
-        logging.info('try to load extended data sections...')
+        for i, (k, items) in enumerate(self.bone_disp_lists.items()):
+            logging.info('  Frame %d: %s', i, k.rstrip())
+            for j, b in enumerate(items):
+                logging.info('    Bone %d: %s(index: %d)', j, self.bones[b].name, b)
+        logging.info('----- Loaded display items')
+
+        logging.info('')
+        logging.info('===============================')
+        logging.info(' Load Display Items')
+        logging.info('   try to load extended data sections...')
+        logging.info('')
+
         # try to load extended data sections.
         try:
             eng_flag = fs.readByte()
         except e:
             logging.info('found no extended data sections')
+            logging.info('===============================')
             return
+        logging.info('===============================')
 
+        logging.info('')
+        logging.info('------------------------------')
+        logging.info(' Load a extended data for english')
+        logging.info('------------------------------')
         if eng_flag:
             logging.info('found a extended data for english.')
             self.name_e = fs.readStr(20)
@@ -438,42 +505,90 @@ class Model:
             for i in range(1, len(self.morphs)):
                 self.morphs[i].name_e = fs.readStr(20)
 
+            logging.info(' Name(english): %s', self.name_e)
+            logging.info(' Comment(english): %s', self.comment_e)
+
             bone_disps_e = []
             for i in range(len(bone_disps)):
-                bone_disps_e.append(fs.readStr(50))
-            logging.info('''name_e: %s
-comment_e: %s''', self.name_e, self.comment_e)
+                t = fs.readStr(50)
+                bone_disps_e.append(t)
+                logging.info(' Bone name(english) %d: %s', i, t)
+        logging.info('----- Loaded english data.')
 
-        logging.info('importing toon textures...')
+        logging.info('')
+        logging.info('------------------------------')
+        logging.info(' Load toon textures')
+        logging.info('------------------------------')
         self.toon_textures = []
         for i in range(10):
-            self.toon_textures.append(fs.readStr(100))
-        logging.info('the number of joints: %d', len(self.toon_textures))
-        logging.info('finished importing joints.')
+            t = fs.readStr(100)
+            self.toon_textures.append(t)
+            logging.info('Toon Texture %d: %s', i, t)
+        logging.info('----- Loaded %d textures', len(self.toon_textures))
 
-        logging.info('importing rigid bodies...')
+        logging.info('')
+        logging.info('------------------------------')
+        logging.info(' Load Rigid Bodies')
+        logging.info('------------------------------')
         rigid_count = fs.readUnsignedInt()
         self.rigid_bodies = []
+        rigid_types = {0: 'Sphere', 1: 'Box', 2: 'Capsule'}
+        rigid_modes = {0: 'Static', 1: 'Dynamic', 2: 'Dynamic(track to bone)'}
         for i in range(rigid_count):
             rigid = RigidBody()
             rigid.load(fs)
             self.rigid_bodies.append(rigid)
-        logging.info('the number of rigid bodies: %d', len(self.rigid_bodies))
-        logging.info('finished importing rigid bodies.')
+            logging.info('Rigid Body %d: %s', i, rigid.name)
+            logging.debug('  Bone: %s', rigid.bone)
+            logging.debug('  Collision group: %d', rigid.collision_group_number)
+            logging.debug('  Collision group mask: 0x%x', rigid.collision_group_mask)
+            logging.debug('  Size: (%f, %f, %f)', *rigid.size)
+            logging.debug('  Location: (%f, %f, %f)', *rigid.location)
+            logging.debug('  Rotation: (%f, %f, %f)', *rigid.rotation)
+            logging.debug('  Mass: %f', rigid.mass)
+            logging.debug('  Bounce: %f', rigid.bounce)
+            logging.debug('  Friction: %f', rigid.friction)
+            logging.debug('')
+        logging.info('----- Loaded %d rigid bodies', len(self.rigid_bodies))
 
-        logging.info('importing joints...')
+        logging.info('')
+        logging.info('------------------------------')
+        logging.info(' Load Joints')
+        logging.info('------------------------------')
         joint_count = fs.readUnsignedInt()
         self.joints = []
         for i in range(joint_count):
             joint = Joint()
             joint.load(fs)
             self.joints.append(joint)
-        logging.info('the number of joints: %d', len(self.joints))
-        logging.info('finished importing joints.')
+            logging.info('Joint %d: %s', i, joint.name)
+            logging.debug('  Rigid A: %s (index: %d)', self.rigid_bodies[joint.src_rigid].name, joint.src_rigid)
+            logging.debug('  Rigid B: %s (index: %d)', self.rigid_bodies[joint.dest_rigid].name, joint.dest_rigid)
+            logging.debug('  Location: (%f, %f, %f)', *joint.location)
+            logging.debug('  Rotation: (%f, %f, %f)', *joint.rotation)
+            logging.debug('  Location Limit: (%f, %f, %f) - (%f, %f, %f)', *(joint.minimum_location + joint.maximum_location))
+            logging.debug('  Rotation Limit: (%f, %f, %f) - (%f, %f, %f)', *(joint.minimum_rotation + joint.maximum_rotation))
+            logging.debug('  Spring: (%f, %f, %f)', *joint.spring_constant)
+            logging.debug('  Spring(rotation): (%f, %f, %f)', *joint.spring_rotation_constant)
+            logging.debug('')
+        logging.info('----- Loaded %d joints', len(self.joints))
+
         logging.info('finished importing the model.')
 
 def load(path):
     with FileReadStream(path) as fs:
+        logging.info('****************************************')
+        logging.info(' mmd_tools.pmd module')
+        logging.info('----------------------------------------')
+        logging.info(' Start load model data form a pmd file')
+        logging.info('            by the mmd_tools.pmd modlue.')
+        logging.info('')
+
         model = Model()
         model.load(fs)
+
+        logging.info(' Finish loading.')
+        logging.info('----------------------------------------')
+        logging.info(' mmd_tools.pmd module')
+        logging.info('****************************************')
         return model
