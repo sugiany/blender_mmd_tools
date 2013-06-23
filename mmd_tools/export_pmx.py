@@ -3,11 +3,12 @@ from . import pmx
 from . import bpyutils
 
 import collections
+import os
+import copy
 
 import mathutils
 import bpy
 import bmesh
-import copy
 
 
 class __PmxExporter:
@@ -149,6 +150,8 @@ class __PmxExporter:
         t = pmx.Texture()
         t.path = texture.image.filepath
         self.__model.textures.append(t)
+        if not os.path.isfile(t.path):
+            logging.warning('  The texture file does not exist: %s', t.path)
         return len(self.__model.textures) - 1
 
     def __exportMaterials(self, materialIndexDict):
@@ -166,7 +169,7 @@ class __PmxExporter:
             p_mat.specular = list(i.specular_color) + [i.specular_alpha]
             p_mat.edge_color = [0.25, 0.3, 0.5, 0.5]
             p_mat.vertex_count = num_faces * 3
-            if len(i.texture_slots) > 0:
+            if len(i.texture_slots) > 0 and i.texture_slots[0] is not None:
                 tex = i.texture_slots[0].texture
                 index = -1
                 if tex not in textureList:
