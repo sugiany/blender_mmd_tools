@@ -5,6 +5,7 @@ from . import bpyutils
 import collections
 import os
 import copy
+import logging
 
 import mathutils
 import bpy
@@ -169,6 +170,7 @@ class __PmxExporter:
             p_mat.specular = list(i.specular_color) + [i.specular_alpha]
             p_mat.edge_color = [0.25, 0.3, 0.5, 0.5]
             p_mat.vertex_count = num_faces * 3
+            #p_mat.is_double_sided = True
             if len(i.texture_slots) > 0 and i.texture_slots[0] is not None:
                 tex = i.texture_slots[0].texture
                 index = -1
@@ -220,6 +222,7 @@ class __PmxExporter:
             for i in pmx_bones:
                 if i.parent is not None:
                     i.parent = pmx_bones.index(boneMap[i.parent])
+                    logging.debug('the parent of %s: %s', i.name, i.parent)
                 if isinstance(i.displayConnection, pmx.Bone):
                     i.displayConnection = pmx_bones.index(i.displayConnection)
                 elif isinstance(i.displayConnection, bpy.types.EditBone):
@@ -227,6 +230,71 @@ class __PmxExporter:
 
             self.__model.bones = pmx_bones
         return r
+
+    def __exportIKLinks(self, pose_bone, pmx_bones, bone_map, ik_links, count):
+        if count <= 0:
+            return ik_links
+
+        logging.debug('    Create IK Link for %s', pose_bone.name)
+        ik_link = pmx.IKLink()
+        ik_link.target = bone_map[pose_bone.name]
+        if pose_bone.use_ik_limit_x or pose_bone.use_ik_limit_y or pose_bone.use_ik_limit_z:
+            minimum = []
+            maximum = []
+            if pose_bone.use_ik_limit_x:
+                minimum.append(-pose_bone.ik_max_x)
+                maximum.append(-pose_bone.ik_min_x)
+            else:
+                minimum.append(0.0)
+                maximum.append(0.0)
+
+            if pose_bone.use_ik_limit_y:
+                minimum.append(pose_bone.ik_min_y)
+                maximum.append(pose_bone.ik_max_y)
+            else:
+                minimum.append(0.0)
+                maximum.append(0.0)
+
+            if pose_bone.use_ik_limit_z:
+                minimum.append(pose_bone.ik_min_z)
+                maximum.append(pose_bone.ik_max_z)
+            else:
+                minimum.append(0.0)
+                maximum.append(0.0)
+            ik_link.minimumAngle = minimum
+            ik_link.maximumAngle = maximum
+
+        if pose_bone.parent is not None:
+            return self.__exportIKLinks(pose_bone.parent, pmx_bones, bone_map, ik_links + [ik_link], count - 1)
+        else:
+            return ik_link + [ik_link]
+
+
+    def __exportIK(self, bone_map):
+        """ Export IK constraints
+         @param bone_map the dictionary to map Blender bone names to bone indices of the pmx.model instance.
+        """
+        pmx_bones = self.__model.bones
+        arm = self.__armature
+        pose_bones = arm.pose.bones
+        for bone in pose_bones:
+            for c in bone.constraints:
+                if c.type == 'IK':
+                    logging.debug('  Found IK constraint.')
+                    ik_pose_bone = pose_bones[c.subtarget]
+                    if ik_pose_bone.mmd_shadow_bone_type == 'IK_PROXY':
+                        ik_bone_index = bone_map[ik_pose_bone.parent.name]
+                        logging.debug('  Found IK proxy bone: %s -> %s', ik_pose_bone.name, ik_pose_bone.parent.name)
+                    else:
+                        ik_bone_index = bone_map[c.subtarget]
+
+                    pmx_ik_bone = pmx_bones[ik_bone_index]
+                    pmx_ik_bone.isIK = True
+                    pmx_ik_bone.transform_order += 1
+                    pmx_ik_bone.target = pmx_bones[bone_map[bone.name]].displayConnection
+                    pmx_ik_bone.ik_links = self.__exportIKLinks(bone, pmx_bones, bone_map, [], c.chain_count)
+
+
 
     def __exportVertexMorphs(self, obj, vertexIndexMap):
         """ Export VertexMorphs
@@ -286,6 +354,7 @@ class __PmxExporter:
 
 
         nameMap = self.__exportBones()
+        self.__exportIK(nameMap)
         vgi_to_pbi = self.__getVertexGroupIndexToPmxBoneIndexMap(target, nameMap)
         verticesTable = self.__getVerticesTable(mesh, vgi_to_pbi)
         facesTable = self.__getFaceTable(mesh, verticesTable)

@@ -392,6 +392,7 @@ def register():
 
     bpy.types.PoseBone.is_mmd_tip_bone = bpy.props.BoolProperty(name='is_mmd_tip_bone', default=False)
     bpy.types.PoseBone.is_mmd_shadow_bone = bpy.props.BoolProperty(name='is_mmd_shadow_bone', default=False)
+    bpy.types.PoseBone.mmd_shadow_bone_type = bpy.props.StringProperty(name='mmd_shadow_bone_type')
 
     bpy.types.Object.is_mmd_glsl_light = bpy.props.BoolProperty(name='is_mmd_glsl_light', default=False)
 

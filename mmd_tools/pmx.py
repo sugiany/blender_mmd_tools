@@ -967,9 +967,9 @@ class Bone:
 
         # 以下IKボーンのみ有効な変数
         self.target = None
-        self.loopCount = 0
+        self.loopCount = 8
         # IKループ計三時の1回あたりの制限角度(ラジアン)
-        self.rotationConstraint = 0
+        self.rotationConstraint = 0.03
 
         # IKLinkオブジェクトの配列
         self.ik_links = []
@@ -1046,7 +1046,7 @@ class Bone:
         fs.writeStr(self.name_e)
 
         fs.writeVector(self.location)
-        fs.writeBoneIndex(self.parent or -1)
+        fs.writeBoneIndex(-1 if self.parent is None else self.parent)
         fs.writeInt(self.transform_order)
 
         flags = 0

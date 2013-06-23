@@ -230,6 +230,7 @@ class PMXImporter:
             logging.info('  Use %s as IK target bone instead of %s', s_bone_name, target_bone.name)
             target_bone = self.__armObj.pose.bones[s_bone_name]
             target_bone.is_mmd_shadow_bone = True
+            target_bone.mmd_shadow_bone_type = 'IK_PROXY'
 
         ikConst = ik_bone.constraints.new('IK')
         ikConst.chain_count = len(pmx_bone.ik_links)
@@ -295,6 +296,7 @@ class PMXImporter:
 
         p_bone = obj.pose.bones[bone_name]
         p_bone.is_mmd_shadow_bone = True
+        p_bone.mmd_shadow_bone_type = 'ADDITIONAL_TRANSFORM'
 
         if rotation:
             c = p_bone.constraints.new('COPY_ROTATION')
