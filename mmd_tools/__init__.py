@@ -57,6 +57,12 @@ def log_handler(log_level, filepath=None):
     handler.setFormatter(formatter)
     return handler
 
+LOG_LEVEL_ITEMS = [
+    ('DEBUG', '4. DEBUG', '', 1),
+    ('INFO', '3. INFO', '', 2),
+    ('WARNING', '2. WARNING', '', 3),
+    ('ERROR', '1. ERROR', '', 4),
+    ]
 
 class MMDToolsPropertyGroup(bpy.types.PropertyGroup):
     pass
@@ -77,13 +83,8 @@ class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     only_collisions = bpy.props.BoolProperty(name='import only non dynamics rigid bodies', default=False)
     ignore_non_collision_groups = bpy.props.BoolProperty(name='ignore  non collision groups', default=False)
     distance_of_ignore_collisions = bpy.props.FloatProperty(name='distance of ignore collisions', default=5.0)
+    log_level = bpy.props.EnumProperty(items=LOG_LEVEL_ITEMS, name='log level', default='DEBUG')
     save_log = bpy.props.BoolProperty(name='create a log file', default=False)
-    log_level = bpy.props.EnumProperty(items=[
-            ('DEBUG', '4. DEBUG', '', 1),
-            ('INFO', '3. INFO', '', 2),
-            ('WARNING', '2. WARNING', '', 3),
-            ('ERROR', '1. ERROR', '', 4),
-            ], name='log level', default='DEBUG')
 
     def execute(self, context):
         logger = logging.getLogger()
@@ -169,11 +170,25 @@ class ExportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 
     scale = bpy.props.FloatProperty(name='scale', default=0.2)
 
+    log_level = bpy.props.EnumProperty(items=LOG_LEVEL_ITEMS, name='log level', default='DEBUG')
+    save_log = bpy.props.BoolProperty(name='create a log file', default=False)
+
     def execute(self, context):
-        export_pmx.export(
-            filepath=self.filepath,
-            scale=self.scale
-            )
+        logger = logging.getLogger()
+        logger.setLevel(self.log_level)
+        if self.save_log:
+            handler = log_handler(self.log_level, filepath=self.filepath + '.mmd_tools.export.log')
+        else:
+            handler = log_handler(self.log_level)
+        logger.addHandler(handler)
+        try:
+            export_pmx.export(
+                filepath=self.filepath,
+                scale=self.scale
+                )
+        finally:
+            logger.removeHandler(handler)
+
         return {'FINISHED'}
 
     def invoke(self, context, event):
