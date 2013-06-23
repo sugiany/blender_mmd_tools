@@ -9,6 +9,7 @@ import bpy
 import os
 import mathutils
 import collections
+import logging
 
 class PMXImporter:
     TO_BLE_MATRIX = mathutils.Matrix([
@@ -58,8 +59,9 @@ class PMXImporter:
             count += c
         raise Exception('invalid face index.')
 
-    ## 必要なオブジェクトを生成し、ターゲットシーンにリンク
     def __createObjects(self):
+        """ Create main objects and link them to scene.
+        """
         pmxModel = self.__model
 
         self.__root = bpy.data.objects.new(name=pmxModel.name, object_data=None)
@@ -86,10 +88,15 @@ class PMXImporter:
     def __createGroups(self):
         pmxModel = self.__model
         self.__mainObjGroup = bpy.data.groups.new(name=pmxModel.name)
+        logging.debug('Create main group: %s', self.__mainObjGroup.name)
         self.__allObjGroup = bpy.data.groups.new(name=pmxModel.name + '_all')
+        logging.debug('Create all group: %s', self.__allObjGroup.name)
         self.__rigidObjGroup = bpy.data.groups.new(name=pmxModel.name + '_rigids')
+        logging.debug('Create rigid group: %s', self.__rigidObjGroup.name)
         self.__jointObjGroup = bpy.data.groups.new(name=pmxModel.name + '_joints')
+        logging.debug('Create joint group: %s', self.__jointObjGroup.name)
         self.__tempObjGroup = bpy.data.groups.new(name=pmxModel.name + '_temp')
+        logging.debug('Create temporary group: %s', self.__tempObjGroup.name)
 
     def __importVertexGroup(self):
         self.__vertexGroupTable = []
@@ -135,7 +142,7 @@ class PMXImporter:
             try:
                 tex.image = bpy.data.images.load(filepath=i.path)
             except Exception:
-                print('WARNING: failed to load %s'%str(i.path))
+                logging.warning('failed to load %s', str(i.path))
             self.__textureTable.append(tex)
 
     def __createEditBones(self, obj, pmx_bones):
@@ -208,13 +215,20 @@ class PMXImporter:
         target_bone = pose_bones[index]
 
         if (mathutils.Vector(ik_bone.tail) - mathutils.Vector(target_bone.head)).length > 0.001:
+            logging.info('Found a seperated IK constraint: IK: %s, Target: %s', ik_bone.name, target_bone.name)
             with bpyutils.edit_object(self.__armObj):
                 s_bone = self.__armObj.data.edit_bones.new(name='shadow')
+                logging.info('  Create a proxy bone: %s', s_bone.name)
                 s_bone.head = ik_bone.tail
                 s_bone.tail = s_bone.head + mathutils.Vector([0, 0, 1])
                 s_bone.layers = (False, False, False, False, False, False, False, False, True, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False)
                 s_bone.parent = self.__armObj.data.edit_bones[target_bone.name]
-            target_bone = self.__armObj.pose.bones[s_bone.name]
+                logging.info('  Set parent: %s -> %s', target_bone.name, s_bone.name)
+                # Must not access to EditBones from outside of the 'with' section.
+                s_bone_name = s_bone.name
+
+            logging.info('  Use %s as IK target bone instead of %s', s_bone_name, target_bone.name)
+            target_bone = self.__armObj.pose.bones[s_bone_name]
             target_bone.is_mmd_shadow_bone = True
 
         ikConst = ik_bone.constraints.new('IK')
@@ -491,8 +505,6 @@ class PMXImporter:
 
             collisionGroups[rigid.collision_group_number].append(obj)
             self.__rigidTable.append(obj)
-            print(len(self.__rigidTable))
-
 
     def __makeNonCollisionConstraint(self, obj_a, obj_b):
         if (mathutils.Vector(obj_a.location) - mathutils.Vector(obj_b.location)).length > self.__distance_of_ignore_collisions:
@@ -676,8 +688,6 @@ class PMXImporter:
                 mat.transparency_method = 'Z_TRANSPARENCY'
                 mat.alpha = 0
 
-
-
     def __importFaces(self):
         pmxModel = self.__model
         mesh = self.__meshObj.data
@@ -695,7 +705,6 @@ class PMXImporter:
             uv.uv3 = self.flipUV_V(pmxModel.vertices[f[2]].uv)
 
             bf.material_index = self.__getMaterialIndexFromFaceIndex(i)
-
 
     def __importVertexMorphs(self):
         pmxModel = self.__model

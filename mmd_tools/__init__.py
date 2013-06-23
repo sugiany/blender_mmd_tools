@@ -80,7 +80,7 @@ class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
             ('INFO', '3. INFO', '', 2),
             ('WARNING', '2. WARNING', '', 3),
             ('ERROR', '1. ERROR', '', 4),
-            ], name='log level', default='WARNING')
+            ], name='log level', default='DEBUG')
 
     def execute(self, context):
         logger = logging.getLogger()
