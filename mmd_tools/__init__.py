@@ -19,7 +19,7 @@ from . import auto_scene_setup
 bl_info= {
     "name": "mmd_tools",
     "author": "sugiany",
-    "version": (0, 4, 0),
+    "version": (0, 4, 1),
     "blender": (2, 67, 0),
     "location": "View3D > Tool Shelf > mmd_tools Panel",
     "description": "Utility tools for MMD model editing.",
@@ -80,7 +80,7 @@ class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
             ('INFO', '3. INFO', '', 2),
             ('WARNING', '2. WARNING', '', 3),
             ('ERROR', '1. ERROR', '', 4),
-            ], name='log level', default='DEBUG')
+            ], name='log level', default='INFO')
 
     def execute(self, context):
         logger = logging.getLogger()
