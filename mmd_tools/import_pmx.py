@@ -666,7 +666,6 @@ class PMXImporter:
 
     def __importMaterials(self):
         self.__importTextures()
-        bpy.types.Material.ambient_color = bpy.props.FloatVectorProperty(name='ambient color')
 
         pmxModel = self.__model
 
@@ -676,7 +675,7 @@ class PMXImporter:
             mat = bpy.data.materials.new(name=i.name)
             mat.diffuse_color = i.diffuse[0:3]
             mat.alpha = i.diffuse[3]
-            mat.ambient_color = i.ambient
+            mat.mmd_ambient_color = i.ambient
             mat.specular_color = i.specular[0:3]
             mat.specular_alpha = i.specular[3]
             self.__materialFaceCountTable.append(int(i.vertex_count/3))

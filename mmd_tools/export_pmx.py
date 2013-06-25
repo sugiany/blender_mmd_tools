@@ -99,7 +99,7 @@ class __PmxExporter:
         if vertex.uv is None:
             vertex.uv = uv
         elif (vertex.uv[0] - uv[0])**2 + (vertex.uv[1] - uv[1])**2 > 0.0001:
-            for i in cloneVertexMap[vertex]:
+            for i in cloneVertexMap.get(vertex, []):
                 if (i.uv[0] - uv[0])**2 + (i.uv[1] - uv[1])**2 < 0.0001:
                     return i
             n = copy.deepcopy(vertex)
@@ -166,7 +166,7 @@ class __PmxExporter:
             p_mat.name = i.name
             p_mat.name_e = i.name
             p_mat.diffuse = list(i.diffuse_color) + [i.alpha]
-            p_mat.ambient = i.ambient_color or [0.5, 0.5, 0.5]
+            p_mat.ambient = i.mmd_ambient_color or [0.5, 0.5, 0.5]
             p_mat.specular = list(i.specular_color) + [i.specular_alpha]
             p_mat.edge_color = [0.25, 0.3, 0.5, 0.5]
             p_mat.vertex_count = num_faces * 3
@@ -191,6 +191,7 @@ class __PmxExporter:
         boneMap = {}
         pmx_bones = []
         pose_bones = arm.pose.bones
+        world_mat = arm.matrix_world
         r = {}
         with bpyutils.edit_object(arm) as data:
             for bone in data.edit_bones:
@@ -203,7 +204,7 @@ class __PmxExporter:
                 else:
                     pmx_bone.name = bone.name
                 pmx_bone_e = p_bone.mmd_bone_name_e or ''
-                pmx_bone.location = mathutils.Vector(bone.head) * self.__scale * self.TO_PMX_MATRIX
+                pmx_bone.location = world_mat * mathutils.Vector(bone.head) * self.__scale * self.TO_PMX_MATRIX
                 pmx_bone.parent = bone.parent
                 pmx_bones.append(pmx_bone)
                 boneMap[bone] = pmx_bone
@@ -212,7 +213,7 @@ class __PmxExporter:
                 if len(bone.children) == 0 and not p_bone.is_mmd_tip_bone:
                     pmx_tip_bone = pmx.Bone()
                     pmx_tip_bone.name = 'tip_' + bone.name
-                    pmx_tip_bone.location =  mathutils.Vector(bone.tail) * self.__scale * self.TO_PMX_MATRIX
+                    pmx_tip_bone.location =  world_mat * mathutils.Vector(bone.tail) * self.__scale * self.TO_PMX_MATRIX
                     pmx_tip_bone.parent = bone
                     pmx_bones.append(pmx_tip_bone)
                     pmx_bone.displayConnection = pmx_tip_bone
@@ -301,6 +302,9 @@ class __PmxExporter:
         @param obj the target mesh object
         @param vertexIndexMap the dictionary to map vertex indices in blender to vertex indices in pmx.
         """
+        if obj.data.shape_keys is None:
+            logging.info('%s has no shape keys', obj.name)
+            return
         baseShape = obj.data.shape_keys.reference_key
         for shapeKey in obj.data.shape_keys.key_blocks:
             morph = pmx.VertexMorph(shapeKey.name, '', 4)
@@ -346,6 +350,7 @@ class __PmxExporter:
 
 
         mesh = target.to_mesh(bpy.context.scene, True, 'PREVIEW', False)
+        mesh.transform(target.matrix_world)
         mesh.transform(self.TO_PMX_MATRIX*self.__scale)
         self.__triangulate(mesh)
         mesh.update(calc_tessface=True)
