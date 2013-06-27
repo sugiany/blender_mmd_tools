@@ -70,21 +70,21 @@ class MMDToolsPropertyGroup(bpy.types.PropertyGroup):
 ## Import-Export
 class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     bl_idname = 'mmd_tools.import_model'
-    bl_label = 'Import PMX file (.pmx)'
+    bl_label = 'Import Model file (.pmd, .pmx)'
     bl_description = 'Import a Model file (.pmd, .pmx)'
     bl_options = {'PRESET'}
 
     filename_ext = '.pmx'
     filter_glob = bpy.props.StringProperty(default='*.pmx;*.pmd', options={'HIDDEN'})
 
-    scale = bpy.props.FloatProperty(name='scale', default=0.2)
-    renameBones = bpy.props.BoolProperty(name='rename bones', default=True)
-    hide_rigids = bpy.props.BoolProperty(name='hide rigid bodies and joints', default=True)
-    only_collisions = bpy.props.BoolProperty(name='import only non dynamics rigid bodies', default=False)
-    ignore_non_collision_groups = bpy.props.BoolProperty(name='ignore  non collision groups', default=False)
-    distance_of_ignore_collisions = bpy.props.FloatProperty(name='distance of ignore collisions', default=5.0)
-    log_level = bpy.props.EnumProperty(items=LOG_LEVEL_ITEMS, name='log level', default='DEBUG')
-    save_log = bpy.props.BoolProperty(name='create a log file', default=False)
+    scale = bpy.props.FloatProperty(name='Scale', default=0.2)
+    renameBones = bpy.props.BoolProperty(name='Rename bones', default=True)
+    hide_rigids = bpy.props.BoolProperty(name='Hide rigid bodies and joints', default=True)
+    only_collisions = bpy.props.BoolProperty(name='Ignore rigid bodies', default=False)
+    ignore_non_collision_groups = bpy.props.BoolProperty(name='Ignore  non collision groups', default=False)
+    distance_of_ignore_collisions = bpy.props.FloatProperty(name='Distance of ignore collisions', default=5.0)
+    log_level = bpy.props.EnumProperty(items=LOG_LEVEL_ITEMS, name='Log level', default='DEBUG')
+    save_log = bpy.props.BoolProperty(name='Create a log file', default=False)
 
     def execute(self, context):
         logger = logging.getLogger()
@@ -139,9 +139,9 @@ class ImportVmd_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     filename_ext = '.vmd'
     filter_glob = bpy.props.StringProperty(default='*.vmd', options={'HIDDEN'})
 
-    scale = bpy.props.FloatProperty(name='scale', default=0.2)
-    margin = bpy.props.IntProperty(name='margin', default=5, min=0)
-    update_scene_settings = bpy.props.BoolProperty(name='update scene settings', default=True)
+    scale = bpy.props.FloatProperty(name='Scale', default=0.2)
+    margin = bpy.props.IntProperty(name='Margin', default=5, min=0)
+    update_scene_settings = bpy.props.BoolProperty(name='Update scene settings', default=True)
 
     def execute(self, context):
         importer = import_vmd.VMDImporter(filepath=self.filepath, scale=self.scale, frame_margin=self.margin)
@@ -168,10 +168,10 @@ class ExportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     filename_ext = '.pmx'
     filter_glob = bpy.props.StringProperty(default='*.pmx', options={'HIDDEN'})
 
-    scale = bpy.props.FloatProperty(name='scale', default=0.2)
+    scale = bpy.props.FloatProperty(name='Scale', default=0.2)
 
-    log_level = bpy.props.EnumProperty(items=LOG_LEVEL_ITEMS, name='log level', default='DEBUG')
-    save_log = bpy.props.BoolProperty(name='create a log file', default=False)
+    log_level = bpy.props.EnumProperty(items=LOG_LEVEL_ITEMS, name='Log level', default='DEBUG')
+    save_log = bpy.props.BoolProperty(name='Create a log file', default=False)
 
     def execute(self, context):
         logger = logging.getLogger()
@@ -214,8 +214,8 @@ class SeparateByMaterials_Op(bpy.types.Operator):
 
 class SetFrameRange_Op(bpy.types.Operator):
     bl_idname = 'mmd_tools.set_frame_range'
-    bl_label = 'set range'
-    bl_description = 'set the frame range to best values to play the animation from start to finish. And set the frame rate to 30.0.'
+    bl_label = 'Set range'
+    bl_description = 'Set the frame range to best values to play the animation from start to finish. And set the frame rate to 30.0.'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -301,7 +301,7 @@ class ResetShading_Op(bpy.types.Operator):
 class SetShadelessMaterials_Op(bpy.types.Operator):
     bl_idname = 'mmd_tools.set_shadeless_materials'
     bl_label = 'GLSL View'
-    bl_description = 'set the materials of selected objects to shadeless.'
+    bl_description = 'Set the materials of selected objects to shadeless.'
     bl_options = {'PRESET'}
 
     def execute(self, context):
