@@ -19,9 +19,9 @@ from . import auto_scene_setup
 bl_info= {
     "name": "mmd_tools",
     "author": "sugiany",
-    "version": (0, 4, 1),
+    "version": (0, 4, 2),
     "blender": (2, 67, 0),
-    "location": "View3D > Tool Shelf > mmd_tools Panel",
+    "location": "View3D > Tool Shelf > MMD Tools Panel",
     "description": "Utility tools for MMD model editing.",
     "warning": "",
     "wiki_url": "",
@@ -42,8 +42,6 @@ if "bpy" in locals():
         imp.reload(cycles_converter)
     if "auto_scene_setup" in locals():
         imp.reload(auto_scene_setup)
-    if "test" in locals():
-        imp.reload(test)
 
 def log_handler(log_level, filepath=None):
     if filepath is None:
