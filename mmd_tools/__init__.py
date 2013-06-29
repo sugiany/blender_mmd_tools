@@ -20,9 +20,9 @@ from . import auto_scene_setup
 bl_info= {
     "name": "mmd_tools",
     "author": "sugiany",
-    "version": (0, 4, 0),
+    "version": (0, 4, 2),
     "blender": (2, 67, 0),
-    "location": "View3D > Tool Shelf > mmd_tools Panel",
+    "location": "View3D > Tool Shelf > MMD Tools Panel",
     "description": "Utility tools for MMD model editing.",
     "warning": "",
     "wiki_url": "",
@@ -45,8 +45,6 @@ if "bpy" in locals():
         imp.reload(cycles_converter)
     if "auto_scene_setup" in locals():
         imp.reload(auto_scene_setup)
-    if "test" in locals():
-        imp.reload(test)
 
 def log_handler(log_level, filepath=None):
     if filepath is None:
@@ -82,7 +80,7 @@ class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     hide_rigids = bpy.props.BoolProperty(name='Hide rigid bodies and joints', default=True)
     only_collisions = bpy.props.BoolProperty(name='Ignore rigid bodies', default=False)
     ignore_non_collision_groups = bpy.props.BoolProperty(name='Ignore  non collision groups', default=False)
-    distance_of_ignore_collisions = bpy.props.FloatProperty(name='Distance of ignore collisions', default=5.0)
+    distance_of_ignore_collisions = bpy.props.FloatProperty(name='Distance of ignore collisions', default=3.0)
     log_level = bpy.props.EnumProperty(items=LOG_LEVEL_ITEMS, name='Log level', default='DEBUG')
     save_log = bpy.props.BoolProperty(name='Create a log file', default=False)
 
