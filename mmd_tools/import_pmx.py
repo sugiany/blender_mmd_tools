@@ -39,6 +39,7 @@ class PMXImporter:
         self.__jointTable = []
 
         self.__materialFaceCountTable = None
+        self.__nonCollisionConstraints = []
 
         # object groups
         self.__allObjGroup = None    # a group which contains all objects created for the target model by mmd_tools.
@@ -463,18 +464,17 @@ class PMXImporter:
                 bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=True)
 
                 target_bone = self.__boneTable[rigid.bone]
-                bpy.ops.object.add(type='EMPTY',
-                                   view_align=False,
-                                   enter_editmode=False,
-                                   location=target_bone.tail
-                                   )
-                empty = bpy.context.selected_objects[0]
-                empty.name = 'mmd_bonetrack'
+                empty = bpy.data.objects.new(
+                    'mmd_bonetrack',
+                    None)
+                bpy.context.scene.objects.link(empty)
+                empty.location = target_bone.tail
                 empty.empty_draw_size = 0.5 * self.__scale
                 empty.empty_draw_type = 'ARROWS'
                 empty.is_mmd_rigid_track_target = True
                 self.__tempObjGroup.objects.link(empty)
 
+                utils.selectAObject(empty)
                 bpy.context.scene.objects.active = obj
                 bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=False)
 
@@ -507,7 +507,6 @@ class PMXImporter:
                     for j in collisionGroups[i]:
                         s = time.time()
                         self.__makeNonCollisionConstraint(obj, j)
-                        logging.debug('makeNonCollisionConstraint took %f seconds.', time.time() - s)
 
             collisionGroups[rigid.collision_group_number].append(obj)
             self.__rigidTable.append(obj)
@@ -517,22 +516,23 @@ class PMXImporter:
     def __makeNonCollisionConstraint(self, obj_a, obj_b):
         if (mathutils.Vector(obj_a.location) - mathutils.Vector(obj_b.location)).length > self.__distance_of_ignore_collisions:
             return
-        bpy.ops.object.add(type='EMPTY',
-                   view_align=False,
-                   enter_editmode=False,
-                   location=[0, 0, 0]
-                   )
-        t = bpy.context.selected_objects[0]
+        t = bpy.data.objects.new(
+            'ncc.%d'%len(self.__nonCollisionConstraints),
+            None)
+        bpy.context.scene.objects.link(t)
+        t.location = [0, 0, 0]
         t.empty_draw_size = 0.5 * self.__scale
         t.empty_draw_type = 'ARROWS'
         t.is_mmd_non_collision_joint = True
         t.hide_render = True
         t.parent = self.__root
+        utils.selectAObject(t)
         bpy.ops.rigidbody.constraint_add(type='GENERIC')
         rb = t.rigid_body_constraint
         rb.disable_collisions = True
         rb.object1 = obj_a
         rb.object2 = obj_b
+        self.__nonCollisionConstraints.append(t)
         self.__nonCollisionJointTable[frozenset((obj_a, obj_b))] = t
         self.__tempObjGroup.objects.link(t)
 
@@ -548,19 +548,18 @@ class PMXImporter:
         self.__rigidObjGroup.objects.unlink(spring_target)
         self.__tempObjGroup.objects.link(spring_target)
 
-        bpy.ops.object.add(type='EMPTY',
-                           view_align=False,
-                           enter_editmode=False,
-                           location=target.location
-                           )
-        obj = bpy.context.selected_objects[0]
-        obj.name = 'S.'+target.name
+        obj = bpy.data.objects.new(
+            'S.'+target.name,
+            None)
+        bpy.context.scene.objects.link(obj)
+        obj.location = target.location
         obj.empty_draw_size = 0.5 * self.__scale
         obj.empty_draw_type = 'ARROWS'
         obj.hide_render = True
         obj.is_mmd_spring_joint = True
         obj.parent = self.__root
         self.__tempObjGroup.objects.link(obj)
+        utils.selectAObject(obj)
         bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
         rbc = obj.rigid_body_constraint
         rbc.object1 = target
@@ -581,14 +580,12 @@ class PMXImporter:
         for joint in self.__model.joints:
             loc = mathutils.Vector(joint.location) * self.TO_BLE_MATRIX * self.__scale
             rot = mathutils.Vector(joint.rotation) * self.TO_BLE_MATRIX * -1
-            bpy.ops.object.add(type='EMPTY',
-                               view_align=False,
-                               enter_editmode=False,
-                               location=loc,
-                               rotation=rot
-                               )
-            obj = bpy.context.selected_objects[0]
-            obj.name = 'J.'+joint.name
+            obj = bpy.data.objects.new(
+                'J.'+joint.name,
+                None)
+            bpy.context.scene.objects.link(obj)
+            obj.location = loc
+            obj.rotation_euler = rot
             obj.empty_draw_size = 0.5 * self.__scale
             obj.empty_draw_type = 'ARROWS'
             obj.hide_render = True
@@ -596,6 +593,7 @@ class PMXImporter:
             obj.parent = self.__root
             self.__jointObjGroup.objects.link(obj)
 
+            utils.selectAObject(obj)
             bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
             rbc = obj.rigid_body_constraint
 
