@@ -1572,7 +1572,7 @@ def load(path):
         fs.setHeader(header)
         model = Model()
         model.load(fs)
-        logging.info(' Finish loading.')
+        logging.info(' Finished loading.')
         logging.info('----------------------------------------')
         logging.info(' mmd_tools.pmx module')
         logging.info('****************************************')

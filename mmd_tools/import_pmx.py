@@ -10,6 +10,7 @@ import os
 import mathutils
 import collections
 import logging
+import time
 
 class PMXImporter:
     TO_BLE_MATRIX = mathutils.Matrix([
@@ -402,7 +403,10 @@ class PMXImporter:
     def __importRigids(self):
         self.__rigidTable = []
         self.__nonCollisionJointTable = {}
-        collisionGroups = collections.defaultdict(list)
+        start_time = time.time()
+        collisionGroups = []
+        for i in range(16):
+            collisionGroups.append([])
         for rigid in self.__model.rigids:
             if self.__onlyCollisions and rigid.mode != pmx.Rigid.MODE_STATIC:
                 continue
@@ -501,10 +505,14 @@ class PMXImporter:
             for i in range(16):
                 if rigid.collision_group_mask & (1<<i) == 0:
                     for j in collisionGroups[i]:
+                        s = time.time()
                         self.__makeNonCollisionConstraint(obj, j)
+                        logging.debug('makeNonCollisionConstraint took %f seconds.', time.time() - s)
 
             collisionGroups[rigid.collision_group_number].append(obj)
             self.__rigidTable.append(obj)
+        logging.debug('Finished importing rigid bodies in %f seconds.', time.time() - start_time)
+
 
     def __makeNonCollisionConstraint(self, obj_a, obj_b):
         if (mathutils.Vector(obj_a.location) - mathutils.Vector(obj_b.location)).length > self.__distance_of_ignore_collisions:
@@ -753,6 +761,15 @@ class PMXImporter:
         self.__distance_of_ignore_collisions = args.get('distance_of_ignore_collisions', 1) # 衝突を考慮しない距離（非衝突グループ設定を無視する距離）
         self.__distance_of_ignore_collisions *= self.__scale
 
+        logging.info('****************************************')
+        logging.info(' mmd_tools.import_pmx module')
+        logging.info('----------------------------------------')
+        logging.info(' Start to load model data form a pmx file')
+        logging.info('            by the mmd_tools.pmx modlue.')
+        logging.info('')
+
+        start_time = time.time()
+
         self.__createGroups()
         self.__createObjects()
 
@@ -781,3 +798,8 @@ class PMXImporter:
                 self.__allObjGroup.objects.link(j)
 
         bpy.context.scene.gravity[2] = -9.81 * 10 * self.__scale
+
+        logging.info(' Finished importing the model in %f seconds.', time.time() - start_time)
+        logging.info('----------------------------------------')
+        logging.info(' mmd_tools.import_pmx module')
+        logging.info('****************************************')
