@@ -89,15 +89,15 @@ class PMXImporter:
 
     def __createGroups(self):
         pmxModel = self.__model
-        self.__mainObjGroup = bpy.data.groups.new(name=pmxModel.name)
+        self.__mainObjGroup = bpy.data.groups.new(name='mmd_tools.' + pmxModel.name)
         logging.debug('Create main group: %s', self.__mainObjGroup.name)
-        self.__allObjGroup = bpy.data.groups.new(name=pmxModel.name + '_all')
+        self.__allObjGroup = bpy.data.groups.new(name='mmd_tools.' + pmxModel.name + '_all')
         logging.debug('Create all group: %s', self.__allObjGroup.name)
-        self.__rigidObjGroup = bpy.data.groups.new(name=pmxModel.name + '_rigids')
+        self.__rigidObjGroup = bpy.data.groups.new(name='mmd_tools.' + pmxModel.name + '_rigids')
         logging.debug('Create rigid group: %s', self.__rigidObjGroup.name)
-        self.__jointObjGroup = bpy.data.groups.new(name=pmxModel.name + '_joints')
+        self.__jointObjGroup = bpy.data.groups.new(name='mmd_tools.' + pmxModel.name + '_joints')
         logging.debug('Create joint group: %s', self.__jointObjGroup.name)
-        self.__tempObjGroup = bpy.data.groups.new(name=pmxModel.name + '_temp')
+        self.__tempObjGroup = bpy.data.groups.new(name='mmd_tools.' + pmxModel.name + '_temp')
         logging.debug('Create temporary group: %s', self.__tempObjGroup.name)
 
     def __importVertexGroup(self):
@@ -523,7 +523,7 @@ class PMXImporter:
         t.location = [0, 0, 0]
         t.empty_draw_size = 0.5 * self.__scale
         t.empty_draw_type = 'ARROWS'
-        t.is_mmd_non_collision_joint = True
+        t.is_mmd_non_collision_constraint = True
         t.hide_render = True
         t.parent = self.__root
         utils.selectAObject(t)
@@ -726,7 +726,7 @@ class PMXImporter:
                 shapeKeyPoint.co = shapeKeyPoint.co + offset * self.__scale
 
     def __hideRigidsAndJoints(self, obj):
-        if obj.is_mmd_rigid or obj.is_mmd_joint or obj.is_mmd_non_collision_joint or obj.is_mmd_spring_joint or obj.is_mmd_spring_goal:
+        if obj.is_mmd_rigid or obj.is_mmd_joint or obj.is_mmd_non_collision_constraint or obj.is_mmd_spring_joint or obj.is_mmd_spring_goal:
             obj.hide = True
 
         for i in obj.children:

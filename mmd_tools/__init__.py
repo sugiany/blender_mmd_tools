@@ -15,6 +15,7 @@ from . import mmd_camera
 from . import utils
 from . import cycles_converter
 from . import auto_scene_setup
+from . import rigging
 
 bl_info= {
     "name": "mmd_tools",
@@ -55,6 +56,7 @@ def log_handler(log_level, filepath=None):
 
 class MMDToolsPropertyGroup(bpy.types.PropertyGroup):
     pass
+
 
 ## Import-Export
 class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
@@ -313,6 +315,98 @@ class MMDToolsObjectPanel(bpy.types.Panel):
         c = col.column(align=True)
         c.operator('mmd_tools.set_frame_range', text='Set frame range')
 
+
+class ShowRigidBodies_Op(bpy.types.Operator):
+    bl_idname = 'mmd_tools.show_rigid_bodies'
+    bl_label = 'Show Rigid Bodies'
+    bl_description = 'Show Rigid bodies'
+    bl_options = {'PRESET'}
+
+    def execute(self, context):
+        for i in rigging.findRididBodyObjects():
+            i.hide = False
+        return {'FINISHED'}
+
+class HideRigidBodies_Op(bpy.types.Operator):
+    bl_idname = 'mmd_tools.hide_rigid_bodies'
+    bl_label = 'Hide Rigid Bodies'
+    bl_description = 'Hide Rigid bodies'
+    bl_options = {'PRESET'}
+
+    def execute(self, context):
+        for i in rigging.findRididBodyObjects():
+            i.hide = True
+        return {'FINISHED'}
+
+class ShowJoints_Op(bpy.types.Operator):
+    bl_idname = 'mmd_tools.show_joints'
+    bl_label = 'Show joints'
+    bl_description = 'Show joints'
+    bl_options = {'PRESET'}
+
+    def execute(self, context):
+        for i in rigging.findJointObjects():
+            i.hide = False
+        return {'FINISHED'}
+
+class HideJoints_Op(bpy.types.Operator):
+    bl_idname = 'mmd_tools.hide_joints'
+    bl_label = 'Hide joints'
+    bl_description = 'Hide joints'
+    bl_options = {'PRESET'}
+
+    def execute(self, context):
+        for i in rigging.findJointObjects():
+            i.hide = True
+        return {'FINISHED'}
+
+class ShowTemporaryObjects_Op(bpy.types.Operator):
+    bl_idname = 'mmd_tools.show_temporary_objects'
+    bl_label = 'Show temporary objects'
+    bl_description = 'Show temporary objects'
+    bl_options = {'PRESET'}
+
+    def execute(self, context):
+        for i in rigging.findTemporaryObjects():
+            i.hide = False
+        return {'FINISHED'}
+
+class HideTemporaryObjects_Op(bpy.types.Operator):
+    bl_idname = 'mmd_tools.hide_temporary_objects'
+    bl_label = 'Hide temporary objects'
+    bl_description = 'Hide temporary objects'
+    bl_options = {'PRESET'}
+
+    def execute(self, context):
+        for i in rigging.findTemporaryObjects():
+            i.hide = True
+        return {'FINISHED'}
+
+class MMDToolsRiggingPanel(bpy.types.Panel):
+    bl_idname = 'OBJECT_PT_mmd_tools_rigging'
+    bl_label = 'MMD Rig Tools'
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'TOOLS'
+    bl_context = ''
+
+
+    def draw(self, context):
+        col = self.layout.column(align=True)
+        col.label('Show/Hide:')
+        c = col.column(align=True)
+        r = c.row()
+        r.label('Rigid:')
+        r.operator('mmd_tools.show_rigid_bodies', text='Show')
+        r.operator('mmd_tools.hide_rigid_bodies', text='Hide')
+        r = c.row()
+        r.label('Joint:')
+        r.operator('mmd_tools.show_joints', text='Show')
+        r.operator('mmd_tools.hide_joints', text='Hide')
+        r = c.row()
+        r.label('Temp:')
+        r.operator('mmd_tools.show_temporary_objects', text='Show')
+        r.operator('mmd_tools.hide_temporary_objects', text='Hide')
+
 def menu_func_import(self, context):
     self.layout.operator(ImportPmx_Op.bl_idname, text="MikuMikuDance Model (.pmd, .pmx)")
     self.layout.operator(ImportVmd_Op.bl_idname, text="MikuMikuDance Motion (.vmd)")
@@ -334,7 +428,7 @@ def register():
     bpy.types.Object.is_mmd_rigid = bpy.props.BoolProperty(name='is_mmd_rigid', default=False)
     bpy.types.Object.is_mmd_joint = bpy.props.BoolProperty(name='is_mmd_joint', default=False)
     bpy.types.Object.is_mmd_rigid_track_target = bpy.props.BoolProperty(name='is_mmd_rigid_track_target', default=False)
-    bpy.types.Object.is_mmd_non_collision_joint = bpy.props.BoolProperty(name='is_mmd_non_collision_joint', default=False)
+    bpy.types.Object.is_mmd_non_collision_constraint = bpy.props.BoolProperty(name='is_mmd_non_collision_constraint', default=False)
     bpy.types.Object.is_mmd_spring_joint = bpy.props.BoolProperty(name='is_mmd_spring_joint', default=False)
     bpy.types.Object.is_mmd_spring_goal = bpy.props.BoolProperty(name='is_mmd_spring_goal', default=False)
     bpy.types.PoseBone.mmd_enabled_local_axis = bpy.props.BoolProperty(name='mmd_enabled_local_axis', default=False)
@@ -364,7 +458,7 @@ def unregister():
     del bpy.types.Object.is_mmd_rigid
     del bpy.types.Object.is_mmd_joint
     del bpy.types.Object.is_mmd_rigid_track_target
-    del bpy.types.Object.is_mmd_non_collision_joint
+    del bpy.types.Object.is_mmd_non_collision_constraint
     del bpy.types.Object.is_mmd_spring_joint
     del bpy.types.Object.is_mmd_spring_goal
     del bpy.types.PoseBone.mmd_enabled_local_axis
