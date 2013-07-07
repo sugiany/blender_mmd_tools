@@ -206,6 +206,9 @@ class __PmxExporter:
                 pmx_bone_e = p_bone.mmd_bone_name_e or ''
                 pmx_bone.location = world_mat * mathutils.Vector(bone.head) * self.__scale * self.TO_PMX_MATRIX
                 pmx_bone.parent = bone.parent
+                pmx_bone.visible = not p_bone.bone.hide
+                pmx_bone.isMovable = not all(p_bone.lock_location)
+                pmx_bone.isRotatable = not all(p_bone.lock_rotation)
                 pmx_bones.append(pmx_bone)
                 boneMap[bone] = pmx_bone
                 r[bone.name] = len(pmx_bones) - 1

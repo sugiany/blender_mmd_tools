@@ -372,7 +372,7 @@ class PMXImporter:
                 b_bone.lock_rotation = [True, True, True]
 
             if not p_bone.isMovable:
-                b_bone.lock_location =[True, True, True]
+                b_bone.lock_location = [True, True, True]
 
             if p_bone.isIK:
                 if p_bone.target != -1:
