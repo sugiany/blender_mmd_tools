@@ -513,8 +513,11 @@ class PMXImporter:
         logging.debug('Finished importing rigid bodies in %f seconds.', time.time() - start_time)
 
 
+    def __getRigidRange(self, obj):
+        return (mathutils.Vector(obj.bound_box[0]) - mathutils.Vector(obj.bound_box[6])).length
+
     def __makeNonCollisionConstraint(self, obj_a, obj_b):
-        if (mathutils.Vector(obj_a.location) - mathutils.Vector(obj_b.location)).length > self.__distance_of_ignore_collisions:
+        if (mathutils.Vector(obj_a.location) - mathutils.Vector(obj_b.location)).length > self.__distance_of_ignore_collisions * (self.__getRigidRange(obj_a) + self.__getRigidRange(obj_b)):
             return
         t = bpy.data.objects.new(
             'ncc.%d'%len(self.__nonCollisionConstraints),
@@ -757,7 +760,7 @@ class PMXImporter:
         self.__onlyCollisions = args.get('only_collisions', False)
         self.__ignoreNonCollisionGroups = args.get('ignore_non_collision_groups', True)
         self.__distance_of_ignore_collisions = args.get('distance_of_ignore_collisions', 1) # 衝突を考慮しない距離（非衝突グループ設定を無視する距離）
-        self.__distance_of_ignore_collisions *= self.__scale
+        self.__distance_of_ignore_collisions /= 2
 
         logging.info('****************************************')
         logging.info(' mmd_tools.import_pmx module')
