@@ -89,15 +89,15 @@ class PMXImporter:
 
     def __createGroups(self):
         pmxModel = self.__model
-        self.__mainObjGroup = bpy.data.groups.new(name=pmxModel.name)
+        self.__mainObjGroup = bpy.data.groups.new(name='mmd_tools.' + pmxModel.name)
         logging.debug('Create main group: %s', self.__mainObjGroup.name)
-        self.__allObjGroup = bpy.data.groups.new(name=pmxModel.name + '_all')
+        self.__allObjGroup = bpy.data.groups.new(name='mmd_tools.' + pmxModel.name + '_all')
         logging.debug('Create all group: %s', self.__allObjGroup.name)
-        self.__rigidObjGroup = bpy.data.groups.new(name=pmxModel.name + '_rigids')
+        self.__rigidObjGroup = bpy.data.groups.new(name='mmd_tools.' + pmxModel.name + '_rigids')
         logging.debug('Create rigid group: %s', self.__rigidObjGroup.name)
-        self.__jointObjGroup = bpy.data.groups.new(name=pmxModel.name + '_joints')
+        self.__jointObjGroup = bpy.data.groups.new(name='mmd_tools.' + pmxModel.name + '_joints')
         logging.debug('Create joint group: %s', self.__jointObjGroup.name)
-        self.__tempObjGroup = bpy.data.groups.new(name=pmxModel.name + '_temp')
+        self.__tempObjGroup = bpy.data.groups.new(name='mmd_tools.' + pmxModel.name + '_temp')
         logging.debug('Create temporary group: %s', self.__tempObjGroup.name)
 
     def __importVertexGroup(self):
@@ -515,8 +515,11 @@ class PMXImporter:
         logging.debug('Finished importing rigid bodies in %f seconds.', time.time() - start_time)
 
 
+    def __getRigidRange(self, obj):
+        return (mathutils.Vector(obj.bound_box[0]) - mathutils.Vector(obj.bound_box[6])).length
+
     def __makeNonCollisionConstraint(self, obj_a, obj_b):
-        if (mathutils.Vector(obj_a.location) - mathutils.Vector(obj_b.location)).length > self.__distance_of_ignore_collisions:
+        if (mathutils.Vector(obj_a.location) - mathutils.Vector(obj_b.location)).length > self.__distance_of_ignore_collisions * (self.__getRigidRange(obj_a) + self.__getRigidRange(obj_b)):
             return
         t = bpy.data.objects.new(
             'ncc.%d'%len(self.__nonCollisionConstraints),
@@ -525,7 +528,7 @@ class PMXImporter:
         t.location = [0, 0, 0]
         t.empty_draw_size = 0.5 * self.__scale
         t.empty_draw_type = 'ARROWS'
-        t.is_mmd_non_collision_joint = True
+        t.is_mmd_non_collision_constraint = True
         t.hide_render = True
         t.parent = self.__root
         utils.selectAObject(t)
@@ -727,7 +730,7 @@ class PMXImporter:
                 shapeKeyPoint.co = shapeKeyPoint.co + offset * self.__scale
 
     def __hideRigidsAndJoints(self, obj):
-        if obj.is_mmd_rigid or obj.is_mmd_joint or obj.is_mmd_non_collision_joint or obj.is_mmd_spring_joint or obj.is_mmd_spring_goal:
+        if obj.is_mmd_rigid or obj.is_mmd_joint or obj.is_mmd_non_collision_constraint or obj.is_mmd_spring_joint or obj.is_mmd_spring_goal:
             obj.hide = True
 
         for i in obj.children:
@@ -758,7 +761,7 @@ class PMXImporter:
         self.__onlyCollisions = args.get('only_collisions', False)
         self.__ignoreNonCollisionGroups = args.get('ignore_non_collision_groups', True)
         self.__distance_of_ignore_collisions = args.get('distance_of_ignore_collisions', 1) # 衝突を考慮しない距離（非衝突グループ設定を無視する距離）
-        self.__distance_of_ignore_collisions *= self.__scale
+        self.__distance_of_ignore_collisions /= 2
 
         logging.info('****************************************')
         logging.info(' mmd_tools.import_pmx module')
