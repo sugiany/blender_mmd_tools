@@ -690,7 +690,7 @@ class PMXImporter:
             self.__materialFaceCountTable.append(int(i.vertex_count/3))
             self.__meshObj.data.materials.append(mat)
             if i.texture != -1:
-                texture_slot = mat.texture_slots.add()
+                texture_slot = mat.texture_slots.create(0)
                 texture_slot.use_map_alpha = True
                 texture_slot.texture = self.__textureTable[i.texture]
                 texture_slot.texture_coords = 'UV'
@@ -698,11 +698,20 @@ class PMXImporter:
                 mat.transparency_method = 'Z_TRANSPARENCY'
                 mat.alpha = 0
             if not i.is_shared_toon_texture and i.toon_texture != -1:
-                texture_slot = mat.texture_slots.add()
+                texture_slot = mat.texture_slots.create(1)
                 texture_slot.use_map_alpha = True
                 texture_slot.texture = self.__textureTable[i.toon_texture]
                 texture_slot.texture_coords = 'UV'
                 mat.use_textures[1] = False
+                mat.use_transparency = True
+                mat.transparency_method = 'Z_TRANSPARENCY'
+                mat.alpha = 0
+            if i.sphere_texture != -1:
+                texture_slot = mat.texture_slots.create(2)
+                texture_slot.use_map_alpha = True
+                texture_slot.texture = self.__textureTable[i.sphere_texture]
+                texture_slot.texture_coords = 'UV'
+                mat.use_textures[2] = False
                 mat.use_transparency = True
                 mat.transparency_method = 'Z_TRANSPARENCY'
                 mat.alpha = 0
