@@ -697,6 +697,15 @@ class PMXImporter:
                 mat.use_transparency = True
                 mat.transparency_method = 'Z_TRANSPARENCY'
                 mat.alpha = 0
+            if not i.is_shared_toon_texture and i.toon_texture != -1:
+                texture_slot = mat.texture_slots.add()
+                texture_slot.use_map_alpha = True
+                texture_slot.texture = self.__textureTable[i.toon_texture]
+                texture_slot.texture_coords = 'UV'
+                mat.use_textures[1] = False
+                mat.use_transparency = True
+                mat.transparency_method = 'Z_TRANSPARENCY'
+                mat.alpha = 0
 
     def __importFaces(self):
         pmxModel = self.__model
