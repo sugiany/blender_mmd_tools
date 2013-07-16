@@ -3,6 +3,8 @@
 from bpy.types import PropertyGroup
 from bpy.props import BoolProperty, CollectionProperty, EnumProperty, FloatProperty, FloatVectorProperty, IntProperty, StringProperty, PointerProperty
 
+from .pmx import Material
+
 class MMDMaterial(PropertyGroup):
     name_j = StringProperty(
         name='Name',
@@ -74,6 +76,17 @@ class MMDMaterial(PropertyGroup):
         max=100,
         step=0.1,
         default=0.5,
+        )
+
+    sphere_texture_type = EnumProperty(
+        name='Sphere Map Type',
+        description='',
+        items = [
+            (str(Material.SPHERE_MODE_OFF), 'Off', '', 1),
+            (str(Material.SPHERE_MODE_MULT), 'Multiply', '', 2),
+            (str(Material.SPHERE_MODE_ADD), 'Add', '', 3),
+            (str(Material.SPHERE_MODE_SUBTEX), 'SubTexture', '', 4),
+            ],
         )
 
     comment = StringProperty(

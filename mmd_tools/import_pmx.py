@@ -698,6 +698,7 @@ class PMXImporter:
             mmd_material.enabled_toon_edge = i.enabled_toon_edge
             mmd_material.edge_color = i.edge_color
             mmd_material.edge_weight = i.edge_size
+            mmd_material.sphere_texture_type = str(i.sphere_texture_mode)
             mmd_material.comment = i.comment
 
             self.__materialFaceCountTable.append(int(i.vertex_count/3))

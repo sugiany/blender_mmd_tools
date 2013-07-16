@@ -519,6 +519,8 @@ class MMDMaterialPanel(bpy.types.Panel):
         col.label('Other:')
         c = col.column()
         r = c.row()
+        r.prop(mmd_material, 'sphere_texture_type')
+        r = c.row()
         r.prop(mmd_material, 'comment')
 
 
