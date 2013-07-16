@@ -471,7 +471,22 @@ def register():
     bpy.types.Object.mmd_camera_distance = bpy.props.FloatProperty(name='mmd_camera_distance')
     bpy.types.Object.mmd_camera_angle = bpy.props.FloatProperty(name='mmd_camera_angle')
     bpy.types.Object.mmd_camera_persp = bpy.props.BoolProperty(name='mmd_camera_persp')
-    bpy.types.Material.mmd_ambient_color = bpy.props.FloatVectorProperty(name='mmd_ambient_color')
+
+    # Material custom properties
+    bpy.types.Material.mmd_material_name_j = bpy.props.StringProperty(name='Name')
+    bpy.types.Material.mmd_material_name_e = bpy.props.StringProperty(name='Name')
+    bpy.types.Material.mmd_ambient_color = bpy.props.FloatVectorProperty(subtype='COLOR', name='mmd_ambient_color')
+    bpy.types.Material.mmd_double_sided = bpy.props.BoolProperty(name='mmd_double_sided')
+    bpy.types.Material.mmd_enabled_drop_shadow = bpy.props.BoolProperty(name='mmd_enabled_drop_shadow')
+    bpy.types.Material.mmd_enabled_self_shadow_map = bpy.props.BoolProperty(name='mmd_enabled_self_shadow_map')
+    bpy.types.Material.mmd_enabled_self_shadow = bpy.props.BoolProperty(name='mmd_enabled_self_shadow')
+    bpy.types.Material.mmd_enabled_toon_edge = bpy.props.BoolProperty(name='mmd_enabled_toon_edge')
+
+    bpy.types.Material.mmd_edge_color = bpy.props.FloatVectorProperty(subtype='COLOR', size=4, name='mmd_edge_color')
+    bpy.types.Material.mmd_edge_size = bpy.props.FloatProperty(name='mmd_edge_size')
+
+    bpy.types.Material.mmd_material_comment = bpy.props.StringProperty(name='mmd_material_comment')
+
 
     bpy.types.Object.is_mmd_lamp = bpy.props.BoolProperty(name='is_mmd_lamp', default=False)
     bpy.types.Object.is_mmd_rigid = bpy.props.BoolProperty(name='is_mmd_rigid', default=False)
@@ -515,8 +530,23 @@ def unregister():
     del bpy.types.PoseBone.mmd_local_axis_x
     del bpy.types.PoseBone.mmd_local_axis_z
 
+    del bpy.types.Material.mmd_material_name_j
+    del bpy.types.Material.mmd_material_name_e
+    del bpy.types.Material.mmd_ambient_color
+    del bpy.types.Material.mmd_double_sided
+    del bpy.types.Material.mmd_enabled_drop_shadow
+    del bpy.types.Material.mmd_enabled_self_shadow_map
+    del bpy.types.Material.mmd_enabled_self_shadow
+    del bpy.types.Material.mmd_enabled_toon_edge
+
+    del bpy.types.Material.mmd_edge_color
+    del bpy.types.Material.mmd_edge_size
+
+    del bpy.types.Material.mmd_material_comment
+
+
     del bpy.types.PoseBone.is_mmd_tip_bone
-    del bpy.types.PoseBone.mmd_shadow_bone
+    del bpy.types.PoseBone.is_mmd_shadow_bone
     del bpy.types.Object.is_mmd_glsl_light
     del bpy.types.PoseBone.mmd_bone_name_j
     del bpy.types.PoseBone.mmd_bone_name_e

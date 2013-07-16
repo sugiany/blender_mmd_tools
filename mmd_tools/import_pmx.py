@@ -682,11 +682,22 @@ class PMXImporter:
         self.__materialFaceCountTable = []
         for i in pmxModel.materials:
             mat = bpy.data.materials.new(name=i.name)
+            mat.mmd_material_name_j = i.name
+            mat.mmd_material_name_e = i.name_e
             mat.diffuse_color = i.diffuse[0:3]
             mat.alpha = i.diffuse[3]
             mat.mmd_ambient_color = i.ambient
             mat.specular_color = i.specular[0:3]
             mat.specular_alpha = i.specular[3]
+            mat.mmd_double_sided = i.is_double_sided
+            mat.mmd_enabled_drop_shadow = i.enabled_drop_shadow
+            mat.mmd_enabled_self_shadow_map = i.enabled_self_shadow_map
+            mat.mmd_enabled_self_shadow = i.enabled_self_shadow
+            mat.mmd_enabled_toon_edge = i.enabled_toon_edge
+            mat.mmd_edge_color = i.edge_color
+            mat.mmd_edge_size = i.edge_size
+            mat.mmd_material_comment = i.comment
+
             self.__materialFaceCountTable.append(int(i.vertex_count/3))
             self.__meshObj.data.materials.append(mat)
             if i.texture != -1:
