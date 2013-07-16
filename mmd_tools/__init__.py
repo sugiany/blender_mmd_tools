@@ -17,6 +17,7 @@ from . import utils
 from . import cycles_converter
 from . import auto_scene_setup
 from . import rigging
+from . import properties
 
 bl_info= {
     "name": "mmd_tools",
@@ -454,6 +455,73 @@ class MMDToolsRiggingPanel(bpy.types.Panel):
         r.operator('mmd_tools.show_temporary_objects', text='Show')
         r.operator('mmd_tools.hide_temporary_objects', text='Hide')
 
+class MMDMaterialPanel(bpy.types.Panel):
+    bl_idname = 'MATERIAL_PT_mmd_tools_material'
+    bl_label = 'MMD Material Tools'
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'material'
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None
+
+    def draw(self, context):
+        material = context.active_object.active_material
+        mmd_material = material.mmd_material
+
+        layout = self.layout
+
+        col = layout.column(align=True)
+        col.label('Information:')
+        c = col.column()
+        r = c.row()
+        r.prop(mmd_material, 'name_j')
+        r = c.row()
+        r.prop(mmd_material, 'name_e')
+
+        col = layout.column(align=True)
+        col.label('Color:')
+        c = col.column()
+        r = c.row()
+        r.prop(material, 'diffuse_color')
+        r = c.row()
+        r.label('Diffuse Alpha:')
+        r.prop(material, 'alpha')
+        r = c.row()
+        r.prop(mmd_material, 'ambient_color')
+        r = c.row()
+        r.prop(material, 'specular_color')
+        r = c.row()
+        r.label('Specular Alpha:')
+        r.prop(material, 'specular_alpha')
+
+        col = layout.column(align=True)
+        col.label('Shadow:')
+        c = col.column()
+        r = c.row()
+        r.prop(mmd_material, 'is_double_sided')
+        r.prop(mmd_material, 'enabled_drop_shadow')
+        r = c.row()
+        r.prop(mmd_material, 'enabled_self_shadow_map')
+        r.prop(mmd_material, 'enabled_self_shadow')
+
+        col = layout.column(align=True)
+        col.label('Edge:')
+        c = col.column()
+        r = c.row()
+        r.prop(mmd_material, 'enabled_toon_edge')
+        r.prop(mmd_material, 'edge_weight')
+        r = c.row()
+        r.prop(mmd_material, 'edge_color')
+
+        col = layout.column(align=True)
+        col.label('Other:')
+        c = col.column()
+        r = c.row()
+        r.prop(mmd_material, 'comment')
+
+
 def menu_func_import(self, context):
     self.layout.operator(ImportPmx_Op.bl_idname, text="MikuMikuDance Model (.pmd, .pmx)")
     self.layout.operator(ExportPmx_Op.bl_idname, text="MikuMikuDance model (.pmx)")
@@ -461,6 +529,7 @@ def menu_func_import(self, context):
 
 def register():
     bpy.utils.register_class(MMDToolsPropertyGroup)
+    bpy.utils.register_class(properties.MMDMaterial)
     bpy.types.INFO_MT_file_import.append(menu_func_import)
 
     bpy.types.Scene.mmd_tools = bpy.props.PointerProperty(type=MMDToolsPropertyGroup)
@@ -473,20 +542,7 @@ def register():
     bpy.types.Object.mmd_camera_persp = bpy.props.BoolProperty(name='mmd_camera_persp')
 
     # Material custom properties
-    bpy.types.Material.mmd_material_name_j = bpy.props.StringProperty(name='Name')
-    bpy.types.Material.mmd_material_name_e = bpy.props.StringProperty(name='Name')
-    bpy.types.Material.mmd_ambient_color = bpy.props.FloatVectorProperty(subtype='COLOR', name='mmd_ambient_color')
-    bpy.types.Material.mmd_double_sided = bpy.props.BoolProperty(name='mmd_double_sided')
-    bpy.types.Material.mmd_enabled_drop_shadow = bpy.props.BoolProperty(name='mmd_enabled_drop_shadow')
-    bpy.types.Material.mmd_enabled_self_shadow_map = bpy.props.BoolProperty(name='mmd_enabled_self_shadow_map')
-    bpy.types.Material.mmd_enabled_self_shadow = bpy.props.BoolProperty(name='mmd_enabled_self_shadow')
-    bpy.types.Material.mmd_enabled_toon_edge = bpy.props.BoolProperty(name='mmd_enabled_toon_edge')
-
-    bpy.types.Material.mmd_edge_color = bpy.props.FloatVectorProperty(subtype='COLOR', size=4, name='mmd_edge_color')
-    bpy.types.Material.mmd_edge_size = bpy.props.FloatProperty(name='mmd_edge_size')
-
-    bpy.types.Material.mmd_material_comment = bpy.props.StringProperty(name='mmd_material_comment')
-
+    bpy.types.Material.mmd_material = bpy.props.PointerProperty(type=properties.MMDMaterial)
 
     bpy.types.Object.is_mmd_lamp = bpy.props.BoolProperty(name='is_mmd_lamp', default=False)
     bpy.types.Object.is_mmd_rigid = bpy.props.BoolProperty(name='is_mmd_rigid', default=False)
@@ -530,19 +586,7 @@ def unregister():
     del bpy.types.PoseBone.mmd_local_axis_x
     del bpy.types.PoseBone.mmd_local_axis_z
 
-    del bpy.types.Material.mmd_material_name_j
-    del bpy.types.Material.mmd_material_name_e
-    del bpy.types.Material.mmd_ambient_color
-    del bpy.types.Material.mmd_double_sided
-    del bpy.types.Material.mmd_enabled_drop_shadow
-    del bpy.types.Material.mmd_enabled_self_shadow_map
-    del bpy.types.Material.mmd_enabled_self_shadow
-    del bpy.types.Material.mmd_enabled_toon_edge
-
-    del bpy.types.Material.mmd_edge_color
-    del bpy.types.Material.mmd_edge_size
-
-    del bpy.types.Material.mmd_material_comment
+    del bpy.types.Material.mmd_material
 
 
     del bpy.types.PoseBone.is_mmd_tip_bone
