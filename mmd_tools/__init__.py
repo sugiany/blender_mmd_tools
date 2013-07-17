@@ -524,8 +524,8 @@ class MMDMaterialPanel(bpy.types.Panel):
         r.prop(mmd_material, 'comment')
 
 
-class MMDMaterialPanel(bpy.types.Panel):
-    bl_idname = 'MATERIAL_PT_mmd_tools_material'
+class MMDCameraPanel(bpy.types.Panel):
+    bl_idname = 'OBJECT_PT_mmd_tools_camera'
     bl_label = 'MMD Camera Tools'
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
