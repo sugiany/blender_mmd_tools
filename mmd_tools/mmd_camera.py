@@ -25,23 +25,13 @@ class MMDCamera:
 
     @staticmethod
     def __setDrivers(empty, camera):
-        driver = camera.driver_add('location', 1).driver
-        driverVar = driver.variables.new()
-        driverVar.name = 'mmd_distance'
-        driverVar.type = 'SINGLE_PROP'
-        driverVar.targets[0].id_type = 'OBJECT'
-        driverVar.targets[0].id = empty
-        driverVar.targets[0].data_path = 'mmd_camera_distance'
-        driver.type = 'SCRIPTED'
-        driver.expression = '-%s'%driverVar.name
-
         driver = camera.data.driver_add('lens').driver
         angle = driver.variables.new()
-        angle.name = 'mmd_distance'
+        angle.name = 'angle'
         angle.type = 'SINGLE_PROP'
         angle.targets[0].id_type = 'OBJECT'
         angle.targets[0].id = empty
-        angle.targets[0].data_path = 'mmd_camera_angle'
+        angle.targets[0].data_path = 'mmd_camera.angle'
 
         sensorHeight = driver.variables.new()
         sensorHeight.name = 'sensor_height'
@@ -66,9 +56,9 @@ class MMDCamera:
 
         empty.rotation_mode = 'YXZ'
         empty.is_mmd_camera = True
-        empty.mmd_camera_distance = 0.0
-        empty.mmd_camera_angle = 45
-        empty.mmd_camera_persp = True
+        empty.mmd_camera.distance = 0.0
+        empty.mmd_camera.angle = 45
+        empty.mmd_camera.persp = True
         cameraObj.parent = empty
         cameraObj.data.sensor_fit = 'VERTICAL'
         cameraObj.location = mathutils.Vector((0,0,0))
@@ -84,3 +74,9 @@ class MMDCamera:
 
     def object(self):
         return self.__emptyObj
+
+    def camera(self):
+        for i in self.__emptyObj.children:
+            if i.type == 'CAMERA':
+                return i
+        raise Exception

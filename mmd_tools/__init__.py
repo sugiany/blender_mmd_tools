@@ -524,6 +524,60 @@ class MMDMaterialPanel(bpy.types.Panel):
         r.prop(mmd_material, 'comment')
 
 
+class MMDMaterialPanel(bpy.types.Panel):
+    bl_idname = 'MATERIAL_PT_mmd_tools_material'
+    bl_label = 'MMD Camera Tools'
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'object'
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        return obj is not None and (obj.type == 'CAMERA' or mmd_camera.MMDCamera.isMMDCamera(obj))
+
+    def draw(self, context):
+        obj = context.active_object
+
+        layout = self.layout
+
+        if mmd_camera.MMDCamera.isMMDCamera(obj):
+            mmd_cam = mmd_camera.MMDCamera(obj)
+            empty = mmd_cam.object()
+            camera = mmd_cam.camera()
+
+            row = layout.row(align=True)
+
+            c = row.column()
+            c.prop(empty, 'location')
+            c.prop(camera, 'location', index=1, text='Distance')
+
+            c = row.column()
+            c.prop(empty, 'rotation_euler')
+
+            row = layout.row(align=True)
+            row.prop(empty.mmd_camera, 'angle')
+            row = layout.row(align=True)
+            row.prop(empty.mmd_camera, 'is_perspective')
+        else:
+            col = layout.column(align=True)
+
+            c = col.column()
+            r = c.row()
+            r.operator('mmd_tools.convert_to_mmd_camera', 'Convert')
+
+
+class ConvertToMMDCamera_Op(bpy.types.Operator):
+    bl_idname = 'mmd_tools.convert_to_mmd_camera'
+    bl_label = 'Convert to MMD Camera'
+    bl_description = 'create a camera rig for mmd.'
+    bl_options = {'PRESET'}
+
+    def execute(self, context):
+        mmd_camera.MMDCamera.convertToMMDCamera(context.active_object)
+        return {'FINISHED'}
+
+
 def menu_func_import(self, context):
     self.layout.operator(ImportPmx_Op.bl_idname, text="MikuMikuDance Model (.pmd, .pmx)")
     self.layout.operator(ExportPmx_Op.bl_idname, text="MikuMikuDance model (.pmx)")
@@ -532,16 +586,13 @@ def menu_func_import(self, context):
 def register():
     bpy.utils.register_class(MMDToolsPropertyGroup)
     bpy.utils.register_class(properties.MMDMaterial)
+    bpy.utils.register_class(properties.MMDCamera)
     bpy.types.INFO_MT_file_import.append(menu_func_import)
 
     bpy.types.Scene.mmd_tools = bpy.props.PointerProperty(type=MMDToolsPropertyGroup)
 
     bpy.types.Object.is_mmd_camera = bpy.props.BoolProperty(name='is_mmd_camera', default=False)
-    bpy.types.Object.mmd_camera_location = bpy.props.FloatVectorProperty(name='mmd_camera_location')
-    bpy.types.Object.mmd_camera_rotation = bpy.props.FloatVectorProperty(name='mmd_camera_rotation')
-    bpy.types.Object.mmd_camera_distance = bpy.props.FloatProperty(name='mmd_camera_distance')
-    bpy.types.Object.mmd_camera_angle = bpy.props.FloatProperty(name='mmd_camera_angle')
-    bpy.types.Object.mmd_camera_persp = bpy.props.BoolProperty(name='mmd_camera_persp')
+    bpy.types.Object.mmd_camera = bpy.props.PointerProperty(type=properties.MMDCamera)
 
     # Material custom properties
     bpy.types.Material.mmd_material = bpy.props.PointerProperty(type=properties.MMDMaterial)
@@ -572,11 +623,8 @@ def unregister():
     bpy.types.INFO_MT_file_import.remove(menu_func_import)
 
     del bpy.types.Object.is_mmd_camera
-    del bpy.types.Object.mmd_camera_location
-    del bpy.types.Object.mmd_camera_rotation
-    del bpy.types.Object.mmd_camera_distance
-    del bpy.types.Object.mmd_camera_angle
-    del bpy.types.Object.mmd_camera_persp
+    del bpy.types.Object.mmd_camera
+
     del bpy.types.Object.is_mmd_lamp
     del bpy.types.Object.is_mmd_rigid
     del bpy.types.Object.is_mmd_joint

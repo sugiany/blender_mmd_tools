@@ -92,3 +92,16 @@ class MMDMaterial(PropertyGroup):
     comment = StringProperty(
         name='Comment',
         )
+
+class MMDCamera(PropertyGroup):
+    angle = FloatProperty(
+        name='Angle',
+        min=0,
+        default=45,
+        step=0.1,
+        )
+
+    is_perspective = BoolProperty(
+        name='Perspective',
+        default=True,
+        )

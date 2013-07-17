@@ -189,29 +189,31 @@ class VMDImporter:
                     f.interpolation = 'CONSTANT'
 
     def __assignToCamera(self, cameraObj, action_name=None):
-        mmdCamera = mmd_camera.MMDCamera.convertToMMDCamera(cameraObj).object()
+        mmdCameraInstance = mmd_camera.MMDCamera.convertToMMDCamera(cameraObj)
+        mmdCamera = mmdCameraInstance.object()
         if action_name is not None:
             act = bpy.data.actions.new(name=action_name)
             a = mmdCamera.animation_data_create()
             a.action = act
 
+        cameraObj = mmdCameraInstance.camera()
         cameraAnim = self.__vmdFile.cameraAnimation
         cameraAnim.sort(key=lambda x:x.frame_number)
         for keyFrame in cameraAnim:
-            mmdCamera.mmd_camera_angle = keyFrame.angle
-            mmdCamera.mmd_camera_distance = -keyFrame.distance * self.__scale
+            mmdCamera.mmd_camera.angle = keyFrame.angle
+            cameraObj.location[1] = keyFrame.distance * self.__scale
             mmdCamera.location = mathutils.Vector((keyFrame.location[0], keyFrame.location[2], keyFrame.location[1])) * self.__scale
             mmdCamera.rotation_euler = mathutils.Vector((keyFrame.rotation[0], keyFrame.rotation[2], keyFrame.rotation[1]))
-            mmdCamera.keyframe_insert(data_path='mmd_camera_angle',
+            mmdCamera.keyframe_insert(data_path='mmd_camera.angle',
                                            frame=keyFrame.frame_number+self.__frame_margin)
-            mmdCamera.keyframe_insert(data_path='mmd_camera_distance',
+            cameraObj.keyframe_insert(data_path='location', index=1,
                                       frame=keyFrame.frame_number+self.__frame_margin)
             mmdCamera.keyframe_insert(data_path='location',
                                       frame=keyFrame.frame_number+self.__frame_margin)
             mmdCamera.keyframe_insert(data_path='rotation_euler',
                                       frame=keyFrame.frame_number+self.__frame_margin)
 
-        paths = ['rotation_euler', 'mmd_camera_distance', 'mmd_camera_angle', 'location']
+        paths = ['rotation_euler', 'mmd_camera.angle', 'location']
         for fcurve in act.fcurves:
             if fcurve.data_path in paths:
                 if fcurve.data_path =='location':
