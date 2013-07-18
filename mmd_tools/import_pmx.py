@@ -366,7 +366,10 @@ class PMXImporter:
         self.__boneTable = pose_bones
         for i, p_bone in sorted(enumerate(pmxModel.bones), key=lambda x: x[1].transform_order):
             b_bone = pose_bones[i]
-            b_bone.mmd_bone_name_e = p_bone.name_e
+            b_bone.mmd_bone.name_e = p_bone.name_e
+            b_bone.mmd_bone.transform_order = p_bone.transform_order
+            b_bone.mmd_bone.is_visible = p_bone.visible
+            b_bone.mmd_bone.is_controllable = p_bone.isControllable
 
             if not p_bone.isRotatable:
                 b_bone.lock_rotation = [True, True, True]
@@ -392,12 +395,12 @@ class PMXImporter:
                     )
 
             if p_bone.localCoordinate is not None:
-                b_bone.mmd_enabled_local_axis = True
-                b_bone.mmd_local_axis_x = p_bone.localCoordinate.x_axis
-                b_bone.mmd_local_axis_z = p_bone.localCoordinate.z_axis
+                b_bone.mmd_bone.enabled_local_axes = True
+                b_bone.mmd_bone.local_axis_x = p_bone.localCoordinate.x_axis
+                b_bone.mmd_bone.local_axis_z = p_bone.localCoordinate.z_axis
 
             if len(b_bone.children) == 0:
-                b_bone.is_mmd_tip_bone = True
+                b_bone.mmd_bone.is_tip = True
                 b_bone.lock_rotation = [True, True, True]
                 b_bone.lock_location = [True, True, True]
                 b_bone.lock_scale = [True, True, True]
@@ -778,9 +781,9 @@ class PMXImporter:
         for i in pose_bones:
             if i.is_mmd_shadow_bone:
                 continue
-            i.mmd_bone_name_j = i.name
+            i.mmd_bone.name_j = i.name
             i.name = utils.convertNameToLR(i.name)
-            self.__meshObj.vertex_groups[i.mmd_bone_name_j].name = i.name
+            self.__meshObj.vertex_groups[i.mmd_bone.name_j].name = i.name
 
     def execute(self, **args):
         if 'pmx' in args:

@@ -199,11 +199,11 @@ class __PmxExporter:
                 p_bone = pose_bones[bone.name]
                 if p_bone.is_mmd_shadow_bone:
                     continue
-                if p_bone.mmd_bone_name_j != '':
-                    pmx_bone.name = p_bone.mmd_bone_name_j
+                if p_bone.mmd_bone.name_j != '':
+                    pmx_bone.name = p_bone.mmd_bone.name_j
                 else:
                     pmx_bone.name = bone.name
-                pmx_bone_e = p_bone.mmd_bone_name_e or ''
+                pmx_bone_e = p_bone.mmd_bone.name_e or ''
                 pmx_bone.location = world_mat * mathutils.Vector(bone.head) * self.__scale * self.TO_PMX_MATRIX
                 pmx_bone.parent = bone.parent
                 pmx_bone.visible = not p_bone.bone.hide
@@ -213,7 +213,7 @@ class __PmxExporter:
                 boneMap[bone] = pmx_bone
                 r[bone.name] = len(pmx_bones) - 1
 
-                if len(bone.children) == 0 and not p_bone.is_mmd_tip_bone:
+                if len(bone.children) == 0 and not p_bone.mmd_bone.is_tip:
                     pmx_tip_bone = pmx.Bone()
                     pmx_tip_bone.name = 'tip_' + bone.name
                     pmx_tip_bone.location =  world_mat * mathutils.Vector(bone.tail) * self.__scale * self.TO_PMX_MATRIX
@@ -221,7 +221,7 @@ class __PmxExporter:
                     pmx_bones.append(pmx_tip_bone)
                     pmx_bone.displayConnection = pmx_tip_bone
                 elif len(bone.children) > 0:
-                    pmx_bone.displayConnection = list(filter(lambda x: not pose_bones[x.name].is_mmd_shadow_bone, sorted(bone.children, key=lambda x: 1 if pose_bones[x.name].is_mmd_tip_bone else 0)))[0]
+                    pmx_bone.displayConnection = list(filter(lambda x: not pose_bones[x.name].is_mmd_shadow_bone, sorted(bone.children, key=lambda x: 1 if pose_bones[x.name].mmd_bone.is_tip else 0)))[0]
 
             for i in pmx_bones:
                 if i.parent is not None:

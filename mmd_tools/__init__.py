@@ -577,6 +577,48 @@ class ConvertToMMDCamera_Op(bpy.types.Operator):
         mmd_camera.MMDCamera.convertToMMDCamera(context.active_object)
         return {'FINISHED'}
 
+class MMDBonePanel(bpy.types.Panel):
+    bl_idname = 'BONE_PT_mmd_tools_bone'
+    bl_label = 'MMD Bone Tools'
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'bone'
+
+    @classmethod
+    def poll(cls, context):
+        return context.mode == 'EDIT_ARMATURE' and context.active_bone is not None or context.mode == 'POSE' and context.active_pose_bone is not None
+
+    def draw(self, context):
+        if context.mode == 'EDIT_ARMATURE':
+            edit_bone = context.active_bone
+            pose_bone = context.active_object.pose.bones[edit_bone.name]
+        else:
+            pose_bone = context.active_pose_bone
+
+        layout = self.layout
+        c = layout.column(align=True)
+
+        c.label('Information:')
+        c.prop(pose_bone.mmd_bone, 'name_j')
+        c.prop(pose_bone.mmd_bone, 'name_e')
+
+        c = layout.column(align=True)
+        row = c.row()
+        row.prop(pose_bone.mmd_bone, 'transform_order')
+        row.prop(pose_bone.mmd_bone, 'transform_after_dynamics')
+        row.prop(pose_bone.mmd_bone, 'is_visible')
+        row = c.row()
+        row.prop(pose_bone.mmd_bone, 'is_controllable')
+        row.prop(pose_bone.mmd_bone, 'is_tip')
+        row.prop(pose_bone.mmd_bone, 'enabled_local_axes')
+
+        row = layout.row(align=True)
+        c = row.column()
+        c.prop(pose_bone.mmd_bone, 'local_axis_x')
+        c = row.column()
+        c.prop(pose_bone.mmd_bone, 'local_axis_z')
+
+
 
 def menu_func_import(self, context):
     self.layout.operator(ImportPmx_Op.bl_idname, text="MikuMikuDance Model (.pmd, .pmx)")
@@ -587,6 +629,7 @@ def register():
     bpy.utils.register_class(MMDToolsPropertyGroup)
     bpy.utils.register_class(properties.MMDMaterial)
     bpy.utils.register_class(properties.MMDCamera)
+    bpy.utils.register_class(properties.MMDBone)
     bpy.types.INFO_MT_file_import.append(menu_func_import)
 
     bpy.types.Scene.mmd_tools = bpy.props.PointerProperty(type=MMDToolsPropertyGroup)
@@ -604,18 +647,14 @@ def register():
     bpy.types.Object.is_mmd_non_collision_constraint = bpy.props.BoolProperty(name='is_mmd_non_collision_constraint', default=False)
     bpy.types.Object.is_mmd_spring_joint = bpy.props.BoolProperty(name='is_mmd_spring_joint', default=False)
     bpy.types.Object.is_mmd_spring_goal = bpy.props.BoolProperty(name='is_mmd_spring_goal', default=False)
-    bpy.types.PoseBone.mmd_enabled_local_axis = bpy.props.BoolProperty(name='mmd_enabled_local_axis', default=False)
-    bpy.types.PoseBone.mmd_local_axis_x = bpy.props.FloatVectorProperty(name='mmd_local_axis_x')
-    bpy.types.PoseBone.mmd_local_axis_z = bpy.props.FloatVectorProperty(name='mmd_local_axis_z')
 
-    bpy.types.PoseBone.is_mmd_tip_bone = bpy.props.BoolProperty(name='is_mmd_tip_bone', default=False)
+    bpy.types.PoseBone.mmd_bone = bpy.props.PointerProperty(type=properties.MMDBone)
+
     bpy.types.PoseBone.is_mmd_shadow_bone = bpy.props.BoolProperty(name='is_mmd_shadow_bone', default=False)
     bpy.types.PoseBone.mmd_shadow_bone_type = bpy.props.StringProperty(name='mmd_shadow_bone_type')
 
     bpy.types.Object.is_mmd_glsl_light = bpy.props.BoolProperty(name='is_mmd_glsl_light', default=False)
 
-    bpy.types.PoseBone.mmd_bone_name_j = bpy.props.StringProperty(name='mmd_bone_name_j', description='the bone name in japanese.')
-    bpy.types.PoseBone.mmd_bone_name_e = bpy.props.StringProperty(name='mmd_bone_name_e', description='the bone name in english.')
 
     bpy.utils.register_module(__name__)
 
@@ -632,18 +671,12 @@ def unregister():
     del bpy.types.Object.is_mmd_non_collision_constraint
     del bpy.types.Object.is_mmd_spring_joint
     del bpy.types.Object.is_mmd_spring_goal
-    del bpy.types.PoseBone.mmd_enabled_local_axis
-    del bpy.types.PoseBone.mmd_local_axis_x
-    del bpy.types.PoseBone.mmd_local_axis_z
 
+    del bpy.types.PoseBone.mmd_bone
     del bpy.types.Material.mmd_material
 
-
-    del bpy.types.PoseBone.is_mmd_tip_bone
     del bpy.types.PoseBone.is_mmd_shadow_bone
     del bpy.types.Object.is_mmd_glsl_light
-    del bpy.types.PoseBone.mmd_bone_name_j
-    del bpy.types.PoseBone.mmd_bone_name_e
 
     bpy.utils.unregister_module(__name__)
 
