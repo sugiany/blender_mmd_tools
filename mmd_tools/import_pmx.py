@@ -450,6 +450,13 @@ class PMXImporter:
                 obj = bpy.context.selected_objects[0]
             obj.name = rigid.name
             obj.scale = size * self.__scale
+            obj.mmd_rigid.shape = str(rigid.type)
+            obj.mmd_rigid.type = str(rigid.mode)
+            obj.mmd_rigid.collision_group_number = rigid.collision_group_number
+            t = []
+            for i in range(16):
+                t.append(rigid.collision_group_mask & (1<<i) == 0)
+            obj.mmd_rigid.collision_group_mask = t
             obj.hide_render = True
             obj.draw_type = 'WIRE'
             obj.is_mmd_rigid = True

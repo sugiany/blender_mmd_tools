@@ -619,6 +619,47 @@ class MMDBonePanel(bpy.types.Panel):
         c.prop(pose_bone.mmd_bone, 'local_axis_z')
 
 
+class MMDBonePanel(bpy.types.Panel):
+    bl_idname = 'RIGID_PT_mmd_tools_bone'
+    bl_label = 'MMD Rigid Tools'
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'object'
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None and context.active_object.rigid_body is not None and context.active_object.is_mmd_rigid
+
+    def draw(self, context):
+        obj = context.active_object
+
+        layout = self.layout
+        c = layout.column()
+        c.prop(obj, 'name')
+        c.prop(obj.mmd_rigid, 'name_e')
+
+        row = layout.row(align=True)
+        row.prop(obj.mmd_rigid, 'type')
+        row.prop_search(obj, 'parent_bone', text='', search_data=obj.parent.pose, search_property='bones', icon='BONE_DATA')
+
+        row = layout.row()
+
+        c = row.column()
+        c.prop(obj.rigid_body, 'mass')
+        c.prop(obj.mmd_rigid, 'collision_group_number')
+        c = row.column()
+        c.prop(obj.rigid_body, 'restitution', text='Bounciness')
+        c.prop(obj.rigid_body, 'friction')
+
+        c = layout.column()
+        c.prop(obj.mmd_rigid, 'collision_group_mask')
+
+        c = layout.column()
+        c.label('Damping')
+        row = c.row()
+        row.prop(obj.rigid_body, 'linear_damping')
+        row.prop(obj.rigid_body, 'angular_damping')
+
 
 def menu_func_import(self, context):
     self.layout.operator(ImportPmx_Op.bl_idname, text="MikuMikuDance Model (.pmd, .pmx)")
@@ -630,6 +671,7 @@ def register():
     bpy.utils.register_class(properties.MMDMaterial)
     bpy.utils.register_class(properties.MMDCamera)
     bpy.utils.register_class(properties.MMDBone)
+    bpy.utils.register_class(properties.MMDRigid)
     bpy.types.INFO_MT_file_import.append(menu_func_import)
 
     bpy.types.Scene.mmd_tools = bpy.props.PointerProperty(type=MMDToolsPropertyGroup)
@@ -641,7 +683,11 @@ def register():
     bpy.types.Material.mmd_material = bpy.props.PointerProperty(type=properties.MMDMaterial)
 
     bpy.types.Object.is_mmd_lamp = bpy.props.BoolProperty(name='is_mmd_lamp', default=False)
+
     bpy.types.Object.is_mmd_rigid = bpy.props.BoolProperty(name='is_mmd_rigid', default=False)
+    bpy.types.Object.mmd_rigid = bpy.props.PointerProperty(type=properties.MMDRigid)
+
+
     bpy.types.Object.is_mmd_joint = bpy.props.BoolProperty(name='is_mmd_joint', default=False)
     bpy.types.Object.is_mmd_rigid_track_target = bpy.props.BoolProperty(name='is_mmd_rigid_track_target', default=False)
     bpy.types.Object.is_mmd_non_collision_constraint = bpy.props.BoolProperty(name='is_mmd_non_collision_constraint', default=False)
@@ -665,7 +711,10 @@ def unregister():
     del bpy.types.Object.mmd_camera
 
     del bpy.types.Object.is_mmd_lamp
+
     del bpy.types.Object.is_mmd_rigid
+    del bpy.types.Object.mmd_rigid
+
     del bpy.types.Object.is_mmd_joint
     del bpy.types.Object.is_mmd_rigid_track_target
     del bpy.types.Object.is_mmd_non_collision_constraint

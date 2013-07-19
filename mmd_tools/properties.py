@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 from bpy.types import PropertyGroup
-from bpy.props import BoolProperty, CollectionProperty, EnumProperty, FloatProperty, FloatVectorProperty, IntProperty, StringProperty, PointerProperty
+from bpy.props import BoolProperty, BoolVectorProperty, CollectionProperty, EnumProperty, FloatProperty, FloatVectorProperty, IntProperty, StringProperty, PointerProperty
 
-from .pmx import Material
+from .pmx import Material, Rigid
 
 class MMDMaterial(PropertyGroup):
     name_j = StringProperty(
@@ -162,4 +162,42 @@ class MMDBone(PropertyGroup):
     is_tip = BoolProperty(
         name='Tip Bone',
         default=False,
+        )
+
+class MMDRigid(PropertyGroup):
+    name_e = StringProperty(
+        name='Name(Eng)',
+        description='English Name',
+        default='',
+        )
+
+    collision_group_number = IntProperty(
+        name='Collision Group',
+        min=1,
+        max=16,
+        default=1,
+        )
+
+    collision_group_mask = BoolVectorProperty(
+        name='Collision Group Mask',
+        size=16,
+        subtype='LAYER',
+        )
+
+    type = EnumProperty(
+        name='Rigid Type',
+        items = [
+            (str(Rigid.MODE_STATIC), 'Static', '', 1),
+            (str(Rigid.MODE_DYNAMIC), 'Dynamic', '', 2),
+            (str(Rigid.MODE_DYNAMIC_BONE), 'Dynamic&BoneTrack', '', 3),
+            ],
+        )
+
+    shape = EnumProperty(
+        name='Shape',
+        items = [
+            (str(Rigid.TYPE_SPHERE), 'Sphere', '', 1),
+            (str(Rigid.TYPE_BOX), 'Box', '', 2),
+            (str(Rigid.TYPE_CAPSULE), 'Capsule', '', 3),
+            ],
         )
