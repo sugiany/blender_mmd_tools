@@ -660,6 +660,66 @@ class MMDBonePanel(bpy.types.Panel):
         row.prop(obj.rigid_body, 'linear_damping')
         row.prop(obj.rigid_body, 'angular_damping')
 
+class MMDJointPanel(bpy.types.Panel):
+    bl_idname = 'JOINT_PT_mmd_tools_bone'
+    bl_label = 'MMD Joint Tools'
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'object'
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None and context.active_object.type == 'EMPTY' and obj.rigid_body_constraint is not None and context.active_object.is_mmd_joint
+
+    def draw(self, context):
+        obj = context.active_object
+        rbc = obj.rigid_body_constraint
+
+        layout = self.layout
+        c = layout.column()
+        c.prop(obj.mmd_joint, 'name_j')
+        c.prop(obj.mmd_joint, 'name_e')
+
+        c = layout.column()
+        c.prop(rbc, 'object1')
+        c.prop(rbc, 'object2')
+
+        col = layout.column()
+        row = col.row(align=True)
+        row.label('X-Axis:')
+        row.prop(rbc, 'limit_lin_x_lower')
+        row.prop(rbc, 'limit_lin_x_upper')
+        row = col.row(align=True)
+        row.label('Y-Axis:')
+        row.prop(rbc, 'limit_lin_y_lower')
+        row.prop(rbc, 'limit_lin_y_upper')
+        row = col.row(align=True)
+        row.label('Z-Axis:')
+        row.prop(rbc, 'limit_lin_z_lower')
+        row.prop(rbc, 'limit_lin_z_upper')
+
+        col = layout.column()
+        row = col.row(align=True)
+        row.label('X-Axis:')
+        row.prop(rbc, 'limit_ang_x_lower')
+        row.prop(rbc, 'limit_ang_x_upper')
+        row = col.row(align=True)
+        row.label('Y-Axis:')
+        row.prop(rbc, 'limit_ang_y_lower')
+        row.prop(rbc, 'limit_ang_y_upper')
+        row = col.row(align=True)
+        row.label('Z-Axis:')
+        row.prop(rbc, 'limit_ang_z_lower')
+        row.prop(rbc, 'limit_ang_z_upper')
+
+        col = layout.column()
+        col.label('Spring(Linear):')
+        row = col.row()
+        row.prop(obj.mmd_joint, 'spring_linear', text='')
+        col.label('Spring(Angular):')
+        row = col.row()
+        row.prop(obj.mmd_joint, 'spring_angular', text='')
+
 
 def menu_func_import(self, context):
     self.layout.operator(ImportPmx_Op.bl_idname, text="MikuMikuDance Model (.pmd, .pmx)")
@@ -672,6 +732,7 @@ def register():
     bpy.utils.register_class(properties.MMDCamera)
     bpy.utils.register_class(properties.MMDBone)
     bpy.utils.register_class(properties.MMDRigid)
+    bpy.utils.register_class(properties.MMDJoint)
     bpy.types.INFO_MT_file_import.append(menu_func_import)
 
     bpy.types.Scene.mmd_tools = bpy.props.PointerProperty(type=MMDToolsPropertyGroup)
@@ -689,6 +750,8 @@ def register():
 
 
     bpy.types.Object.is_mmd_joint = bpy.props.BoolProperty(name='is_mmd_joint', default=False)
+    bpy.types.Object.mmd_joint = bpy.props.PointerProperty(type=properties.MMDJoint)
+
     bpy.types.Object.is_mmd_rigid_track_target = bpy.props.BoolProperty(name='is_mmd_rigid_track_target', default=False)
     bpy.types.Object.is_mmd_non_collision_constraint = bpy.props.BoolProperty(name='is_mmd_non_collision_constraint', default=False)
     bpy.types.Object.is_mmd_spring_joint = bpy.props.BoolProperty(name='is_mmd_spring_joint', default=False)
@@ -716,6 +779,8 @@ def unregister():
     del bpy.types.Object.mmd_rigid
 
     del bpy.types.Object.is_mmd_joint
+    del bpy.types.Object.mmd_joint
+
     del bpy.types.Object.is_mmd_rigid_track_target
     del bpy.types.Object.is_mmd_non_collision_constraint
     del bpy.types.Object.is_mmd_spring_joint

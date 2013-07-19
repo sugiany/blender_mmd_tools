@@ -201,3 +201,30 @@ class MMDRigid(PropertyGroup):
             (str(Rigid.TYPE_CAPSULE), 'Capsule', '', 3),
             ],
         )
+
+class MMDJoint(PropertyGroup):
+    name_j = StringProperty(
+        name='Name',
+        description='Japanese Name',
+        default='',
+        )
+
+    name_e = StringProperty(
+        name='Name(Eng)',
+        description='English Name',
+        default='',
+        )
+
+    spring_linear = FloatVectorProperty(
+        name='Spring(Linear)',
+        size=3,
+        min=0,
+        step=0.1,
+        )
+
+    spring_angular = FloatVectorProperty(
+        name='Spring(Angular)',
+        size=3,
+        min=0,
+        step=0.1,
+        )

@@ -658,6 +658,8 @@ class PMXImporter:
             rbc.limit_ang_y_lower = -max_rot[1]
             rbc.limit_ang_z_lower = -max_rot[2]
 
+            obj.mmd_joint.spring_linear = joint.spring_constant
+            obj.mmd_joint.spring_angular = joint.spring_rotation_constant
             # spring_damp = mathutils.Vector(joint.spring_constant) * self.TO_BLE_MATRIX
             # rbc.spring_damping_x = spring_damp[0]
             # rbc.spring_damping_y = spring_damp[1]
