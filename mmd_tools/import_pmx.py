@@ -431,6 +431,8 @@ class PMXImporter:
                 size = size * self.__scale,
                 collision_group_number = rigid.collision_group_number,
                 collision_group_mask = [rigid.collision_group_mask & (1<<i) == 0 for i in range(16)],
+                arm_obj = self.__armObj,
+                bone = None if rigid.bone == -1 else self.__boneTable[rigid.bone].name,
                 )
 
             obj.draw_type = 'WIRE'

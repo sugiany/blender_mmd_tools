@@ -225,6 +225,14 @@ def createRigid(**kwargs):
     if bounce:
         rb.restitution = bounce
 
+    constraint = obj.constraints.new('CHILD_OF')
+    if arm_obj is not None:
+        constraint.target = arm_obj
+    if bone != '':
+        constraint.subtarget = bone
+    constraint.name = 'mmd_tools_rigid_parent'
+    constraint.mute = True
+    
     return obj
 
 def createJoint(**kwargs):
@@ -341,22 +349,33 @@ def updateRigid(rigid_obj):
         raise TypeError('rigid_obj must be a mmd_rigid object')
 
     rigid = rigid_obj.mmd_rigid
-    target_bone = rigid_obj.parent_bone
+    relation = rigid_obj.constraints['mmd_tools_rigid_parent']
+    arm = relation.target
+    bone_name = relation.subtarget
+    target_bone = None
+    if arm is not None and bone_name != '':
+        target_bone = arm.pose.bones[bone_name]
 
-    if target_bone != '':
+    if target_bone is not None:
         for i in target_bone.constraints:
             if i.name == 'mmd_tools_rigid_track':
                 target_bone.constraints.remove(i)
 
-    if rigid.type == pmx.Rigid.MODE_STATIC:
+    if int(rigid.type) == pmx.Rigid.MODE_STATIC:
+        rigid_obj.rigid_body.kinematic = True
+    else:
         rigid_obj.rigid_body.kinematic = False
-    elif rigid.type in [pmx.Rigid.MODE_DYNAMIC, pmx.Rigid.MODE_DYNAMIC_BONE] and rigid_obj.parent is not None and rigid_obj.parent_bone != '':
-        # bpy.ops.object.select_all(action='DESELECT')
-        # obj.select = True
-        # bpy.context.scene.objects.active = self.__root
-        # bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=True)
 
-        # target_bone = self.__boneTable[rigid.bone]
+    if int(rigid.type) == pmx.Rigid.MODE_STATIC:
+        if arm is not None and bone_name != '':
+            relation.mute = False
+            relation.inverse_matrix = mathutils.Matrix(target_bone.matrix).inverted()
+        else:
+            relation.mute = True
+    else:
+        relation.mute = True
+
+    if int(rigid.type) in [pmx.Rigid.MODE_DYNAMIC, pmx.Rigid.MODE_DYNAMIC_BONE] and rigid_obj.parent is not None and rigid_obj.parent_bone != '':
         empty = bpy.data.objects.new(
             'mmd_bonetrack',
             None)
@@ -365,66 +384,64 @@ def updateRigid(rigid_obj):
         empty.empty_draw_size = 0.1
         empty.empty_draw_type = 'ARROWS'
         empty.is_mmd_rigid_track_target = True
-        # self.__tempObjGroup.objects.link(empty)
 
-        bpy.ops.object.select_all(action='DESELECT')
-        bpy.context.scene.objects.active = obj
-        bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=False)
-
+        bpyutils.setParent(empty, rigid_obj)
         empty.hide = True
 
 
         for i in target_bone.constraints:
             if i.type == 'IK':
                 i.influence = 0
-        const = target_bone.constraints.new('DAMPED_TRACK', name='mmd_tools_rigid_track')
+        const = target_bone.constraints.new('DAMPED_TRACK')
+        const.name='mmd_tools_rigid_track'
         const.target = empty
-    # else:
-    #     obj.parent = self.__armObj
-    #     bpy.ops.object.select_all(action='DESELECT')
-    #     obj.select = True
 
-        obj.rigid_body.collision_shape = rigid.shape_type
+        rigid_obj.rigid_body.collision_shape = rigid.shape
 
 def __getRigidRange(obj):
-        return (mathutils.Vector(obj.bound_box[0]) - mathutils.Vector(obj.bound_box[6])).length
+    return (mathutils.Vector(obj.bound_box[0]) - mathutils.Vector(obj.bound_box[6])).length
     
 def __makeNonCollisionConstraint(obj_a, obj_b, cnt=0):
-        t = bpy.data.objects.new(
-            'ncc.%d'%cnt,
-            None)
-        bpy.context.scene.objects.link(t)
-        t.location = [0, 0, 0]
-        t.empty_draw_size = 0.5
-        t.empty_draw_type = 'ARROWS'
-        t.is_mmd_non_collision_constraint = True
-        t.hide_render = True
-        # t.parent = self.__root
-        bpyutils.select_object(t)
-        bpy.ops.rigidbody.constraint_add(type='GENERIC')
-        rb = t.rigid_body_constraint
-        rb.disable_collisions = True
-        rb.object1 = obj_a
-        rb.object2 = obj_b
-        # self.__nonCollisionConstraints.append(t)
-        # self.__nonCollisionJointTable[frozenset((obj_a, obj_b))] = t
-        # self.__tempObjGroup.objects.link(t)
+    if obj_a is obj_b:
+        return
+    t = bpy.data.objects.new(
+        'ncc.%d'%cnt,
+        None)
+    bpy.context.scene.objects.link(t)
+    t.location = [0, 0, 0]
+    t.empty_draw_size = 0.5
+    t.empty_draw_type = 'ARROWS'
+    t.is_mmd_non_collision_constraint = True
+    t.hide_render = True
+    # t.parent = self.__root
+    bpyutils.select_object(t)
+    bpy.ops.rigidbody.constraint_add(type='GENERIC')
+    rb = t.rigid_body_constraint
+    rb.disable_collisions = True
+    rb.object1 = obj_a
+    rb.object2 = obj_b
+    # self.__nonCollisionConstraints.append(t)
+    # self.__nonCollisionJointTable[frozenset((obj_a, obj_b))] = t
+    # self.__tempObjGroup.objects.link(t)
 
-def buildRigids(objects, distance_of_ignore_collisions=1.5):
-    logging.info('Start building rigid body riging.')
-    start_time = time.time()
+def __updateRigids(objects):
     rigid_objects = []
-    non_collision_constraint_cnt = 0
     for i in objects:
-        rigid_objects += buildRigids(i.children)
+        rigid_objects += __updateRigids(i.children)
         if i.is_mmd_rigid:
             updateRigid(i)
             rigid_objects.append(i)
 
-    rigid_objects = list(set(rigid_objects))
+    return list(set(rigid_objects))
+    
+
+def buildRigids(objects, distance_of_ignore_collisions=1.5):
+    start_time = time.time()
+    non_collision_constraint_cnt = 0
+    rigid_objects = __updateRigids(objects)
     rigid_object_groups = [[] for i in range(16)]
     for i in rigid_objects:
-        rigid_object_groups[i.mmd_rigid.collision_group_number].append(i)
+        rigid_object_groups[i.mmd_rigid.collision_group_number-1].append(i)
 
     non_collision_pairs = set()
     for obj_a in rigid_objects:
@@ -436,19 +453,21 @@ def buildRigids(objects, distance_of_ignore_collisions=1.5):
                 pair = frozenset((obj_a, obj_b))
                 if pair in non_collision_pairs:
                     continue
-                if (mathutils.Vector(obj_a.location) - mathutils.Vector(obj_b.location)).length > distance_of_ignore_collisions * (__getRigidRange(obj_a) + __getRigidRange(obj_b)):
+                distance = (mathutils.Vector(obj_a.location) - mathutils.Vector(obj_b.location)).length
+                if distance < distance_of_ignore_collisions * (__getRigidRange(obj_a) + __getRigidRange(obj_b)):
                      __makeNonCollisionConstraint(obj_a, obj_b, non_collision_constraint_cnt)
                      non_collision_constraint_cnt += 1
                 non_collision_pairs.add(pair)
                 non_collision_pairs.add(frozenset((obj_b, obj_a)))
-    logging.info('Finished building rigid body riging in %f seconds.', time.time() - start_time)
     return rigid_objects
 
-def __makeSpring(self, target, base_obj, spring_stiffness):
+def __makeSpring(target, base_obj, spring_stiffness):
     bpyutils.select_object(target)
     bpy.ops.object.duplicate()
     spring_target = bpy.context.scene.objects.active
+    spring_target.constraints.remove(spring_target.constraints['mmd_tools_rigid_parent'])
     spring_target.is_mmd_spring_goal = True
+    spring_target.is_mmd_rigid = False
     spring_target.rigid_body.kinematic = True
     spring_target.rigid_body.collision_groups = (False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, True)
     bpy.context.scene.objects.active = base_obj
@@ -461,13 +480,13 @@ def __makeSpring(self, target, base_obj, spring_stiffness):
         None)
     bpy.context.scene.objects.link(obj)
     obj.location = target.location
-    obj.empty_draw_size = 0.5 * self.__scale
+    obj.empty_draw_size = 0.1
     obj.empty_draw_type = 'ARROWS'
     obj.hide_render = True
     obj.is_mmd_spring_joint = True
-    obj.parent = self.__root
-    self.__tempObjGroup.objects.link(obj)
-    utils.selectAObject(obj)
+    # obj.parent = self.__root
+    # self.__tempObjGroup.objects.link(obj)
+    bpyutils.select_object(obj)
     bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
     rbc = obj.rigid_body_constraint
     rbc.object1 = target
@@ -484,14 +503,14 @@ def __makeSpring(self, target, base_obj, spring_stiffness):
 def updateJoint(joint_obj):
     rbc = joint_obj.rigid_body_constraint
     if rbc.object1.rigid_body.kinematic:
-        self.__makeSpring(rbc.object2, rbc.object1, joint_obj.mmd_joint.spring_angular)
+        __makeSpring(rbc.object2, rbc.object1, joint_obj.mmd_joint.spring_angular)
     if rbc.object2.rigid_body.kinematic:
-        self.__makeSpring(rbc.object1, rbc.object2, joint_obj.mmd_joint.spring_angular)
+        __makeSpring(rbc.object1, rbc.object2, joint_obj.mmd_joint.spring_angular)
 
 def buildJoints(objects):
     joints = []
     for joint in objects:
-        joints += buildRigids(joint.children)
+        joints += buildJoints(joint.children)
         if joint.is_mmd_joint:
             updateJoint(joint)
             joints.append(joint)

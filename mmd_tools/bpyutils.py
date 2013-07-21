@@ -28,6 +28,28 @@ def select_object(obj):
     bpy.context.scene.objects.active = obj
     obj.select=True
 
+def setParent(obj, parent):
+    ho = obj.hide
+    hp = parent.hide
+    obj.hide = False
+    parent.hide = False
+    select_object(parent)
+    obj.select = True
+    bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=False)
+    obj.hide = ho
+    parent.hide = hp
+
+def setParentToBone(obj, parent, bone_name):
+    import bpy
+    select_object(parent)
+    bpy.ops.object.mode_set(mode='POSE')
+    select_object(obj)
+    bpy.context.scene.objects.active = parent
+    parent.select = True
+    bpy.ops.object.mode_set(mode='POSE')
+    parent.data.bones.active = parent.data.bones[bone_name]
+    bpy.ops.object.parent_set(type='BONE', xmirror=False, keep_transform=False)
+    bpy.ops.object.mode_set(mode='OBJECT')
 
 def edit_object(obj):
     """ Set the object interaction mode to 'EDIT'

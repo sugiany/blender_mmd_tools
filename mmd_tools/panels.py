@@ -253,8 +253,9 @@ class MMDRigidPanel(Panel):
 
         row = layout.row(align=True)
         row.prop(obj.mmd_rigid, 'type')
-        if obj.parent is not None:
-            row.prop_search(obj, 'parent_bone', text='', search_data=obj.parent.pose, search_property='bones', icon='BONE_DATA')
+        relation = obj.constraints.get('mmd_tools_rigid_parent')
+        if relation.target is not None:
+            row.prop_search(relation, 'subtarget', text='', search_data=relation.target.pose, search_property='bones', icon='BONE_DATA')
 
         row = layout.row()
 
