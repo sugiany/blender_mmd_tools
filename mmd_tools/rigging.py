@@ -323,13 +323,13 @@ def createJoint(**kwargs):
     rbc.limit_lin_y_lower = min_loc[1]
     rbc.limit_lin_z_lower = min_loc[2]
 
-    rbc.limit_ang_x_upper = -min_rot[0]
-    rbc.limit_ang_y_upper = -min_rot[1]
-    rbc.limit_ang_z_upper = -min_rot[2]
+    rbc.limit_ang_x_upper = min_rot[0]
+    rbc.limit_ang_y_upper = min_rot[1]
+    rbc.limit_ang_z_upper = min_rot[2]
 
-    rbc.limit_ang_x_lower = -max_rot[0]
-    rbc.limit_ang_y_lower = -max_rot[1]
-    rbc.limit_ang_z_lower = -max_rot[2]
+    rbc.limit_ang_x_lower = max_rot[0]
+    rbc.limit_ang_y_lower = max_rot[1]
+    rbc.limit_ang_z_lower = max_rot[2]
 
     obj.mmd_joint.spring_linear = spring_linear
     obj.mmd_joint.spring_angular = spring_angular
@@ -375,7 +375,7 @@ def updateRigid(rigid_obj):
     else:
         relation.mute = True
 
-    if int(rigid.type) in [pmx.Rigid.MODE_DYNAMIC, pmx.Rigid.MODE_DYNAMIC_BONE] and rigid_obj.parent is not None and rigid_obj.parent_bone != '':
+    if int(rigid.type) in [pmx.Rigid.MODE_DYNAMIC, pmx.Rigid.MODE_DYNAMIC_BONE] and arm is not None and target_bone is not None:
         empty = bpy.data.objects.new(
             'mmd_bonetrack',
             None)
@@ -396,13 +396,13 @@ def updateRigid(rigid_obj):
         const.name='mmd_tools_rigid_track'
         const.target = empty
 
-        rigid_obj.rigid_body.collision_shape = rigid.shape
+    rigid_obj.rigid_body.collision_shape = rigid.shape
 
 def __getRigidRange(obj):
     return (mathutils.Vector(obj.bound_box[0]) - mathutils.Vector(obj.bound_box[6])).length
     
 def __makeNonCollisionConstraint(obj_a, obj_b, cnt=0):
-    if obj_a is obj_b:
+    if obj_a == obj_b:
         return
     t = bpy.data.objects.new(
         'ncc.%d'%cnt,
@@ -441,22 +441,32 @@ def buildRigids(objects, distance_of_ignore_collisions=1.5):
     rigid_objects = __updateRigids(objects)
     rigid_object_groups = [[] for i in range(16)]
     for i in rigid_objects:
-        rigid_object_groups[i.mmd_rigid.collision_group_number-1].append(i)
+        rigid_object_groups[i.mmd_rigid.collision_group_number].append(i)
+
+    jointMap = {}
+    for joint in findJointObjects():
+        rbc = joint.rigid_body_constraint
+        rbc.disable_collisions = False
+        jointMap[frozenset((rbc.object1, rbc.object2))] = joint
+        jointMap[frozenset((rbc.object2, rbc.object1))] = joint
 
     non_collision_pairs = set()
     for obj_a in rigid_objects:
-        for n, ignore in enumerate(i.mmd_rigid.collision_group_mask):
+        for n, ignore in enumerate(obj_a.mmd_rigid.collision_group_mask):
             if not ignore:
                 continue
-
             for obj_b in rigid_object_groups[n]:
                 pair = frozenset((obj_a, obj_b))
                 if pair in non_collision_pairs:
                     continue
-                distance = (mathutils.Vector(obj_a.location) - mathutils.Vector(obj_b.location)).length
-                if distance < distance_of_ignore_collisions * (__getRigidRange(obj_a) + __getRigidRange(obj_b)):
-                     __makeNonCollisionConstraint(obj_a, obj_b, non_collision_constraint_cnt)
-                     non_collision_constraint_cnt += 1
+                if pair in jointMap:
+                    joint = jointMap[pair]
+                    joint.rigid_body_constraint.disable_collisions = True
+                else:
+                    distance = (mathutils.Vector(obj_a.location) - mathutils.Vector(obj_b.location)).length
+                    if distance < distance_of_ignore_collisions * (__getRigidRange(obj_a) + __getRigidRange(obj_b)):
+                        __makeNonCollisionConstraint(obj_a, obj_b, non_collision_constraint_cnt)
+                        non_collision_constraint_cnt += 1
                 non_collision_pairs.add(pair)
                 non_collision_pairs.add(frozenset((obj_b, obj_a)))
     return rigid_objects

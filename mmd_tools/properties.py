@@ -179,7 +179,7 @@ class MMDRigid(PropertyGroup):
 
     collision_group_number = IntProperty(
         name='Collision Group',
-        min=1,
+        min=0,
         max=16,
         default=1,
         )
