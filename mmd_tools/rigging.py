@@ -190,6 +190,7 @@ def createRigid(**kwargs):
 
     obj = bpy.context.active_object
     bpy.ops.rigidbody.object_add(type='ACTIVE')
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
     obj.location = location
     obj.rotation_euler = rotation
     obj.scale = size
@@ -385,6 +386,8 @@ def updateRigid(rigid_obj):
         empty.empty_draw_type = 'ARROWS'
         empty.is_mmd_rigid_track_target = True
 
+        rigid_obj.constraints.remove(relation)
+
         bpyutils.setParent(empty, rigid_obj)
         empty.hide = True
 
@@ -395,6 +398,9 @@ def updateRigid(rigid_obj):
         const = target_bone.constraints.new('DAMPED_TRACK')
         const.name='mmd_tools_rigid_track'
         const.target = empty
+
+    bpyutils.select_object(rigid_obj)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
 
     rigid_obj.rigid_body.collision_shape = rigid.shape
 
@@ -424,10 +430,15 @@ def __makeNonCollisionConstraint(obj_a, obj_b, cnt=0):
     # self.__nonCollisionJointTable[frozenset((obj_a, obj_b))] = t
     # self.__tempObjGroup.objects.link(t)
 
-def __updateRigids(objects):
+def __updateRigids(objects, visited=None):
     rigid_objects = []
+    if visited is None:
+        visited = []
     for i in objects:
-        rigid_objects += __updateRigids(i.children)
+        if i in visited:
+            continue
+        visited.append(i)
+        rigid_objects += __updateRigids(i.children, visited)
         if i.is_mmd_rigid:
             updateRigid(i)
             rigid_objects.append(i)
@@ -475,7 +486,9 @@ def __makeSpring(target, base_obj, spring_stiffness):
     bpyutils.select_object(target)
     bpy.ops.object.duplicate()
     spring_target = bpy.context.scene.objects.active
-    spring_target.constraints.remove(spring_target.constraints['mmd_tools_rigid_parent'])
+    t = spring_target.constraints.get('mmd_tools_rigid_parent')
+    if t is not None:
+        spring_target.constraints.remove(t)
     spring_target.is_mmd_spring_goal = True
     spring_target.is_mmd_rigid = False
     spring_target.rigid_body.kinematic = True

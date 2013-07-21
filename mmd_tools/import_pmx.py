@@ -465,8 +465,8 @@ class PMXImporter:
                 rigid_b = self.__rigidTable[joint.dest_rigid],
                 maximum_location = mathutils.Vector(joint.maximum_location) * self.TO_BLE_MATRIX * self.__scale,
                 minimum_location = mathutils.Vector(joint.minimum_location) * self.TO_BLE_MATRIX * self.__scale,
-                maximum_rotation = mathutils.Vector(joint.maximum_rotation) * self.TO_BLE_MATRIX,
-                minimum_rotation = mathutils.Vector(joint.minimum_rotation) * self.TO_BLE_MATRIX,
+                maximum_rotation = mathutils.Vector(joint.maximum_rotation) * self.TO_BLE_MATRIX * -1,
+                minimum_rotation = mathutils.Vector(joint.minimum_rotation) * self.TO_BLE_MATRIX * -1,
                 spring_linear = mathutils.Vector(joint.spring_constant) * self.TO_BLE_MATRIX,
                 spring_angular = mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX,
                 )
