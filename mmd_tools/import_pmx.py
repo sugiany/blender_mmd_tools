@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from . import pmx
 from . import utils
+from . import rigging
 from . import bpyutils
 
 import math
@@ -408,186 +409,37 @@ class PMXImporter:
 
     def __importRigids(self):
         self.__rigidTable = []
-        self.__nonCollisionJointTable = {}
         start_time = time.time()
-        collisionGroups = []
-        for i in range(16):
-            collisionGroups.append([])
         for rigid in self.__model.rigids:
             if self.__onlyCollisions and rigid.mode != pmx.Rigid.MODE_STATIC:
                 continue
 
             loc = mathutils.Vector(rigid.location) * self.TO_BLE_MATRIX * self.__scale
             rot = mathutils.Vector(rigid.rotation) * self.TO_BLE_MATRIX * -1
-            rigid_type = None
-            if rigid.type == pmx.Rigid.TYPE_SPHERE:
-                bpy.ops.mesh.primitive_uv_sphere_add(
-                    segments=16,
-                    ring_count=8,
-                    size=1,
-                    view_align=False,
-                    enter_editmode=False
-                    )
-                size = mathutils.Vector([1,1,1]) * rigid.size[0]
-                rigid_type = 'SPHERE'
-                bpy.ops.object.shade_smooth()
-            elif rigid.type == pmx.Rigid.TYPE_BOX:
-                bpy.ops.mesh.primitive_cube_add(
-                    view_align=False,
-                    enter_editmode=False
-                    )
+            if rigid.type == pmx.Rigid.TYPE_BOX:
                 size = mathutils.Vector(rigid.size) * self.TO_BLE_MATRIX
-                rigid_type = 'BOX'
-            elif rigid.type == pmx.Rigid.TYPE_CAPSULE:
-                obj = utils.makeCapsule(radius=rigid.size[0], height=rigid.size[1])
-                size = mathutils.Vector([1,1,1])
-                rigid_type = 'CAPSULE'
-                bpy.ops.object.shade_smooth()
             else:
-                raise Exception('Invalid rigid type')
+                size = mathutils.Vector(rigid.size)
 
-            if rigid.type != pmx.Rigid.TYPE_CAPSULE:
-                obj = bpy.context.selected_objects[0]
-            obj.name = rigid.name
-            obj.scale = size * self.__scale
-            obj.mmd_rigid.shape = str(rigid.type)
-            obj.mmd_rigid.type = str(rigid.mode)
-            obj.mmd_rigid.collision_group_number = rigid.collision_group_number
-            t = []
-            for i in range(16):
-                t.append(rigid.collision_group_mask & (1<<i) == 0)
-            obj.mmd_rigid.collision_group_mask = t
-            obj.hide_render = True
+            obj = rigging.createRigid(
+                name = rigid.name,
+                name_e = rigid.name_e,
+                shape_type = rigid.type,
+                dynamics_type = rigid.mode,
+                location = loc,
+                rotation = rot,
+                size = size * self.__scale,
+                collision_group_number = rigid.collision_group_number,
+                collision_group_mask = [rigid.collision_group_mask & (1<<i) == 0 for i in range(16)],
+                )
+
             obj.draw_type = 'WIRE'
-            obj.is_mmd_rigid = True
             self.__rigidObjGroup.objects.link(obj)
-            utils.selectAObject(obj)
-            bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
-            obj.location = loc
-            obj.rotation_euler = rot
-            bpy.ops.rigidbody.object_add(type='ACTIVE')
-            if rigid.mode == pmx.Rigid.MODE_STATIC and rigid.bone is not None:
-                bpy.ops.object.modifier_add(type='COLLISION')
-                utils.setParentToBone(obj, self.__armObj, self.__boneTable[rigid.bone].name)
-            elif rigid.bone is not None:
-                bpy.ops.object.select_all(action='DESELECT')
-                obj.select = True
-                bpy.context.scene.objects.active = self.__root
-                bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=True)
 
-                target_bone = self.__boneTable[rigid.bone]
-                empty = bpy.data.objects.new(
-                    'mmd_bonetrack',
-                    None)
-                bpy.context.scene.objects.link(empty)
-                empty.location = target_bone.tail
-                empty.empty_draw_size = 0.5 * self.__scale
-                empty.empty_draw_type = 'ARROWS'
-                empty.is_mmd_rigid_track_target = True
-                self.__tempObjGroup.objects.link(empty)
-
-                utils.selectAObject(empty)
-                bpy.context.scene.objects.active = obj
-                bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=False)
-
-                empty.hide = True
-
-
-                for i in target_bone.constraints:
-                    if i.type == 'IK':
-                        i.influence = 0
-                const = target_bone.constraints.new('DAMPED_TRACK')
-                const.target = empty
-            else:
-                obj.parent = self.__armObj
-                bpy.ops.object.select_all(action='DESELECT')
-                obj.select = True
-
-            obj.rigid_body.collision_shape = rigid_type
-            group_flags = []
-            rb = obj.rigid_body
-            rb.friction = rigid.friction
-            rb.mass = rigid.mass
-            rb.angular_damping = rigid.rotation_attenuation
-            rb.linear_damping = rigid.velocity_attenuation
-            rb.restitution = rigid.bounce
-            if rigid.mode == pmx.Rigid.MODE_STATIC:
-                rb.kinematic = True
-
-            for i in range(16):
-                if rigid.collision_group_mask & (1<<i) == 0:
-                    for j in collisionGroups[i]:
-                        s = time.time()
-                        self.__makeNonCollisionConstraint(obj, j)
-
-            collisionGroups[rigid.collision_group_number].append(obj)
             self.__rigidTable.append(obj)
         logging.debug('Finished importing rigid bodies in %f seconds.', time.time() - start_time)
 
-
-    def __getRigidRange(self, obj):
-        return (mathutils.Vector(obj.bound_box[0]) - mathutils.Vector(obj.bound_box[6])).length
-
-    def __makeNonCollisionConstraint(self, obj_a, obj_b):
-        if (mathutils.Vector(obj_a.location) - mathutils.Vector(obj_b.location)).length > self.__distance_of_ignore_collisions * (self.__getRigidRange(obj_a) + self.__getRigidRange(obj_b)):
-            return
-        t = bpy.data.objects.new(
-            'ncc.%d'%len(self.__nonCollisionConstraints),
-            None)
-        bpy.context.scene.objects.link(t)
-        t.location = [0, 0, 0]
-        t.empty_draw_size = 0.5 * self.__scale
-        t.empty_draw_type = 'ARROWS'
-        t.is_mmd_non_collision_constraint = True
-        t.hide_render = True
-        t.parent = self.__root
-        utils.selectAObject(t)
-        bpy.ops.rigidbody.constraint_add(type='GENERIC')
-        rb = t.rigid_body_constraint
-        rb.disable_collisions = True
-        rb.object1 = obj_a
-        rb.object2 = obj_b
-        self.__nonCollisionConstraints.append(t)
-        self.__nonCollisionJointTable[frozenset((obj_a, obj_b))] = t
-        self.__tempObjGroup.objects.link(t)
-
-    def __makeSpring(self, target, base_obj, spring_stiffness):
-        utils.selectAObject(target)
-        bpy.ops.object.duplicate()
-        spring_target = bpy.context.scene.objects.active
-        spring_target.is_mmd_spring_goal = True
-        spring_target.rigid_body.kinematic = True
-        spring_target.rigid_body.collision_groups = (False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, True)
-        bpy.context.scene.objects.active = base_obj
-        bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=True)
-        self.__rigidObjGroup.objects.unlink(spring_target)
-        self.__tempObjGroup.objects.link(spring_target)
-
-        obj = bpy.data.objects.new(
-            'S.'+target.name,
-            None)
-        bpy.context.scene.objects.link(obj)
-        obj.location = target.location
-        obj.empty_draw_size = 0.5 * self.__scale
-        obj.empty_draw_type = 'ARROWS'
-        obj.hide_render = True
-        obj.is_mmd_spring_joint = True
-        obj.parent = self.__root
-        self.__tempObjGroup.objects.link(obj)
-        utils.selectAObject(obj)
-        bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
-        rbc = obj.rigid_body_constraint
-        rbc.object1 = target
-        rbc.object2 = spring_target
-
-        rbc.use_spring_x = True
-        rbc.use_spring_y = True
-        rbc.use_spring_z = True
-
-        rbc.spring_stiffness_x = spring_stiffness[0]
-        rbc.spring_stiffness_y = spring_stiffness[1]
-        rbc.spring_stiffness_z = spring_stiffness[2]
-
+    
     def __importJoints(self):
         if self.__onlyCollisions:
             return
@@ -595,94 +447,25 @@ class PMXImporter:
         for joint in self.__model.joints:
             loc = mathutils.Vector(joint.location) * self.TO_BLE_MATRIX * self.__scale
             rot = mathutils.Vector(joint.rotation) * self.TO_BLE_MATRIX * -1
-            obj = bpy.data.objects.new(
-                'J.'+joint.name,
-                None)
-            bpy.context.scene.objects.link(obj)
-            obj.location = loc
-            obj.rotation_euler = rot
-            obj.empty_draw_size = 0.5 * self.__scale
-            obj.empty_draw_type = 'ARROWS'
-            obj.hide_render = True
-            obj.is_mmd_joint = True
-            obj.parent = self.__root
-            self.__jointObjGroup.objects.link(obj)
 
-            utils.selectAObject(obj)
-            bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
-            rbc = obj.rigid_body_constraint
-
-            rigid1 = self.__rigidTable[joint.src_rigid]
-            rigid2 = self.__rigidTable[joint.dest_rigid]
-            rbc.object1 = rigid1
-            rbc.object2 = rigid2
-
-            if not self.__ignoreNonCollisionGroups:
-                non_collision_joint = self.__nonCollisionJointTable.get(frozenset((rigid1, rigid2)), None)
-                if non_collision_joint is None:
-                    rbc.disable_collisions = False
-                else:
-                    utils.selectAObject(non_collision_joint)
-                    bpy.ops.object.delete(use_global=False)
-                    rbc.disable_collisions = True
-            elif rigid1.rigid_body.kinematic and not rigid2.rigid_body.kinematic or not rigid1.rigid_body.kinematic and rigid2.rigid_body.kinematic:
-                rbc.disable_collisions = False
-
-            rbc.use_limit_ang_x = True
-            rbc.use_limit_ang_y = True
-            rbc.use_limit_ang_z = True
-            rbc.use_limit_lin_x = True
-            rbc.use_limit_lin_y = True
-            rbc.use_limit_lin_z = True
-            rbc.use_spring_x = True
-            rbc.use_spring_y = True
-            rbc.use_spring_z = True
-
-            max_loc = mathutils.Vector(joint.maximum_location) * self.TO_BLE_MATRIX * self.__scale
-            min_loc = mathutils.Vector(joint.minimum_location) * self.TO_BLE_MATRIX * self.__scale
-            rbc.limit_lin_x_upper = max_loc[0]
-            rbc.limit_lin_y_upper = max_loc[1]
-            rbc.limit_lin_z_upper = max_loc[2]
-
-            rbc.limit_lin_x_lower = min_loc[0]
-            rbc.limit_lin_y_lower = min_loc[1]
-            rbc.limit_lin_z_lower = min_loc[2]
-
-            max_rot = mathutils.Vector(joint.maximum_rotation) * self.TO_BLE_MATRIX
-            min_rot = mathutils.Vector(joint.minimum_rotation) * self.TO_BLE_MATRIX
-            rbc.limit_ang_x_upper = -min_rot[0]
-            rbc.limit_ang_y_upper = -min_rot[1]
-            rbc.limit_ang_z_upper = -min_rot[2]
-
-            rbc.limit_ang_x_lower = -max_rot[0]
-            rbc.limit_ang_y_lower = -max_rot[1]
-            rbc.limit_ang_z_lower = -max_rot[2]
-
-            obj.mmd_joint.spring_linear = joint.spring_constant
-            obj.mmd_joint.spring_angular = joint.spring_rotation_constant
-            # spring_damp = mathutils.Vector(joint.spring_constant) * self.TO_BLE_MATRIX
-            # rbc.spring_damping_x = spring_damp[0]
-            # rbc.spring_damping_y = spring_damp[1]
-            # rbc.spring_damping_z = spring_damp[2]
+            obj = rigging.createJoint(
+                name = joint.name,
+                name_e = joint.name_e,
+                location = loc,
+                rotation = rot,
+                size = 0.5 * self.__scale,
+                rigid_a = self.__rigidTable[joint.src_rigid],
+                rigid_b = self.__rigidTable[joint.dest_rigid],
+                maximum_location = mathutils.Vector(joint.maximum_location) * self.TO_BLE_MATRIX * self.__scale,
+                minimum_location = mathutils.Vector(joint.minimum_location) * self.TO_BLE_MATRIX * self.__scale,
+                maximum_rotation = mathutils.Vector(joint.maximum_rotation) * self.TO_BLE_MATRIX,
+                minimum_rotation = mathutils.Vector(joint.minimum_rotation) * self.TO_BLE_MATRIX,
+                spring_linear = mathutils.Vector(joint.spring_constant) * self.TO_BLE_MATRIX,
+                spring_angular = mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX,
+                )
 
             self.__jointTable.append(obj)
-            bpy.ops.object.select_all(action='DESELECT')
-            obj.select = True
-            bpy.context.scene.objects.active = self.__armObj
-            bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=True)
-
-            # spring_stiff = mathutils.Vector()
-            # rbc.spring_stiffness_x = spring_stiff[0]
-            # rbc.spring_stiffness_y = spring_stiff[1]
-            # rbc.spring_stiffness_z = spring_stiff[2]
-
-            if rigid1.rigid_body.kinematic:
-                self.__makeSpring(rigid2, rigid1, mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX)
-            if rigid2.rigid_body.kinematic:
-                self.__makeSpring(rigid1, rigid2, mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX)
-
-
-
+            self.__jointObjGroup.objects.link(obj)
 
 
     def __importMaterials(self):

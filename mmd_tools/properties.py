@@ -165,6 +165,12 @@ class MMDBone(PropertyGroup):
         )
 
 class MMDRigid(PropertyGroup):
+    name_j = StringProperty(
+        name='Name',
+        description='Japanese Name',
+        default='',
+        )
+
     name_e = StringProperty(
         name='Name(Eng)',
         description='English Name',
@@ -196,9 +202,9 @@ class MMDRigid(PropertyGroup):
     shape = EnumProperty(
         name='Shape',
         items = [
-            (str(Rigid.TYPE_SPHERE), 'Sphere', '', 1),
-            (str(Rigid.TYPE_BOX), 'Box', '', 2),
-            (str(Rigid.TYPE_CAPSULE), 'Capsule', '', 3),
+            ('SPHERE', 'Sphere', '', 1),
+            ('BOX', 'Box', '', 2),
+            ('CAPSULE', 'Capsule', '', 3),
             ],
         )
 

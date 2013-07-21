@@ -78,6 +78,9 @@ class MMDToolsRiggingPanel(Panel):
         r.operator('mmd_tools.show_temporary_objects', text='Show')
         r.operator('mmd_tools.hide_temporary_objects', text='Hide')
 
+        col = self.layout.column()
+        col.operator('mmd_tools.build_rig')
+
 class MMDMaterialPanel(Panel):
     bl_idname = 'MATERIAL_PT_mmd_tools_material'
     bl_label = 'MMD Material Tools'
@@ -250,7 +253,8 @@ class MMDRigidPanel(Panel):
 
         row = layout.row(align=True)
         row.prop(obj.mmd_rigid, 'type')
-        row.prop_search(obj, 'parent_bone', text='', search_data=obj.parent.pose, search_property='bones', icon='BONE_DATA')
+        if obj.parent is not None:
+            row.prop_search(obj, 'parent_bone', text='', search_data=obj.parent.pose, search_property='bones', icon='BONE_DATA')
 
         row = layout.row()
 
