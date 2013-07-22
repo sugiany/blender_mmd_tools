@@ -126,6 +126,32 @@ def findTemporaryObjects(objects=None):
         objects = bpy.context.scene.objects
     return filter(isTemporaryObject, objects)
 
+def findRelationalArmature(rigid_body):
+    for i in filter(lambda x: x.type == 'ARMATURE', root.children):
+        return i
+    return None
+
+def findRelationalBone(rigid_body):
+    relation = rigid_body.constraints.get('mmd_tools_rigid_parent')
+    if relation is not None:
+        return (relation.target, relation, 'subtarget')
+    else:
+        root = rigid_body.parent
+        arm = findRelationalArmature(rigid_body)
+        track = None
+        for i in filter(lambda x: x.is_mmd_rigid_track_target, rigid_body.children):
+            track = i
+        if track is None:
+            rigid_body.mmd_rigid.bone = ''
+            return (arm, rigid_body.mmd_rigid, 'bone')
+
+        for bone in arm.pose.bones:
+            c = bone.constraints('mmd_tools_rigid_track')
+            if c is not None and c.target == track:
+                rigid_body.mmd_rigid.bone = c.name
+                return (arm, rigid_body.mmd_rigid, 'bone')
+        rigid_body.mmd_rigid.bone = ''
+        return (arm, rigid_body.mmd_rigid, 'bone')
 
 def createRigid(**kwargs):
     ''' Create a object for MMD rigid body dynamics.

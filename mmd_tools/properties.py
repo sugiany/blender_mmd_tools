@@ -208,6 +208,12 @@ class MMDRigid(PropertyGroup):
             ],
         )
 
+    bone = StringProperty(
+        name='Bone',
+        description='',
+        default='',
+        )
+
 class MMDJoint(PropertyGroup):
     name_j = StringProperty(
         name='Name',

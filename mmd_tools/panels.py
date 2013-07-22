@@ -244,6 +244,7 @@ class MMDRigidPanel(Panel):
         return context.active_object is not None and context.active_object.rigid_body is not None and context.active_object.is_mmd_rigid
 
     def draw(self, context):
+        from . import rigging
         obj = context.active_object
 
         layout = self.layout
@@ -253,9 +254,10 @@ class MMDRigidPanel(Panel):
 
         row = layout.row(align=True)
         row.prop(obj.mmd_rigid, 'type')
-        relation = obj.constraints.get('mmd_tools_rigid_parent')
-        if relation.target is not None:
-            row.prop_search(relation, 'subtarget', text='', search_data=relation.target.pose, search_property='bones', icon='BONE_DATA')
+
+        armature, data, propname = rigging.findRelationalBone(obj)
+
+        row.prop_search(data, propname, text='', search_data=armature.pose, search_property='bones', icon='BONE_DATA')
 
         row = layout.row()
 
@@ -334,5 +336,3 @@ class MMDJointPanel(Panel):
         col.label('Spring(Angular):')
         row = col.row()
         row.prop(obj.mmd_joint, 'spring_angular', text='')
-
-
