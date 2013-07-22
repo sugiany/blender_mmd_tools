@@ -158,10 +158,12 @@ class MMDCameraPanel(Panel):
 
     @classmethod
     def poll(cls, context):
+        from . import mmd_camera
         obj = context.active_object
         return obj is not None and (obj.type == 'CAMERA' or mmd_camera.MMDCamera.isMMDCamera(obj))
 
     def draw(self, context):
+        from . import mmd_camera
         obj = context.active_object
 
         layout = self.layout
@@ -255,10 +257,12 @@ class MMDRigidPanel(Panel):
         row = layout.row(align=True)
         row.prop(obj.mmd_rigid, 'type')
 
-        armature, data, propname = rigging.findRelationalBone(obj)
-
-        row.prop_search(data, propname, text='', search_data=armature.pose, search_property='bones', icon='BONE_DATA')
-
+        armature = rigging.findRelationalArmature(obj)
+        relation = obj.constraints.get('mmd_tools_rigid_parent')
+        if relation is not None:
+            row.prop_search(relation, 'subtarget', text='', search_data=armature.pose, search_property='bones', icon='BONE_DATA')
+        else:
+            row.prop_search(obj.mmd_rigid, 'bone', text='', search_data=armature.pose, search_property='bones', icon='BONE_DATA')
         row = layout.row()
 
         c = row.column()

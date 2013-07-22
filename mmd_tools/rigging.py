@@ -127,14 +127,14 @@ def findTemporaryObjects(objects=None):
     return filter(isTemporaryObject, objects)
 
 def findRelationalArmature(rigid_body):
-    for i in filter(lambda x: x.type == 'ARMATURE', root.children):
+    for i in filter(lambda x: x.type == 'ARMATURE', rigid_body.parent.children):
         return i
     return None
 
 def findRelationalBone(rigid_body):
     relation = rigid_body.constraints.get('mmd_tools_rigid_parent')
     if relation is not None:
-        return (relation.target, relation, 'subtarget')
+        return (relation.target, relation.subtarget)
     else:
         root = rigid_body.parent
         arm = findRelationalArmature(rigid_body)
@@ -142,16 +142,13 @@ def findRelationalBone(rigid_body):
         for i in filter(lambda x: x.is_mmd_rigid_track_target, rigid_body.children):
             track = i
         if track is None:
-            rigid_body.mmd_rigid.bone = ''
-            return (arm, rigid_body.mmd_rigid, 'bone')
+            return (arm, '')
 
         for bone in arm.pose.bones:
-            c = bone.constraints('mmd_tools_rigid_track')
+            c = bone.constraints.get('mmd_tools_rigid_track')
             if c is not None and c.target == track:
-                rigid_body.mmd_rigid.bone = c.name
-                return (arm, rigid_body.mmd_rigid, 'bone')
-        rigid_body.mmd_rigid.bone = ''
-        return (arm, rigid_body.mmd_rigid, 'bone')
+                return (arm, bone.name)
+        return (arm, '')
 
 def createRigid(**kwargs):
     ''' Create a object for MMD rigid body dynamics.
@@ -415,6 +412,7 @@ def updateRigid(rigid_obj):
         empty.empty_draw_type = 'ARROWS'
         empty.is_mmd_rigid_track_target = True
 
+        rigid_obj.mmd_rigid.bone = relation.subtarget
         rigid_obj.constraints.remove(relation)
 
         bpyutils.setParent(empty, rigid_obj)
