@@ -53,6 +53,9 @@ def register():
     bpy.types.INFO_MT_file_import.append(menu_func_import)
     bpy.types.INFO_MT_file_export.append(menu_func_export)
 
+
+    bpy.types.Object.is_mmd_root = bpy.props.BoolProperty(name='is_mmd_root', default=False)
+
     bpy.types.Object.is_mmd_camera = bpy.props.BoolProperty(name='is_mmd_camera', default=False)
     bpy.types.Object.mmd_camera = bpy.props.PointerProperty(type=properties.MMDCamera)
 

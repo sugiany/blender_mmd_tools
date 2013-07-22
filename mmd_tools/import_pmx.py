@@ -68,6 +68,7 @@ class PMXImporter:
         pmxModel = self.__model
 
         self.__root = bpy.data.objects.new(name=pmxModel.name, object_data=None)
+        self.__root.is_mmd_root = True
         self.__targetScene.objects.link(self.__root)
 
         mesh = bpy.data.meshes.new(name=pmxModel.name)

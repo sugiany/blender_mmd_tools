@@ -183,14 +183,13 @@ def createRigid(**kwargs):
         obj = bpyutils.makeCapsule(radius=size[0], height=size[1])
         size = mathutils.Vector([1,1,1])
         rigid_type = 'CAPSULE'
-        bpyutils.select_object(obj)
-        bpy.ops.object.shade_smooth()
+        with bpyutils.select_object(obj):
+            bpy.ops.object.shade_smooth()
     else:
         raise ValueError('Unknown shape type: %s'%(str(shape_type)))
 
     obj = bpy.context.active_object
     bpy.ops.rigidbody.object_add(type='ACTIVE')
-    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
     obj.location = location
     obj.rotation_euler = rotation
     obj.scale = size
@@ -199,6 +198,9 @@ def createRigid(**kwargs):
 
     obj.mmd_rigid.shape = rigid_type
     obj.mmd_rigid.type = str(dynamics_type)
+
+    with bpyutils.select_object(obj):
+        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
 
     if collision_group_number is not None:
         obj.mmd_rigid.collision_group_number = collision_group_number
@@ -229,6 +231,7 @@ def createRigid(**kwargs):
     constraint = obj.constraints.new('CHILD_OF')
     if arm_obj is not None:
         constraint.target = arm_obj
+        obj.parent = arm_obj.parent
     if bone != '':
         constraint.subtarget = bone
     constraint.name = 'mmd_tools_rigid_parent'
@@ -287,8 +290,8 @@ def createJoint(**kwargs):
     if arm_obj is not None:
         obj.parent = arm_obj
 
-    bpyutils.select_object(obj)
-    bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
+    with bpyutils.select_object(obj):
+        bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
     rbc = obj.rigid_body_constraint
 
     rbc.object1 = rigid_a
@@ -399,8 +402,10 @@ def updateRigid(rigid_obj):
         const.name='mmd_tools_rigid_track'
         const.target = empty
 
-    bpyutils.select_object(rigid_obj)
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    t=rigid_obj.hide
+    with bpyutils.select_object(rigid_obj):
+        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    rigid_obj.hide = t
 
     rigid_obj.rigid_body.collision_shape = rigid.shape
 
@@ -420,8 +425,8 @@ def __makeNonCollisionConstraint(obj_a, obj_b, cnt=0):
     t.is_mmd_non_collision_constraint = True
     t.hide_render = True
     # t.parent = self.__root
-    bpyutils.select_object(t)
-    bpy.ops.rigidbody.constraint_add(type='GENERIC')
+    with bpyutils.select_object(t):
+        bpy.ops.rigidbody.constraint_add(type='GENERIC')
     rb = t.rigid_body_constraint
     rb.disable_collisions = True
     rb.object1 = obj_a
@@ -483,9 +488,9 @@ def buildRigids(objects, distance_of_ignore_collisions=1.5):
     return rigid_objects
 
 def __makeSpring(target, base_obj, spring_stiffness):
-    bpyutils.select_object(target)
-    bpy.ops.object.duplicate()
-    spring_target = bpy.context.scene.objects.active
+    with bpyutils.select_object(target):
+        bpy.ops.object.duplicate()
+        spring_target = bpy.context.scene.objects.active
     t = spring_target.constraints.get('mmd_tools_rigid_parent')
     if t is not None:
         spring_target.constraints.remove(t)
@@ -493,8 +498,10 @@ def __makeSpring(target, base_obj, spring_stiffness):
     spring_target.is_mmd_rigid = False
     spring_target.rigid_body.kinematic = True
     spring_target.rigid_body.collision_groups = (False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, True)
-    bpy.context.scene.objects.active = base_obj
-    bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=True)
+    # bpyutils.select_object(base_obj, [spring_target])
+    spring_target.parent = base_obj
+    spring_target.matrix_parent_inverse = mathutils.Matrix(base_obj.matrix_basis).inverted()
+    # bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=True)
     # self.__rigidObjGroup.objects.unlink(spring_target)
     # self.__tempObjGroup.objects.link(spring_target)
 
@@ -509,8 +516,8 @@ def __makeSpring(target, base_obj, spring_stiffness):
     obj.is_mmd_spring_joint = True
     # obj.parent = self.__root
     # self.__tempObjGroup.objects.link(obj)
-    bpyutils.select_object(obj)
-    bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
+    with bpyutils.select_object(obj):
+        bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
     rbc = obj.rigid_body_constraint
     rbc.object1 = target
     rbc.object2 = spring_target

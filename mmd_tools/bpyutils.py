@@ -8,9 +8,9 @@ class __EditMode:
             raise ValueError
         self.__prevMode = obj.mode
         self.__obj = obj
-        select_object(obj)
-        if obj.mode != 'EIDT':
-            bpy.ops.object.mode_set(mode='EDIT')
+        with select_object(obj) as act_obj:
+            if obj.mode != 'EDIT':
+                bpy.ops.object.mode_set(mode='EDIT')
 
     def __enter__(self):
         return self.__obj.data
@@ -18,15 +18,34 @@ class __EditMode:
     def __exit__(self, type, value, traceback):
         bpy.ops.object.mode_set(mode=self.__prevMode)
 
+class __SelectObjects:
+    def __init__(self, active_object, selected_objects=[]):
+        if not isinstance(active_object, bpy.types.Object):
+            raise ValueError
+        try:
+            bpy.ops.object.mode_set(mode='OBJECT')
+        except Exception:
+            pass
 
-def select_object(obj):
-    try:
-        bpy.ops.object.mode_set(mode='OBJECT')
-    except Exception:
-        pass
-    bpy.ops.object.select_all(action='DESELECT')
-    bpy.context.scene.objects.active = obj
-    obj.select=True
+        for i in bpy.context.selected_objects:
+            i.select = False
+
+        self.__active_object = active_object
+        self.__selected_objects = [active_object]+selected_objects
+
+        self.__hides = []
+        for i in self.__selected_objects:
+            self.__hides.append(i.hide)
+            i.hide = False
+            i.select = True
+        bpy.context.scene.objects.active = active_object
+
+    def __enter__(self):
+        return self.__active_object
+
+    def __exit__(self, type, value, traceback):
+        for i, j in zip(self.__selected_objects, self.__hides):
+            i.hide = j
 
 def setParent(obj, parent):
     ho = obj.hide
@@ -54,13 +73,23 @@ def setParentToBone(obj, parent, bone_name):
 def edit_object(obj):
     """ Set the object interaction mode to 'EDIT'
 
-    It is recommended to use 'edit_object' with 'with' statement like the following code.
-    @code{.py}
-    with edit_object:
-        some functions...
-    @endcode
+     It is recommended to use 'edit_object' with 'with' statement like the following code.
+
+        with edit_object:
+            some functions...
     """
     return __EditMode(obj)
+
+def select_object(obj, objects=[]):
+    """ Select objects.
+
+     It is recommended to use 'select_object' with 'with' statement like the following code.
+     This function can select "hidden" objects safely.
+
+        with select_object(obj):
+            some functions...
+    """
+    return __SelectObjects(obj, objects)
 
 def makeCapsule(segment=16, ring_count=8, radius=1.0, height=1.0, target_scene=None):
     import math
