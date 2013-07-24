@@ -243,7 +243,8 @@ class MMDRigidPanel(Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.active_object is not None and context.active_object.rigid_body is not None and context.active_object.is_mmd_rigid
+        obj = context.active_object
+        return obj is not None and obj.mmd_type == 'RIGID_BODY'
 
     def draw(self, context):
         from . import rigging
@@ -257,7 +258,7 @@ class MMDRigidPanel(Panel):
         row = layout.row(align=True)
         row.prop(obj.mmd_rigid, 'type')
 
-        armature = rigging.findRelationalArmature(obj)
+        armature = rigging.findArmatureObject(obj)
         relation = obj.constraints.get('mmd_tools_rigid_parent')
         if relation is not None:
             row.prop_search(relation, 'subtarget', text='', search_data=armature.pose, search_property='bones', icon='BONE_DATA')
@@ -290,7 +291,8 @@ class MMDJointPanel(Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.active_object is not None and context.active_object.type == 'EMPTY' and obj.rigid_body_constraint is not None and context.active_object.is_mmd_joint
+        obj = context.active_object
+        return obj is not None and obj.mmd_type == 'JOINT'
 
     def draw(self, context):
         obj = context.active_object

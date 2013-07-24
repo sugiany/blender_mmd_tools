@@ -54,27 +54,48 @@ def register():
     bpy.types.INFO_MT_file_export.append(menu_func_export)
 
 
-    bpy.types.Object.is_mmd_root = bpy.props.BoolProperty(name='is_mmd_root', default=False)
+    #bpy.types.Object.is_mmd_root = bpy.props.BoolProperty(name='is_mmd_root', default=False)
 
-    bpy.types.Object.is_mmd_camera = bpy.props.BoolProperty(name='is_mmd_camera', default=False)
+    #bpy.types.Object.is_mmd_camera = bpy.props.BoolProperty(name='is_mmd_camera', default=False)
     bpy.types.Object.mmd_camera = bpy.props.PointerProperty(type=properties.MMDCamera)
 
     # Material custom properties
     bpy.types.Material.mmd_material = bpy.props.PointerProperty(type=properties.MMDMaterial)
 
+    bpy.types.Object.mmd_type = bpy.props.EnumProperty(
+        name='Type',
+        default='NONE',
+        items=[
+            ('NONE', 'None', '', 1),
+            ('ROOT', 'Root', '', 2),
+            ('RIGID_GRP_OBJ', 'Rigid Body Grp Empty', '', 3),
+            ('JOINT_GRP_OBJ', 'Joint Grp Empty', '', 4),
+
+            ('CAMERA', 'Camera', '', 21),
+            ('JOINT', 'Joint', '', 22),
+            ('RIGID_BODY', 'Rigid body', '', 23),
+            ('LIGHT', 'Light', '', 24),
+
+            ('TRACK_TARGET', 'Track Target', '', 51),
+            ('NON_COLLISION_CONSTRAINT', 'Non Collision Constraint', '', 52),
+            ('SPRING_CONSTRAINT', 'Spring Constraint', '', 53),
+            ('SPRING_GOAL', 'Spring Goal', '', 54),
+            ]
+        )
+
     bpy.types.Object.is_mmd_lamp = bpy.props.BoolProperty(name='is_mmd_lamp', default=False)
 
-    bpy.types.Object.is_mmd_rigid = bpy.props.BoolProperty(name='is_mmd_rigid', default=False)
+    # bpy.types.Object.is_mmd_rigid = bpy.props.BoolProperty(name='is_mmd_rigid', default=False)
     bpy.types.Object.mmd_rigid = bpy.props.PointerProperty(type=properties.MMDRigid)
 
 
-    bpy.types.Object.is_mmd_joint = bpy.props.BoolProperty(name='is_mmd_joint', default=False)
+    # bpy.types.Object.is_mmd_joint = bpy.props.BoolProperty(name='is_mmd_joint', default=False)
     bpy.types.Object.mmd_joint = bpy.props.PointerProperty(type=properties.MMDJoint)
 
     bpy.types.Object.is_mmd_rigid_track_target = bpy.props.BoolProperty(name='is_mmd_rigid_track_target', default=False)
-    bpy.types.Object.is_mmd_non_collision_constraint = bpy.props.BoolProperty(name='is_mmd_non_collision_constraint', default=False)
-    bpy.types.Object.is_mmd_spring_joint = bpy.props.BoolProperty(name='is_mmd_spring_joint', default=False)
-    bpy.types.Object.is_mmd_spring_goal = bpy.props.BoolProperty(name='is_mmd_spring_goal', default=False)
+    #bpy.types.Object.is_mmd_non_collision_constraint = bpy.props.BoolProperty(name='is_mmd_non_collision_constraint', default=False)
+    #bpy.types.Object.is_mmd_spring_joint = bpy.props.BoolProperty(name='is_mmd_spring_joint', default=False)
+    #bpy.types.Object.is_mmd_spring_goal = bpy.props.BoolProperty(name='is_mmd_spring_goal', default=False)
 
     bpy.types.PoseBone.mmd_bone = bpy.props.PointerProperty(type=properties.MMDBone)
 

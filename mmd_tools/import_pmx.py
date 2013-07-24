@@ -29,6 +29,8 @@ class PMXImporter:
         self.__root = None
         self.__armObj = None
         self.__meshObj = None
+        self.__rigidsSetObj = None
+        self.__jointsSetObj = None
 
         self.__vertexTable = None
         self.__vertexGroupTable = None
@@ -68,7 +70,7 @@ class PMXImporter:
         pmxModel = self.__model
 
         self.__root = bpy.data.objects.new(name=pmxModel.name, object_data=None)
-        self.__root.is_mmd_root = True
+        self.__root.mmd_type = 'ROOT'
         self.__targetScene.objects.link(self.__root)
 
         mesh = bpy.data.meshes.new(name=pmxModel.name)
@@ -78,8 +80,15 @@ class PMXImporter:
         self.__armObj = bpy.data.objects.new(name=pmxModel.name+'_arm', object_data=arm)
         self.__meshObj.parent = self.__armObj
 
+        self.__rigidsSetObj = bpy.data.objects.new(name='rigids', object_data=None)
+        self.__rigidsSetObj.parent = self.__root
+        self.__jointsSetObj = bpy.data.objects.new(name='joints', object_data=None)
+        self.__jointsSetObj.parent = self.__root
+
         self.__targetScene.objects.link(self.__meshObj)
         self.__targetScene.objects.link(self.__armObj)
+        self.__targetScene.objects.link(self.__rigidsSetObj)
+        self.__targetScene.objects.link(self.__jointsSetObj)
 
         self.__armObj.parent = self.__root
 
@@ -440,8 +449,9 @@ class PMXImporter:
                 bounce = rigid.bounce,
                 bone = None if rigid.bone == -1 else self.__boneTable[rigid.bone].name,
                 )
-
+            obj.parent = self.__rigidsSetObj
             obj.draw_type = 'WIRE'
+            obj.hide = True
             self.__rigidObjGroup.objects.link(obj)
 
             self.__rigidTable.append(obj)
@@ -471,7 +481,8 @@ class PMXImporter:
                 spring_linear = mathutils.Vector(joint.spring_constant) * self.TO_BLE_MATRIX,
                 spring_angular = mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX,
                 )
-
+            obj.parent = self.__jointsSetObj
+            obj.hide = True
             self.__jointTable.append(obj)
             self.__jointObjGroup.objects.link(obj)
 
@@ -564,13 +575,6 @@ class PMXImporter:
                 offset = mathutils.Vector(md.offset) * self.TO_BLE_MATRIX
                 shapeKeyPoint.co = shapeKeyPoint.co + offset * self.__scale
 
-    def __hideRigidsAndJoints(self, obj):
-        if obj.is_mmd_rigid or obj.is_mmd_joint or obj.is_mmd_non_collision_constraint or obj.is_mmd_spring_joint or obj.is_mmd_spring_goal:
-            obj.hide = True
-
-        for i in obj.children:
-            self.__hideRigidsAndJoints(i)
-
     def __addArmatureModifier(self, meshObj, armObj):
         armModifier = meshObj.modifiers.new(name='Armature', type='ARMATURE')
         armModifier.object = armObj
@@ -626,8 +630,6 @@ class PMXImporter:
         self.__meshObj.data.update()
 
         bpy.types.Object.pmx_import_scale = bpy.props.FloatProperty(name='pmx_import_scale')
-        if args.get('hide_rigids', False):
-            self.__hideRigidsAndJoints(self.__root)
         self.__armObj.pmx_import_scale = self.__scale
 
         for i in [self.__rigidObjGroup.objects, self.__jointObjGroup.objects, self.__tempObjGroup.objects]:

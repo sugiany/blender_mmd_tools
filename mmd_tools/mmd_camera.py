@@ -8,7 +8,7 @@ class MMDCamera:
             if obj.parent is None or obj.type != 'CAMERA':
                 raise ValueError('%s is not MMDCamera'%str(obj))
             obj = obj.parent
-        if obj.type == 'EMPTY' and obj.get('is_mmd_camera', False):
+        if obj.type == 'EMPTY' and obj.mmd_type == 'CAMERA':
             self.__emptyObj = obj
         else:
             raise ValueError('%s is not MMDCamera'%str(obj))
@@ -20,7 +20,7 @@ class MMDCamera:
             if obj.parent is None or obj.type != 'CAMERA':
                 return False
             obj = obj.parent
-        return obj.type == 'EMPTY' and obj.get('is_mmd_camera', False)
+        return obj.type == 'EMPTY' and obj.mmd_type == 'CAMERA'
 
 
     @staticmethod
@@ -55,7 +55,7 @@ class MMDCamera:
         bpy.context.scene.objects.link(empty)
 
         empty.rotation_mode = 'YXZ'
-        empty.is_mmd_camera = True
+        empty.mmd_type = 'CAMERA'
         empty.mmd_camera.distance = 0.0
         empty.mmd_camera.angle = 45
         empty.mmd_camera.persp = True

@@ -23,7 +23,7 @@ class ShowRigidBodies(Operator):
     bl_options = {'PRESET'}
 
     def execute(self, context):
-        for i in findRididBodyObjects():
+        for i in findRigidBodyObjects():
             i.hide = False
         return {'FINISHED'}
 
@@ -34,7 +34,7 @@ class HideRigidBodies(Operator):
     bl_options = {'PRESET'}
 
     def execute(self, context):
-        for i in findRididBodyObjects():
+        for i in findRigidBodyObjects():
             i.hide = True
         return {'FINISHED'}
 
@@ -107,15 +107,15 @@ class BuildRig(Operator):
         return {'FINISHED'}
 
 def isRigidBodyObject(obj):
-    return obj.is_mmd_rigid and not (obj.is_mmd_rigid_track_target or obj.is_mmd_spring_goal or obj.is_mmd_spring_joint)
+    return obj.mmd_type == 'RIGID_BODY'
 
 def isJointObject(obj):
-    return obj.is_mmd_joint
+    return obj.mmd_type == 'JOINT'
 
 def isTemporaryObject(obj):
-    return obj.is_mmd_rigid_track_target or obj.is_mmd_spring_goal or obj.is_mmd_spring_joint or obj.is_mmd_non_collision_constraint
+    return obj.mmd_type in ['TRACK_TARGET', 'NON_COLLISION_CONSTRAINT', 'SPRING_CONSTRAINT', 'SPRING_GOAL']
 
-def findRididBodyObjects():
+def findRigidBodyObjects():
     return filter(isRigidBodyObject, bpy.context.scene.objects)
 
 def findJointObjects():
@@ -126,20 +126,38 @@ def findTemporaryObjects(objects=None):
         objects = bpy.context.scene.objects
     return filter(isTemporaryObject, objects)
 
-def findRelationalArmature(rigid_body):
-    for i in filter(lambda x: x.type == 'ARMATURE', rigid_body.parent.children):
+def findRootObject(obj):
+    if obj.mmd_type == 'ROOT':
+        return obj
+    if obj.parent is None:
+        raise Exception('Not found a root object.')
+    return findRootObject(obj.parent)
+
+def findArmatureObject(obj):
+    if obj.type == 'ARMATURE':
+        return obj
+    else:
+        root = findRootObject(obj)
+        for i in filter(lambda x: x.type == 'ARMATURE', root.children):
+            return i
+    raise Exception('Not found a armature object.')
+
+def getRigidGroupObject(obj):
+    root = findRootObject(obj)
+    for i in filter(lambda x: x.type == 'RIGID_GRP_OBJ', root.children):
         return i
-    return None
+    self.__rigidsSetObj = bpy.data.objects.new(name='rigids', object_data=None)
+    self.__rigidsSetObj.parent = self.__root
+    self.__jointsSetObj.parent = self.__root
 
 def findRelationalBone(rigid_body):
     relation = rigid_body.constraints.get('mmd_tools_rigid_parent')
     if relation is not None:
         return (relation.target, relation.subtarget)
     else:
-        root = rigid_body.parent
-        arm = findRelationalArmature(rigid_body)
+        arm = findArmatureObject(rigid_body)
         track = None
-        for i in filter(lambda x: x.is_mmd_rigid_track_target, rigid_body.children):
+        for i in filter(lambda x: x.mmd_type == 'TRACK_TARGET', rigid_body.children):
             track = i
         if track is None:
             return (arm, '')
@@ -217,7 +235,7 @@ def createRigid(**kwargs):
     obj.rotation_euler = rotation
     obj.scale = size
     obj.hide_render = True
-    obj.is_mmd_rigid = True
+    obj.mmd_type = 'RIGID_BODY'
 
     obj.mmd_rigid.shape = rigid_type
     obj.mmd_rigid.type = str(dynamics_type)
@@ -254,7 +272,6 @@ def createRigid(**kwargs):
     constraint = obj.constraints.new('CHILD_OF')
     if arm_obj is not None:
         constraint.target = arm_obj
-        obj.parent = arm_obj.parent
     if bone != '':
         constraint.subtarget = bone
     constraint.name = 'mmd_tools_rigid_parent'
@@ -300,7 +317,7 @@ def createJoint(**kwargs):
         'J.'+name,
         None)
     bpy.context.scene.objects.link(obj)
-    obj.is_mmd_joint = True
+    obj.mmd_type = 'JOINT'
     obj.mmd_joint.name_j = name
     if name_e is not None:
         obj.mmd_joint.name_e = name_e
@@ -372,7 +389,7 @@ class InvalidRigidSettingException(ValueError):
     pass
 
 def updateRigid(rigid_obj):
-    if not rigid_obj.is_mmd_rigid:
+    if rigid_obj.mmd_type != 'RIGID_BODY':
         raise TypeError('rigid_obj must be a mmd_rigid object')
 
     rigid = rigid_obj.mmd_rigid
@@ -410,7 +427,7 @@ def updateRigid(rigid_obj):
         empty.location = target_bone.tail
         empty.empty_draw_size = 0.1
         empty.empty_draw_type = 'ARROWS'
-        empty.is_mmd_rigid_track_target = True
+        empty.mmd_type = 'TRACK_TARGET'
 
         rigid_obj.mmd_rigid.bone = relation.subtarget
         rigid_obj.constraints.remove(relation)
@@ -446,7 +463,7 @@ def __makeNonCollisionConstraint(obj_a, obj_b, cnt=0):
     t.location = [0, 0, 0]
     t.empty_draw_size = 0.5
     t.empty_draw_type = 'ARROWS'
-    t.is_mmd_non_collision_constraint = True
+    t.mmd_type = 'NON_COLLISION_CONSTRAINT'
     t.hide_render = True
     # t.parent = self.__root
     with bpyutils.select_object(t):
@@ -468,7 +485,7 @@ def __updateRigids(objects, visited=None):
             continue
         visited.append(i)
         rigid_objects += __updateRigids(i.children, visited)
-        if i.is_mmd_rigid:
+        if i.mmd_type == 'RIGID_BODY':
             updateRigid(i)
             rigid_objects.append(i)
 
@@ -518,8 +535,7 @@ def __makeSpring(target, base_obj, spring_stiffness):
     t = spring_target.constraints.get('mmd_tools_rigid_parent')
     if t is not None:
         spring_target.constraints.remove(t)
-    spring_target.is_mmd_spring_goal = True
-    spring_target.is_mmd_rigid = False
+    spring_target.mmd_type = 'SPRING_GOAL'
     spring_target.rigid_body.kinematic = True
     spring_target.rigid_body.collision_groups = (False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, True)
     # bpyutils.select_object(base_obj, [spring_target])
@@ -537,7 +553,7 @@ def __makeSpring(target, base_obj, spring_stiffness):
     obj.empty_draw_size = 0.1
     obj.empty_draw_type = 'ARROWS'
     obj.hide_render = True
-    obj.is_mmd_spring_joint = True
+    obj.mmd_type = 'SPRING_CONSTRAINT'
     # obj.parent = self.__root
     # self.__tempObjGroup.objects.link(obj)
     with bpyutils.select_object(obj):
@@ -565,7 +581,7 @@ def buildJoints(objects):
     joints = []
     for joint in objects:
         joints += buildJoints(joint.children)
-        if joint.is_mmd_joint:
+        if joint.mmd_type == 'JOINT':
             updateJoint(joint)
             joints.append(joint)
 
