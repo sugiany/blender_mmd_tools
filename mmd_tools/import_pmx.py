@@ -68,31 +68,36 @@ class PMXImporter:
         """ Create main objects and link them to scene.
         """
         pmxModel = self.__model
+        self.__rig = rigging.Rig.create(pmxModel.name)
 
-        self.__root = bpy.data.objects.new(name=pmxModel.name, object_data=None)
-        self.__root.mmd_type = 'ROOT'
-        self.__targetScene.objects.link(self.__root)
+        # self.__root = bpy.data.objects.new(name=pmxModel.name, object_data=None)
+        # self.__root.mmd_type = 'ROOT'
+        # self.__targetScene.objects.link(self.__root)
 
         mesh = bpy.data.meshes.new(name=pmxModel.name)
         self.__meshObj = bpy.data.objects.new(name=pmxModel.name+'_mesh', object_data=mesh)
-
-        arm = bpy.data.armatures.new(name=pmxModel.name)
-        self.__armObj = bpy.data.objects.new(name=pmxModel.name+'_arm', object_data=arm)
+        self.__targetScene.objects.link(self.__meshObj)
+    
+        self.__armObj = self.__rig.armature()
         self.__meshObj.parent = self.__armObj
 
-        self.__targetScene.objects.link(self.__meshObj)
-        self.__targetScene.objects.link(self.__armObj)
+        # arm = bpy.data.armatures.new(name=pmxModel.name)
+        # self.__armObj = bpy.data.objects.new(name=pmxModel.name+'_arm', object_data=arm)
+        # self.__meshObj.parent = self.__armObj
 
-        self.__armObj.parent = self.__root
+        # self.__targetScene.objects.link(self.__meshObj)
+        # self.__targetScene.objects.link(self.__armObj)
 
-        self.__rigidsSetObj = rigging.getRigidGroupObject(self.__root)
-        self.__jointsSetObj = rigging.getJointGroupObject(self.__root)
+        # self.__armObj.parent = self.__root
 
-        self.__allObjGroup.objects.link(self.__root)
-        self.__allObjGroup.objects.link(self.__armObj)
-        self.__allObjGroup.objects.link(self.__meshObj)
-        self.__mainObjGroup.objects.link(self.__armObj)
-        self.__mainObjGroup.objects.link(self.__meshObj)
+        # self.__rigidsSetObj = rigging.getRigidGroupObject(self.__root)
+        # self.__jointsSetObj = rigging.getJointGroupObject(self.__root)
+
+        # self.__allObjGroup.objects.link(self.__root)
+        # self.__allObjGroup.objects.link(self.__armObj)
+        # self.__allObjGroup.objects.link(self.__meshObj)
+        # self.__mainObjGroup.objects.link(self.__armObj)
+        # self.__mainObjGroup.objects.link(self.__meshObj)
 
     def __createGroups(self):
         pmxModel = self.__model
@@ -427,7 +432,7 @@ class PMXImporter:
             else:
                 size = mathutils.Vector(rigid.size)
 
-            obj = rigging.createRigid(
+            obj = self.__rig.createRigid(
                 name = rigid.name,
                 name_e = rigid.name_e,
                 shape_type = rigid.type,
@@ -445,7 +450,6 @@ class PMXImporter:
                 bounce = rigid.bounce,
                 bone = None if rigid.bone == -1 else self.__boneTable[rigid.bone].name,
                 )
-            obj.parent = self.__rigidsSetObj
             obj.draw_type = 'WIRE'
             obj.hide = True
             self.__rigidObjGroup.objects.link(obj)
@@ -462,7 +466,7 @@ class PMXImporter:
             loc = mathutils.Vector(joint.location) * self.TO_BLE_MATRIX * self.__scale
             rot = mathutils.Vector(joint.rotation) * self.TO_BLE_MATRIX * -1
 
-            obj = rigging.createJoint(
+            obj = self.__rig.createJoint(
                 name = joint.name,
                 name_e = joint.name_e,
                 location = loc,
@@ -477,7 +481,6 @@ class PMXImporter:
                 spring_linear = mathutils.Vector(joint.spring_constant) * self.TO_BLE_MATRIX,
                 spring_angular = mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX,
                 )
-            obj.parent = self.__jointsSetObj
             obj.hide = True
             self.__jointTable.append(obj)
             self.__jointObjGroup.objects.link(obj)
