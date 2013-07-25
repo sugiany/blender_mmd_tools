@@ -80,17 +80,13 @@ class PMXImporter:
         self.__armObj = bpy.data.objects.new(name=pmxModel.name+'_arm', object_data=arm)
         self.__meshObj.parent = self.__armObj
 
-        self.__rigidsSetObj = bpy.data.objects.new(name='rigids', object_data=None)
-        self.__rigidsSetObj.parent = self.__root
-        self.__jointsSetObj = bpy.data.objects.new(name='joints', object_data=None)
-        self.__jointsSetObj.parent = self.__root
-
         self.__targetScene.objects.link(self.__meshObj)
         self.__targetScene.objects.link(self.__armObj)
-        self.__targetScene.objects.link(self.__rigidsSetObj)
-        self.__targetScene.objects.link(self.__jointsSetObj)
 
         self.__armObj.parent = self.__root
+
+        self.__rigidsSetObj = rigging.getRigidGroupObject(self.__root)
+        self.__jointsSetObj = rigging.getJointGroupObject(self.__root)
 
         self.__allObjGroup.objects.link(self.__root)
         self.__allObjGroup.objects.link(self.__armObj)

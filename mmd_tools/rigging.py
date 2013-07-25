@@ -146,9 +146,19 @@ def getRigidGroupObject(obj):
     root = findRootObject(obj)
     for i in filter(lambda x: x.type == 'RIGID_GRP_OBJ', root.children):
         return i
-    self.__rigidsSetObj = bpy.data.objects.new(name='rigids', object_data=None)
-    self.__rigidsSetObj.parent = self.__root
-    self.__jointsSetObj.parent = self.__root
+    obj = bpy.data.objects.new(name='rigidbodies', object_data=None)
+    bpy.context.scene.objects.link(obj)
+    obj.parent = root
+    return obj
+
+def getJointGroupObject(obj):
+    root = findRootObject(obj)
+    for i in filter(lambda x: x.type == 'JOINT_GRP_OBJ', root.children):
+        return i
+    obj = bpy.data.objects.new(name='joints', object_data=None)
+    bpy.context.scene.objects.link(obj)
+    obj.parent = root
+    return obj
 
 def findRelationalBone(rigid_body):
     relation = rigid_body.constraints.get('mmd_tools_rigid_parent')
@@ -276,7 +286,7 @@ def createRigid(**kwargs):
         constraint.subtarget = bone
     constraint.name = 'mmd_tools_rigid_parent'
     constraint.mute = True
-    
+
     return obj
 
 def createJoint(**kwargs):
@@ -452,7 +462,7 @@ def updateRigid(rigid_obj):
 
 def __getRigidRange(obj):
     return (mathutils.Vector(obj.bound_box[0]) - mathutils.Vector(obj.bound_box[6])).length
-    
+
 def __makeNonCollisionConstraint(obj_a, obj_b, cnt=0):
     if obj_a == obj_b:
         return
@@ -490,7 +500,7 @@ def __updateRigids(objects, visited=None):
             rigid_objects.append(i)
 
     return list(set(rigid_objects))
-    
+
 
 def buildRigids(objects, distance_of_ignore_collisions=1.5):
     start_time = time.time()
