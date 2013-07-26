@@ -23,7 +23,8 @@ class ShowRigidBodies(Operator):
     bl_options = {'PRESET'}
 
     def execute(self, context):
-        for i in findRigidBodyObjects():
+        rig = Rig(Rig.findRoot(context.active_object))
+        for i in rig.rigidBodies():
             i.hide = False
         return {'FINISHED'}
 
@@ -34,7 +35,8 @@ class HideRigidBodies(Operator):
     bl_options = {'PRESET'}
 
     def execute(self, context):
-        for i in findRigidBodyObjects():
+        rig = Rig(Rig.findRoot(context.active_object))
+        for i in rig.rigidBodies():
             i.hide = True
         return {'FINISHED'}
 
@@ -45,7 +47,8 @@ class ShowJoints(Operator):
     bl_options = {'PRESET'}
 
     def execute(self, context):
-        for i in findJointObjects():
+        rig = Rig(Rig.findRoot(context.active_object))
+        for i in rig.joints():
             i.hide = False
         return {'FINISHED'}
 
@@ -56,7 +59,8 @@ class HideJoints(Operator):
     bl_options = {'PRESET'}
 
     def execute(self, context):
-        for i in findJointObjects():
+        rig = Rig(Rig.findRoot(context.active_object))
+        for i in rig.joints():
             i.hide = True
         return {'FINISHED'}
 
@@ -67,7 +71,8 @@ class ShowTemporaryObjects(Operator):
     bl_options = {'PRESET'}
 
     def execute(self, context):
-        for i in findTemporaryObjects():
+        rig = Rig(Rig.findRoot(context.active_object))
+        for i in rig.temporaryObjects():
             i.hide = False
         return {'FINISHED'}
 
@@ -78,7 +83,8 @@ class HideTemporaryObjects(Operator):
     bl_options = {'PRESET'}
 
     def execute(self, context):
-        for i in findTemporaryObjects():
+        rig = Rig(Rig.findRoot(context.active_object))
+        for i in rig.temporaryObjects():
             i.hide = True
         return {'FINISHED'}
 
@@ -433,10 +439,13 @@ class Rig:
         return filter(isTemporaryObject, self.allObjects())
 
     def build(self):
+        logging.info('****************************************')
+        logging.info(' Build rig')
+        logging.info('****************************************')
         self.buildRigids()
         self.buildJoints()
 
-    def updateRigid(rigid_obj):
+    def updateRigid(self, rigid_obj):
         if rigid_obj.mmd_type != 'RIGID_BODY':
             raise TypeError('rigid_obj must be a mmd_rigid object')
 
@@ -476,6 +485,7 @@ class Rig:
             empty.empty_draw_size = 0.1
             empty.empty_draw_type = 'ARROWS'
             empty.mmd_type = 'TRACK_TARGET'
+            empty.hide = True
             empty.parent = self.temporaryGroupObject()
 
             rigid_obj.mmd_rigid.bone = relation.subtarget
@@ -513,6 +523,7 @@ class Rig:
         t.empty_draw_type = 'ARROWS'
         t.mmd_type = 'NON_COLLISION_CONSTRAINT'
         t.hide_render = True
+        t.hide = True
         t.parent = self.temporaryGroupObject()
         with bpyutils.select_object(t):
             bpy.ops.rigidbody.constraint_add(type='GENERIC')
@@ -522,24 +533,31 @@ class Rig:
         rb.object2 = obj_b
 
     def buildRigids(self, distance_of_ignore_collisions=1.5):
-        rigid_objects = self.rigidBodies()
+        logging.debug('--------------------------------')
+        logging.debug(' Build riggings of rigid bodies')
+        logging.debug('--------------------------------')
+        rigid_objects = list(self.rigidBodies())
         for i in rigid_objects:
+            logging.debug(' Updating rigid body %s', i.name)
             self.updateRigid(i)
         rigid_object_groups = [[] for i in range(16)]
         for i in rigid_objects:
             rigid_object_groups[i.mmd_rigid.collision_group_number].append(i)
 
         jointMap = {}
-        for joint in findJointObjects():
+        for joint in self.joints():
             rbc = joint.rigid_body_constraint
             rbc.disable_collisions = False
             jointMap[frozenset((rbc.object1, rbc.object2))] = joint
             jointMap[frozenset((rbc.object2, rbc.object1))] = joint
 
+        logging.info('Creating non collision constraints')
         # create non collision constraints
         non_collision_constraint_cnt = 0
         non_collision_pairs = set()
-        for obj_a in rigid_objects:
+        rigid_object_cnt = len(rigid_objects)
+        for cnt, obj_a in enumerate(rigid_objects):
+            logging.info('%3d/%3d: %s', cnt+1, rigid_object_cnt, obj_a.name)
             for n, ignore in enumerate(obj_a.mmd_rigid.collision_group_mask):
                 if not ignore:
                     continue
@@ -552,8 +570,8 @@ class Rig:
                         joint.rigid_body_constraint.disable_collisions = True
                     else:
                         distance = (mathutils.Vector(obj_a.location) - mathutils.Vector(obj_b.location)).length
-                        if distance < distance_of_ignore_collisions * (self.__getRigidRange(obj_a) + self.__getRigidRange(obj_b)):
-                            self.____makeNonCollisionConstraint(obj_a, obj_b, non_collision_constraint_cnt)
+                        if distance < distance_of_ignore_collisions * (self.__getRigidRange(obj_a) + self.__getRigidRange(obj_b)) * 0.5:
+                            self.__makeNonCollisionConstraint(obj_a, obj_b, non_collision_constraint_cnt)
                             non_collision_constraint_cnt += 1
                     non_collision_pairs.add(pair)
                     non_collision_pairs.add(frozenset((obj_b, obj_a)))
@@ -571,6 +589,7 @@ class Rig:
         spring_target.rigid_body.collision_groups = (False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, True)
         spring_target.parent = base_obj
         spring_target.matrix_parent_inverse = mathutils.Matrix(base_obj.matrix_basis).inverted()
+        spring_target.hide = True
 
         obj = bpy.data.objects.new(
             'S.'+target.name,
@@ -580,6 +599,7 @@ class Rig:
         obj.empty_draw_size = 0.1
         obj.empty_draw_type = 'ARROWS'
         obj.hide_render = True
+        obj.hide = True
         obj.mmd_type = 'SPRING_CONSTRAINT'
         obj.parent = self.temporaryGroupObject()
 
