@@ -45,6 +45,7 @@ def menu_func_export(self, context):
     self.layout.operator(operators.ExportPmx.bl_idname, text="MikuMikuDance model (.pmx)")
 
 def register():
+    bpy.utils.register_class(properties.MMDRoot)
     bpy.utils.register_class(properties.MMDMaterial)
     bpy.utils.register_class(properties.MMDCamera)
     bpy.utils.register_class(properties.MMDBone)
@@ -58,6 +59,7 @@ def register():
 
     #bpy.types.Object.is_mmd_camera = bpy.props.BoolProperty(name='is_mmd_camera', default=False)
     bpy.types.Object.mmd_camera = bpy.props.PointerProperty(type=properties.MMDCamera)
+    bpy.types.Object.mmd_root = bpy.props.PointerProperty(type=properties.MMDRoot)
 
     # Material custom properties
     bpy.types.Material.mmd_material = bpy.props.PointerProperty(type=properties.MMDMaterial)

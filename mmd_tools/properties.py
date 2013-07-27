@@ -1,9 +1,74 @@
 # -*- coding: utf-8 -*-
 
+import bpy
 from bpy.types import PropertyGroup
 from bpy.props import BoolProperty, BoolVectorProperty, CollectionProperty, EnumProperty, FloatProperty, FloatVectorProperty, IntProperty, StringProperty, PointerProperty
 
 from .pmx import Material, Rigid
+from . import rigging
+
+
+############################################
+# Functions for MMD Root update callbacks. #
+############################################
+def _toggleVisibilityOfRigidBodies(self, context):
+    root = self.id_data
+    rig = rigging.Rig(root)
+    objects = list(rig.rigidBodies())
+    hide = not self.show_rigid_bodies
+    if hide and context.active_object in objects:
+        context.scene.objects.active = root
+    for i in objects:
+        i.hide = hide
+
+def _toggleVisibilityOfJoints(self, context):
+    root = self.id_data
+    rig = rigging.Rig(root)
+    objects = list(rig.joints())
+    hide = not self.show_joints
+    if hide and context.active_object in objects:
+        context.scene.objects.active = root
+    for i in objects:
+        i.hide = hide
+
+def _toggleVisibilityOfTemporaryObjects(self, context):
+    root = self.id_data
+    rig = rigging.Rig(root)
+    objects = list(rig.temporaryObjects())
+    hide = not self.show_temporary_objects
+    if hide and context.active_object in objects:
+        context.scene.objects.active = root
+    for i in objects:
+        i.hide = hide
+
+def _setVisibilityOfMMDRigArmature(obj, v):
+    rig = rigging.Rig(obj)
+    arm = rig.armature()
+    if bpy.context.active_object == arm:
+        bpy.context.scene.objects.active = obj
+    arm.hide = not v
+
+class MMDRoot(PropertyGroup):
+    show_rigid_bodies = BoolProperty(
+        name='Show Rigid Bodies',
+        update=_toggleVisibilityOfRigidBodies,
+        )
+
+    show_joints = BoolProperty(
+        name='Show Joints',
+        update=_toggleVisibilityOfJoints,
+        )
+
+    show_temporary_objects = BoolProperty(
+        name='Show Temps',
+        update=_toggleVisibilityOfTemporaryObjects,
+        )
+
+    show_armature = BoolProperty(
+        name='Show Armature',
+        get=lambda x: not rigging.Rig(x.id_data).armature().hide,
+        set=lambda x, v: _setVisibilityOfMMDRigArmature(x.id_data, v),
+        )
 
 class MMDMaterial(PropertyGroup):
     name_j = StringProperty(

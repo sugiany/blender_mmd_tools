@@ -2,6 +2,7 @@
 
 from bpy.types import Panel
 from . import operators
+from . import rigging
 
 class MMDToolsObjectPanel(Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_object'
@@ -27,16 +28,6 @@ class MMDToolsObjectPanel(Panel):
         r = c.row()
         r.operator('mmd_tools.export_pmx', text='Model')
 
-        col = layout.column(align=True)
-        col.label('View:')
-        c = col.column(align=True)
-        r = c.row()
-        r.operator('mmd_tools.set_glsl_shading', text='GLSL')
-        r.operator('mmd_tools.set_shadeless_glsl_shading', text='Shadeless')
-        r = c.row()
-        r.operator('mmd_tools.set_cycles_rendering', text='Cycles')
-        r.operator('mmd_tools.reset_shading', text='Reset')
-
         if active_obj is not None and active_obj.type == 'MESH':
             col = layout.column(align=True)
             col.label('Mesh:')
@@ -54,29 +45,38 @@ class MMDToolsObjectPanel(Panel):
         c.operator('mmd_tools.set_frame_range', text='Set frame range')
 
 
-class MMDToolsRiggingPanel(Panel):
+class MMDViewPanel(Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_rigging'
-    bl_label = 'MMD Rig Tools'
+    bl_label = 'MMD View Tools'
     bl_space_type = 'VIEW_3D'
-    bl_region_type = 'TOOLS'
+    bl_region_type = 'UI'
     bl_context = ''
 
     def draw(self, context):
-        col = self.layout.column(align=True)
-        col.label('Show/Hide:')
+        layout = self.layout
+        obj = context.active_object
+
+        col = layout.column(align=True)
+        col.label('View:')
         c = col.column(align=True)
         r = c.row()
-        r.label('Rigid:')
-        r.operator('mmd_tools.show_rigid_bodies', text='Show')
-        r.operator('mmd_tools.hide_rigid_bodies', text='Hide')
+        r.operator('mmd_tools.set_glsl_shading', text='GLSL')
+        r.operator('mmd_tools.set_shadeless_glsl_shading', text='Shadeless')
         r = c.row()
-        r.label('Joint:')
-        r.operator('mmd_tools.show_joints', text='Show')
-        r.operator('mmd_tools.hide_joints', text='Hide')
-        r = c.row()
-        r.label('Temp:')
-        r.operator('mmd_tools.show_temporary_objects', text='Show')
-        r.operator('mmd_tools.hide_temporary_objects', text='Hide')
+        r.operator('mmd_tools.set_cycles_rendering', text='Cycles')
+        r.operator('mmd_tools.reset_shading', text='Reset')
+
+
+        col.label('Show/Hide:')
+        root = rigging.Rig.findRoot(obj)
+        rig = rigging.Rig(root)
+        c = col.column(align=True)
+
+        arm = rig.armature()
+        c.prop(root.mmd_root, 'show_armature')
+        c.prop(root.mmd_root, 'show_rigid_bodies')
+        c.prop(root.mmd_root, 'show_joints')
+        c.prop(root.mmd_root, 'show_temporary_objects')
 
         col = self.layout.column()
         col.operator('mmd_tools.build_rig')

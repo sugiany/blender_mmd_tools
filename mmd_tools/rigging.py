@@ -16,90 +16,6 @@ import time
 #####################
 # Rigging Oparators #
 #####################
-class ShowRigidBodies(Operator):
-    bl_idname = 'mmd_tools.show_rigid_bodies'
-    bl_label = 'Show Rigid Bodies'
-    bl_description = 'Show Rigid bodies'
-    bl_options = {'PRESET'}
-
-    def execute(self, context):
-        rig = Rig(Rig.findRoot(context.active_object))
-        for i in rig.rigidBodies():
-            i.hide = False
-        return {'FINISHED'}
-
-class HideRigidBodies(Operator):
-    bl_idname = 'mmd_tools.hide_rigid_bodies'
-    bl_label = 'Hide Rigid Bodies'
-    bl_description = 'Hide Rigid bodies'
-    bl_options = {'PRESET'}
-
-    def execute(self, context):
-        obj = context.active_object
-        root = Rig.findRoot(obj)
-        rig = Rig(root)
-        for i in rig.rigidBodies():
-            i.hide = True
-            if i == obj:
-                context.scene.objects.active = root
-        return {'FINISHED'}
-
-class ShowJoints(Operator):
-    bl_idname = 'mmd_tools.show_joints'
-    bl_label = 'Show joints'
-    bl_description = 'Show joints'
-    bl_options = {'PRESET'}
-
-    def execute(self, context):
-        rig = Rig(Rig.findRoot(context.active_object))
-        for i in rig.joints():
-            i.hide = False
-        return {'FINISHED'}
-
-class HideJoints(Operator):
-    bl_idname = 'mmd_tools.hide_joints'
-    bl_label = 'Hide joints'
-    bl_description = 'Hide joints'
-    bl_options = {'PRESET'}
-
-    def execute(self, context):
-        obj = context.active_object
-        root = Rig.findRoot(obj)
-        rig = Rig(root)
-        for i in rig.joints():
-            i.hide = True
-            if i == obj:
-                context.scene.objects.active = root
-        return {'FINISHED'}
-
-class ShowTemporaryObjects(Operator):
-    bl_idname = 'mmd_tools.show_temporary_objects'
-    bl_label = 'Show temporary objects'
-    bl_description = 'Show temporary objects'
-    bl_options = {'PRESET'}
-
-    def execute(self, context):
-        rig = Rig(Rig.findRoot(context.active_object))
-        for i in rig.temporaryObjects():
-            i.hide = False
-        return {'FINISHED'}
-
-class HideTemporaryObjects(Operator):
-    bl_idname = 'mmd_tools.hide_temporary_objects'
-    bl_label = 'Hide temporary objects'
-    bl_description = 'Hide temporary objects'
-    bl_options = {'PRESET'}
-
-    def execute(self, context):
-        obj = context.active_object
-        root = Rig.findRoot(obj)
-        rig = Rig(root)
-        for i in rig.temporaryObjects():
-            i.hide = True
-            if i == obj:
-                context.scene.objects.active = root
-        return {'FINISHED'}
-
 class CleanRiggingObjects(Operator):
     bl_idname = 'mmd_tools.clean_rigging_objects'
     bl_label = 'Clean'
@@ -391,8 +307,10 @@ class Rig:
             r += self.__allObjects(i)
         return r
 
-    def allObjects(self):
-        return [self.__root] + self.__allObjects(self.__root)
+    def allObjects(self, obj=None):
+        if obj is None:
+            obj = self.__root
+        return [obj] + self.__allObjects(obj)
 
     def rootObject(self):
         return self.__root
@@ -436,7 +354,7 @@ class Rig:
                 self.__temporary_grp = i
                 break
             if self.__temporary_grp is None:
-                temporarys = bpy.data.objects.new(name='temporarybodies', object_data=None)
+                temporarys = bpy.data.objects.new(name='temporary', object_data=None)
                 temporarys.mmd_type = 'TEMPORARY_GRP_OBJ'
                 temporarys.parent = self.__root
                 bpy.context.scene.objects.link(temporarys)
@@ -444,13 +362,13 @@ class Rig:
         return self.__temporary_grp
 
     def rigidBodies(self):
-        return filter(isRigidBodyObject, self.allObjects())
+        return filter(isRigidBodyObject, self.allObjects(self.rigidGroupObject()))
 
     def joints(self):
-        return filter(isJointObject, self.allObjects())
+        return filter(isJointObject, self.allObjects(self.jointGroupObject()))
 
     def temporaryObjects(self):
-        return filter(isTemporaryObject, self.allObjects())
+        return filter(isTemporaryObject, self.allObjects(self.temporaryGroupObject()))
 
     def build(self):
         logging.info('****************************************')
