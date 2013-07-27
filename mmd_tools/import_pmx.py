@@ -432,7 +432,7 @@ class PMXImporter:
             else:
                 size = mathutils.Vector(rigid.size)
 
-            obj = self.__rig.createRigid(
+            obj = self.__rig.createRigidBody(
                 name = rigid.name,
                 name_e = rigid.name_e,
                 shape_type = rigid.type,

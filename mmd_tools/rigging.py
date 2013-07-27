@@ -35,9 +35,13 @@ class HideRigidBodies(Operator):
     bl_options = {'PRESET'}
 
     def execute(self, context):
-        rig = Rig(Rig.findRoot(context.active_object))
+        obj = context.active_object
+        root = Rig.findRoot(obj)
+        rig = Rig(root)
         for i in rig.rigidBodies():
             i.hide = True
+            if i == obj:
+                context.scene.objects.active = root
         return {'FINISHED'}
 
 class ShowJoints(Operator):
@@ -59,9 +63,13 @@ class HideJoints(Operator):
     bl_options = {'PRESET'}
 
     def execute(self, context):
-        rig = Rig(Rig.findRoot(context.active_object))
+        obj = context.active_object
+        root = Rig.findRoot(obj)
+        rig = Rig(root)
         for i in rig.joints():
             i.hide = True
+            if i == obj:
+                context.scene.objects.active = root
         return {'FINISHED'}
 
 class ShowTemporaryObjects(Operator):
@@ -83,9 +91,13 @@ class HideTemporaryObjects(Operator):
     bl_options = {'PRESET'}
 
     def execute(self, context):
-        rig = Rig(Rig.findRoot(context.active_object))
+        obj = context.active_object
+        root = Rig.findRoot(obj)
+        rig = Rig(root)
         for i in rig.temporaryObjects():
             i.hide = True
+            if i == obj:
+                context.scene.objects.active = root
         return {'FINISHED'}
 
 class CleanRiggingObjects(Operator):
@@ -176,7 +188,7 @@ class Rig:
         else:
             return None
 
-    def createRigid(self, **kwargs):
+    def createRigidBody(self, **kwargs):
         ''' Create a object for MMD rigid body dynamics.
         ### Parameters ###
          @param shape_type the shape type.
@@ -280,6 +292,7 @@ class Rig:
         constraint.mute = True
 
         obj.parent = self.rigidGroupObject()
+        obj.select = False
         return obj
 
     def createJoint(self, **kwargs):
@@ -368,6 +381,7 @@ class Rig:
         obj.mmd_joint.spring_angular = spring_angular
 
         obj.parent = self.jointGroupObject()
+        obj.select = False
         return obj
 
     def __allObjects(self, obj):
