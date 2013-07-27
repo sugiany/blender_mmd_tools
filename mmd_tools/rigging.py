@@ -80,11 +80,14 @@ class Rig:
         self.__temporary_grp = None
 
     @staticmethod
-    def create(name):
+    def create(name, name_e='', scale=1):
         scene = bpy.context.scene
 
         root = bpy.data.objects.new(name=name, object_data=None)
         root.mmd_type = 'ROOT'
+        root.mmd_root.name = name
+        root.mmd_root.name_e = name_e
+        root.mmd_root.scale = scale
 
         arm = bpy.data.armatures.new(name=name)
         armObj = bpy.data.objects.new(name=name+'_arm', object_data=arm)
@@ -360,6 +363,12 @@ class Rig:
                 bpy.context.scene.objects.link(temporarys)
                 self.__temporary_grp = temporarys
         return self.__temporary_grp
+
+    def meshes(self):
+        arm = self.armature()
+        if arm is None:
+            return []
+        return filter(lambda x: x.type == 'MESH', self.allObjects(arm))
 
     def rigidBodies(self):
         return filter(isRigidBodyObject, self.allObjects(self.rigidGroupObject()))

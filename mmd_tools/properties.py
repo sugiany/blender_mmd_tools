@@ -49,6 +49,16 @@ def _setVisibilityOfMMDRigArmature(obj, v):
     arm.hide = not v
 
 class MMDRoot(PropertyGroup):
+    name = StringProperty(
+        name='Name',
+        default='',
+        )
+
+    name_e = StringProperty(
+        name='Name (English)',
+        default='',
+        )
+
     show_rigid_bodies = BoolProperty(
         name='Show Rigid Bodies',
         update=_toggleVisibilityOfRigidBodies,
@@ -68,6 +78,12 @@ class MMDRoot(PropertyGroup):
         name='Show Armature',
         get=lambda x: not rigging.Rig(x.id_data).armature().hide,
         set=lambda x, v: _setVisibilityOfMMDRigArmature(x.id_data, v),
+        )
+
+    scale = FloatProperty(
+        name='Scale',
+        min=0.1,
+        default=1,
         )
 
 class MMDMaterial(PropertyGroup):

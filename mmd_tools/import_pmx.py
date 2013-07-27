@@ -68,7 +68,7 @@ class PMXImporter:
         """ Create main objects and link them to scene.
         """
         pmxModel = self.__model
-        self.__rig = rigging.Rig.create(pmxModel.name)
+        self.__rig = rigging.Rig.create(pmxModel.name, pmxModel.name_e, self.__scale)
 
         # self.__root = bpy.data.objects.new(name=pmxModel.name, object_data=None)
         # self.__root.mmd_type = 'ROOT'
@@ -79,6 +79,7 @@ class PMXImporter:
         self.__targetScene.objects.link(self.__meshObj)
     
         self.__armObj = self.__rig.armature()
+        self.__armObj.hide = True
         self.__meshObj.parent = self.__armObj
 
         # arm = bpy.data.armatures.new(name=pmxModel.name)

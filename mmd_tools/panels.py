@@ -45,9 +45,9 @@ class MMDToolsObjectPanel(Panel):
         c.operator('mmd_tools.set_frame_range', text='Set frame range')
 
 
-class MMDViewPanel(Panel):
-    bl_idname = 'OBJECT_PT_mmd_tools_rigging'
-    bl_label = 'MMD View Tools'
+class MMDRootPanel(Panel):
+    bl_idname = 'OBJECT_PT_mmd_tools_root'
+    bl_label = 'MMD Model Tools'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_context = ''
@@ -55,6 +55,45 @@ class MMDViewPanel(Panel):
     def draw(self, context):
         layout = self.layout
         obj = context.active_object
+
+        if obj is None:
+            c = layout.column()
+            c.label('No object is selected.')
+            return
+
+        root = rigging.Rig.findRoot(obj)
+        if root is None:
+            c = layout.column()
+            c.label('Create MMD Model')
+            return
+
+        rig = rigging.Rig(root)
+        arm = rig.armature()
+
+        c = layout.column()
+        c.prop(root.mmd_root, 'name')
+        c.prop(root.mmd_root, 'name_e')
+        c.prop(root.mmd_root, 'scale')
+
+        c = layout.column(align=True)
+        c.prop(root.mmd_root, 'show_armature')
+        c.prop(root.mmd_root, 'show_rigid_bodies')
+        c.prop(root.mmd_root, 'show_joints')
+        c.prop(root.mmd_root, 'show_temporary_objects')
+
+        col = self.layout.column()
+        col.operator(operators.ImportVmdToMMDModel.bl_idname, text='Import Motion')
+        col.operator('mmd_tools.build_rig')
+
+class MMDViewPanel(Panel):
+    bl_idname = 'OBJECT_PT_mmd_tools_view'
+    bl_label = 'MMD View Tools'
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_context = ''
+
+    def draw(self, context):
+        layout = self.layout
 
         col = layout.column(align=True)
         col.label('View:')
@@ -65,21 +104,6 @@ class MMDViewPanel(Panel):
         r = c.row()
         r.operator('mmd_tools.set_cycles_rendering', text='Cycles')
         r.operator('mmd_tools.reset_shading', text='Reset')
-
-
-        col.label('Show/Hide:')
-        root = rigging.Rig.findRoot(obj)
-        rig = rigging.Rig(root)
-        c = col.column(align=True)
-
-        arm = rig.armature()
-        c.prop(root.mmd_root, 'show_armature')
-        c.prop(root.mmd_root, 'show_rigid_bodies')
-        c.prop(root.mmd_root, 'show_joints')
-        c.prop(root.mmd_root, 'show_temporary_objects')
-
-        col = self.layout.column()
-        col.operator('mmd_tools.build_rig')
 
 class MMDMaterialPanel(Panel):
     bl_idname = 'MATERIAL_PT_mmd_tools_material'
