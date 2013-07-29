@@ -90,6 +90,7 @@ def convertToCyclesShader(obj):
             if j is not None and isinstance(j.texture, bpy.types.ImageTexture):
                 texture = i.material.node_tree.nodes.new('ShaderNodeTexImage')
                 texture.image = j.texture.image
+                break
         if texture is not None:
             i.material.node_tree.links.new(shader.inputs[0], texture.outputs['Color'])
             alpha_shader = i.material.node_tree.nodes.new('ShaderNodeGroup')

@@ -91,6 +91,9 @@ class Rig:
         root.mmd_root.name = name
         root.mmd_root.name_e = name_e
         root.mmd_root.scale = scale
+        root.lock_location = [True, True, True]
+        root.lock_rotation = [True, True, True]
+        root.lock_scale = [True, True, True]
 
         arm = bpy.data.armatures.new(name=name)
         armObj = bpy.data.objects.new(name=name+'_arm', object_data=arm)
