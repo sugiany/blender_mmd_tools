@@ -451,7 +451,6 @@ class PMXImporter:
                 bounce = rigid.bounce,
                 bone = None if rigid.bone == -1 else self.__boneTable[rigid.bone].name,
                 )
-            obj.draw_type = 'WIRE'
             obj.hide = True
             self.__rigidObjGroup.objects.link(obj)
 

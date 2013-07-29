@@ -177,12 +177,16 @@ class Rig:
 
         obj.mmd_rigid.shape = rigid_type
         obj.mmd_rigid.type = str(dynamics_type)
+        obj.draw_type = 'WIRE'
 
         with bpyutils.select_object(obj):
             bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
 
         if collision_group_number is not None:
+            obj.data.materials.append(RigidBodyMaterial.getMaterial(collision_group_number))
             obj.mmd_rigid.collision_group_number = collision_group_number
+            obj.draw_type = 'SOLID'
+            obj.show_transparent = True
         if collision_group_mask is not None:
             obj.mmd_rigid.collision_group_mask = collision_group_mask
         if name is not None:
@@ -602,3 +606,41 @@ class Rig:
     def buildJoints(self):
         for joint in self.joints():
             self.updateJoint(joint)
+
+class RigidBodyMaterial:
+    COLORS = [
+        0x7fddd4,
+        0xf0e68c,
+        0xee82ee,
+        0xffe4e1,
+        0x8feeee,
+        0xadff2f,
+        0xfa8072,
+        0x9370db,
+
+        0x40e0d0,
+        0x96514d,
+        0x5a964e,
+        0xe6bfab,
+        0xd3381c,
+        0x165e83,
+        0x701682,
+        0x828216,
+        ]
+    @classmethod
+    def getMaterial(cls, number):
+        import bpy
+        number = int(number)
+        material_name = 'mmd_tools_rigid_%d'%(number)
+        if material_name not in bpy.data.materials:
+            mat = bpy.data.materials.new(material_name)
+            color = cls.COLORS[number]
+            mat.diffuse_color = [((0xff0000 & color) >> 16) / float(255), ((0x00ff00 & color) >> 8) / float(255), (0x0000ff & color) / float(255)]
+            mat.diffuse_intensity = 1
+            mat.specular_intensity = 0
+            mat.alpha = 0.5
+            mat.use_transparency = True
+            mat.use_shadeless = True
+        else:
+            mat = bpy.data.materials[material_name]
+        return mat
