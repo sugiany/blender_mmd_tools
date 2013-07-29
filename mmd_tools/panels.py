@@ -83,7 +83,9 @@ class MMDRootPanel(Panel):
 
         col = self.layout.column()
         col.operator(operators.ImportVmdToMMDModel.bl_idname, text='Import Motion')
-        col.operator('mmd_tools.build_rig')
+        row = col.row(align=True)
+        row.operator('mmd_tools.build_rig')
+        row.operator('mmd_tools.clean_rig')
 
 class MMDViewPanel(Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_view'

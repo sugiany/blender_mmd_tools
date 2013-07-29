@@ -17,14 +17,15 @@ import time
 # Rigging Oparators #
 #####################
 class CleanRiggingObjects(Operator):
-    bl_idname = 'mmd_tools.clean_rigging_objects'
+    bl_idname = 'mmd_tools.clean_rig'
     bl_label = 'Clean'
     bl_description = 'Clean temporary objects of rigging'
     bl_options = {'PRESET'}
 
     def execute(self, context):
-        for i in findTemporaryObjects():
-            context.scene.objects.unlink(i)
+        root = Rig.findRoot(context.active_object)
+        rig = Rig(root)
+        rig.clean()
         return {'FINISHED'}
 
 class BuildRig(Operator):
@@ -212,6 +213,7 @@ class Rig:
 
         obj.parent = self.rigidGroupObject()
         obj.select = False
+        self.__root.mmd_root.is_built = False
         return obj
 
     def createJoint(self, **kwargs):
@@ -301,6 +303,7 @@ class Rig:
 
         obj.parent = self.jointGroupObject()
         obj.select = False
+        self.__root.mmd_root.is_built = False
         return obj
 
     def __allObjects(self, obj):
@@ -377,7 +380,7 @@ class Rig:
         return filter(isJointObject, self.allObjects(self.jointGroupObject()))
 
     def temporaryObjects(self):
-        return filter(isTemporaryObject, self.allObjects(self.temporaryGroupObject()))
+        return filter(isTemporaryObject, self.allObjects(self.rigidGroupObject())+self.allObjects(self.temporaryGroupObject()))
 
     def build(self):
         logging.info('****************************************')
@@ -385,6 +388,37 @@ class Rig:
         logging.info('****************************************')
         self.buildRigids()
         self.buildJoints()
+        self.__root.mmd_root.is_built = True
+
+    def clean(self):
+        pose_bones = []
+        arm = self.armature()
+        track_to_bone_map = {}
+        if arm is not None:
+            pose_bones = arm.pose.bones
+        for i in pose_bones:
+            if 'mmd_tools_rigid_track' in i.constraints:
+                const = i.constraints['mmd_tools_rigid_track']
+                track_to_bone_map[const.target] = i
+                i.constraints.remove(const)
+
+        for i in self.temporaryObjects():
+            if i.mmd_type in ['NON_COLLISION_CONSTRAINT', 'SPRING_GOAL', 'SPRING_CONSTRAINT']:
+                bpy.context.scene.objects.unlink(i)
+                bpy.data.objects.remove(i)
+            elif i.mmd_type == 'TRACK_TARGET':
+                rigid = i.parent
+                bone = track_to_bone_map.get(i)
+                logging.info('Create a "CHILD_OF" constraint for %s', rigid.name)
+                constraint = rigid.constraints.new('CHILD_OF')
+                constraint.target = arm
+                if bone is not None:
+                    constraint.subtarget = bone.name
+                constraint.name = 'mmd_tools_rigid_parent'
+                constraint.mute = True
+                bpy.context.scene.objects.unlink(i)
+                bpy.data.objects.remove(i)
+        self.rootObject().mmd_root.is_built = False
 
     def updateRigid(self, rigid_obj):
         if rigid_obj.mmd_type != 'RIGID_BODY':

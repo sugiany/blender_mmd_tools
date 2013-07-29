@@ -86,6 +86,10 @@ class MMDRoot(PropertyGroup):
         default=1,
         )
 
+    is_built = BoolProperty(
+        name='Is Built',
+        )
+
 class MMDMaterial(PropertyGroup):
     name_j = StringProperty(
         name='Name',
