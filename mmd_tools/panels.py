@@ -81,11 +81,17 @@ class MMDRootPanel(Panel):
         c.prop(root.mmd_root, 'show_joints')
         c.prop(root.mmd_root, 'show_temporary_objects')
 
-        col = self.layout.column()
-        col.operator(operators.ImportVmdToMMDModel.bl_idname, text='Import Motion')
+        col = self.layout.column(align=True)
+
+        if not root.mmd_root.is_built:
+            col.label(text='Press the "Build" button before playing the physical animation.', icon='ERROR')
         row = col.row(align=True)
         row.operator('mmd_tools.build_rig')
         row.operator('mmd_tools.clean_rig')
+
+        col = self.layout.column()
+        col.operator(operators.ImportVmdToMMDModel.bl_idname, text='Import Motion')
+
 
 class MMDViewPanel(Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_view'

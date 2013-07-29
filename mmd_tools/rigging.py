@@ -35,9 +35,11 @@ class BuildRig(Operator):
     bl_options = {'PRESET'}
 
     def execute(self, context):
+        obj = context.active_object
         root = Rig.findRoot(context.active_object)
         rig = Rig(root)
         rig.build()
+        context.scene.objects.active = obj
         return {'FINISHED'}
 
 def isRigidBodyObject(obj):
