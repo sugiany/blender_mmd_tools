@@ -449,7 +449,7 @@ class PMXImporter:
                 angular_damping = rigid.rotation_attenuation,
                 linear_damping = rigid.velocity_attenuation,
                 bounce = rigid.bounce,
-                bone = None if rigid.bone == -1 else self.__boneTable[rigid.bone].name,
+                bone = None if rigid.bone == -1 or rigid.bone is None else self.__boneTable[rigid.bone].name,
                 )
             obj.hide = True
             self.__rigidObjGroup.objects.link(obj)
@@ -636,6 +636,7 @@ class PMXImporter:
                 self.__allObjGroup.objects.link(j)
 
         bpy.context.scene.gravity[2] = -9.81 * 10 * self.__scale
+        self.__rig.rootObject().mmd_root.show_meshes = True
 
         logging.info(' Finished importing the model in %f seconds.', time.time() - start_time)
         logging.info('----------------------------------------')

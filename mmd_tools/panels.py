@@ -76,10 +76,15 @@ class MMDRootPanel(Panel):
         c.prop(root.mmd_root, 'scale')
 
         c = layout.column(align=True)
+        c.prop(root.mmd_root, 'show_meshes')
         c.prop(root.mmd_root, 'show_armature')
         c.prop(root.mmd_root, 'show_rigid_bodies')
         c.prop(root.mmd_root, 'show_joints')
         c.prop(root.mmd_root, 'show_temporary_objects')
+
+        c = layout.column(align=True)
+        c.prop(root.mmd_root, 'show_names_of_rigid_bodies')
+        c.prop(root.mmd_root, 'show_names_of_joints')
 
         col = self.layout.column(align=True)
 

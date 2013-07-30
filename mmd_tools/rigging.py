@@ -183,6 +183,7 @@ class Rig:
         obj.mmd_rigid.shape = rigid_type
         obj.mmd_rigid.type = str(dynamics_type)
         obj.draw_type = 'WIRE'
+        obj.show_wire = True
 
         with bpyutils.select_object(obj):
             bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
@@ -215,7 +216,7 @@ class Rig:
 
         constraint = obj.constraints.new('CHILD_OF')
         constraint.target = self.armature()
-        if bone != '':
+        if bone is not None and bone != '':
             constraint.subtarget = bone
         constraint.name = 'mmd_tools_rigid_parent'
         constraint.mute = True
@@ -380,7 +381,7 @@ class Rig:
         arm = self.armature()
         if arm is None:
             return []
-        return filter(lambda x: x.type == 'MESH', self.allObjects(arm))
+        return filter(lambda x: x.type == 'MESH' and x.mmd_type == 'NONE', self.allObjects(arm))
 
     def rigidBodies(self):
         return filter(isRigidBodyObject, self.allObjects(self.rigidGroupObject()))
@@ -476,6 +477,7 @@ class Rig:
             rigid_obj.constraints.remove(relation)
 
             bpyutils.setParent(empty, rigid_obj)
+            empty.select = False
             empty.hide = True
 
             for i in target_bone.constraints:
@@ -507,6 +509,7 @@ class Rig:
         t.empty_draw_type = 'ARROWS'
         t.mmd_type = 'NON_COLLISION_CONSTRAINT'
         t.hide_render = True
+        t.select = False
         t.hide = True
         t.parent = self.temporaryGroupObject()
         with bpyutils.select_object(t):
@@ -583,6 +586,7 @@ class Rig:
         obj.empty_draw_size = 0.1
         obj.empty_draw_type = 'ARROWS'
         obj.hide_render = True
+        obj.select = False
         obj.hide = True
         obj.mmd_type = 'SPRING_CONSTRAINT'
         obj.parent = self.temporaryGroupObject()

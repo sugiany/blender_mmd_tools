@@ -11,6 +11,16 @@ from . import rigging
 ############################################
 # Functions for MMD Root update callbacks. #
 ############################################
+def _toggleVisibilityOfMeshes(self, context):
+    root = self.id_data
+    rig = rigging.Rig(root)
+    objects = list(rig.meshes())
+    hide = not self.show_meshes
+    if hide and context.active_object in objects:
+        context.scene.objects.active = root
+    for i in objects:
+        i.hide = hide
+
 def _toggleVisibilityOfRigidBodies(self, context):
     root = self.id_data
     rig = rigging.Rig(root)
@@ -41,6 +51,20 @@ def _toggleVisibilityOfTemporaryObjects(self, context):
     for i in objects:
         i.hide = hide
 
+def _toggleShowNamesOfRigidBodies(self, context):
+    root = self.id_data
+    rig = rigging.Rig(root)
+    objects = list(rig.rigidBodies())
+    for i in objects:
+        i.show_name = root.mmd_root.show_names_of_rigid_bodies
+
+def _toggleShowNamesOfJoints(self, context):
+    root = self.id_data
+    rig = rigging.Rig(root)
+    objects = list(rig.joints())
+    for i in objects:
+        i.show_name = root.mmd_root.show_names_of_joints
+
 def _setVisibilityOfMMDRigArmature(obj, v):
     rig = rigging.Rig(obj)
     arm = rig.armature()
@@ -57,6 +81,11 @@ class MMDRoot(PropertyGroup):
     name_e = StringProperty(
         name='Name (English)',
         default='',
+        )
+
+    show_meshes = BoolProperty(
+        name='Show Meshes',
+        update=_toggleVisibilityOfMeshes,
         )
 
     show_rigid_bodies = BoolProperty(
@@ -78,6 +107,16 @@ class MMDRoot(PropertyGroup):
         name='Show Armature',
         get=lambda x: not rigging.Rig(x.id_data).armature().hide,
         set=lambda x, v: _setVisibilityOfMMDRigArmature(x.id_data, v),
+        )
+
+    show_names_of_rigid_bodies = BoolProperty(
+        name='Show Rigid Body Names',
+        update=_toggleShowNamesOfRigidBodies,
+        )
+
+    show_names_of_joints = BoolProperty(
+        name='Show Joint Names',
+        update=_toggleShowNamesOfJoints,
         )
 
     scale = FloatProperty(
