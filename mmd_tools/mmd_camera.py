@@ -22,28 +22,6 @@ class MMDCamera:
             obj = obj.parent
         return obj.type == 'EMPTY' and obj.mmd_type == 'CAMERA'
 
-
-    @staticmethod
-    def __setDrivers(empty, camera):
-        driver = camera.data.driver_add('lens').driver
-        angle = driver.variables.new()
-        angle.name = 'angle'
-        angle.type = 'SINGLE_PROP'
-        angle.targets[0].id_type = 'OBJECT'
-        angle.targets[0].id = empty
-        angle.targets[0].data_path = 'mmd_camera.angle'
-
-        sensorHeight = driver.variables.new()
-        sensorHeight.name = 'sensor_height'
-        sensorHeight.type = 'SINGLE_PROP'
-        sensorHeight.targets[0].id_type = 'OBJECT'
-        sensorHeight.targets[0].id = camera
-        sensorHeight.targets[0].data_path = 'data.sensor_height'
-
-        driver.type = 'SCRIPTED'
-        driver.expression = '%s/(2*tan(radians(%s)/2))'%(sensorHeight.name, angle.name)
-
-
     @staticmethod
     def convertToMMDCamera(cameraObj):
         import bpy
@@ -67,8 +45,6 @@ class MMDCamera:
         cameraObj.lock_location = (True, False, True)
         cameraObj.lock_rotation = (True, True, True)
         cameraObj.lock_scale = (True, True, True)
-
-        MMDCamera.__setDrivers(empty, cameraObj)
 
         return MMDCamera(empty)
 

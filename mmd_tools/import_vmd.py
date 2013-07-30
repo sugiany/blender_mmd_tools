@@ -200,7 +200,7 @@ class VMDImporter:
         cameraAnim = self.__vmdFile.cameraAnimation
         cameraAnim.sort(key=lambda x:x.frame_number)
         for keyFrame in cameraAnim:
-            mmdCamera.mmd_camera.angle = keyFrame.angle
+            mmdCamera.mmd_camera.angle = math.radians(keyFrame.angle)
             cameraObj.location[1] = keyFrame.distance * self.__scale
             mmdCamera.location = mathutils.Vector((keyFrame.location[0], keyFrame.location[2], keyFrame.location[1])) * self.__scale
             mmdCamera.rotation_euler = mathutils.Vector((keyFrame.rotation[0], keyFrame.rotation[2], keyFrame.rotation[1]))
