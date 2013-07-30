@@ -268,7 +268,7 @@ class MMDBonePanel(Panel):
 
 class MMDRigidPanel(Panel):
     bl_idname = 'RIGID_PT_mmd_tools_bone'
-    bl_label = 'MMD Rigid Tools'
+    bl_label = 'MMD Rigid Tool'
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = 'object'
@@ -290,7 +290,9 @@ class MMDRigidPanel(Panel):
         row = layout.row(align=True)
         row.prop(obj.mmd_rigid, 'type')
 
-        armature = rigging.findArmatureObject(obj)
+        root = rigging.Rig.findRoot(obj)
+        rig = rigging.Rig(root)
+        armature = rig.armature()
         relation = obj.constraints.get('mmd_tools_rigid_parent')
         if relation is not None:
             row.prop_search(relation, 'subtarget', text='', search_data=armature.pose, search_property='bones', icon='BONE_DATA')
