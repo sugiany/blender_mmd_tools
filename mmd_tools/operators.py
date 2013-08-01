@@ -192,10 +192,18 @@ class ExportPmx(Operator, ImportHelper):
         else:
             handler = log_handler(self.log_level)
         logger.addHandler(handler)
+
+        root = rigging.Rig.findRoot(context.active_object)
+        rig = rigging.Rig(root)
+        rig.clean()
         try:
             export_pmx.export(
                 filepath=self.filepath,
-                scale=self.scale
+                scale=root.mmd_root.scale,
+                armature=rig.armature(),
+                meshes=rig.meshes(),
+                rigid_bodies=rig.rigidBodies(),
+                joints=rig.joints(),
                 )
         finally:
             logger.removeHandler(handler)

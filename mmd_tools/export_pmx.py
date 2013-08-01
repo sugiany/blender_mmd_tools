@@ -11,6 +11,34 @@ import mathutils
 import bpy
 import bmesh
 
+class _Vertex:
+    def __init__(self, co, groups, normal, offsets):
+        self.co = copy.deepcopy(co)
+        self.groups = copy.copy(groups) # [(group_number, weight), ...]
+        self.normal = copy.deepcopy(normal)
+        self.offsets = copy.deepcopy(offsets)
+        self.index = None
+        self.uv = None
+
+class _Face:
+    def __init__(self, vertices, normal):
+        ''' Temporary Face Class
+        '''
+        self.vertices = copy.copy(vertices)
+        self.normal = copy.deepcopy(normal)
+
+class _Mesh:
+    def __init__(self, mesh_data, material_faces, shape_key_names, vertex_group_names, materials):
+        self.mesh_data = mesh_data
+        self.material_faces = material_faces # dict of {material_index => [face1, face2, ....]}
+        self.shape_key_names = shape_key_names
+        self.vertex_group_names = vertex_group_names
+        self.materials = materials
+
+    def __del__(self):
+        logging.debug('remove mesh data: %s', str(self.mesh_data))
+        bpy.data.meshes.remove(self.mesh_data)
+
 
 class __PmxExporter:
     TO_PMX_MATRIX = mathutils.Matrix([
@@ -21,129 +49,80 @@ class __PmxExporter:
 
     def __init__(self):
         self.__model = None
-        self.__targetMesh = None
 
     @staticmethod
     def flipUV_V(uv):
         u, v = uv
         return [u, 1.0-v]
 
-    @staticmethod
-    def __getVertexGroupIndexToPmxBoneIndexMap(meshObj, nameMap):
-        """ Create the dictionary to map vertex group indices to bone indices of the pmx.model instance.
-        @param meshObj the object which has the target vertex groups.
-        @param nameMap the dictionary to map Blender bone name to bone indices of the pmx.model instance.
-        """
-        r = {}
-        for i in meshObj.vertex_groups:
-            r[i.index] = nameMap.get(i.name, -1)
-        return r
+    def __exportMeshes(self, meshes, bone_map):
+        mat_map = {}
+        for mesh in meshes:
+            for index, mat_faces in mesh.material_faces.items():
+                name = mesh.materials[index].name
+                if name not in mat_map:
+                    mat_map[name] = []
+                mat_map[name].append((mat_faces, mesh.vertex_group_names))
 
-    @staticmethod
-    def __getVerticesTable(mesh, vertexGroupToBoneIndexMap):
-        """ Create the list which has pmx.Vertex instances.
-        @param vertexGroupToBoneIndexMap the dictionary to map vertex group indices to bone indices of the pmx.model instance.
-        """
-        r = []
-        for bv in mesh.vertices:
-            pv = pmx.Vertex()
-            pv.co = bv.co
-            pv.normal = bv.normal * -1
-            pv.uv = None
+        # export vertices
+        texture_list = []
+        vert_count = 0
+        for mat_name, mat_meshes in mat_map.items():
+            face_count = 0
+            for mat_faces, vertex_group_names in mat_meshes:
+                mesh_vertices = []
+                for face in mat_faces:
+                    mesh_vertices.extend(face.vertices)
 
-            t = len(bv.groups)
-            if t == 0:
-                weight = pmx.BoneWeight()
-                weight.type = pmx.BoneWeight.BDEF1
-                weight.bones = [-1]
-                pv.weight = weight
-            elif t == 1:
-                weight = pmx.BoneWeight()
-                weight.type = pmx.BoneWeight.BDEF1
-                weight.bones = [vertexGroupToBoneIndexMap[bv.groups[0].group]]
-                pv.weight = weight
-            elif t == 2:
-                vg1, vg2 = bv.groups
-                weight = pmx.BoneWeight()
-                weight.type = pmx.BoneWeight.BDEF2
-                weight.bones = [vertexGroupToBoneIndexMap[vg1.group], vertexGroupToBoneIndexMap[vg2.group]]
-                weight.weights = [vg1.weight]
-                pv.weight = weight
-            else:
-                weight = pmx.BoneWeight()
-                weight.type = pmx.BoneWeight.BDEF4
-                weight.bones = [-1, -1, -1, -1]
-                weight.weights = [0.0, 0.0, 0.0, 0.0]
-                for i in range(min(len(bv.groups), 4)):
-                    vg = bv.groups[i]
-                    weight.bones[i] = vertexGroupToBoneIndexMap[vg.group]
-                    weight.weights[i] = vg.weight
-                pv.weight = weight
-            r.append(pv)
-        return r
+                for v in mesh_vertices:
+                    vert_count += 1
+                    if v.index is not None:
+                        continue
 
-    @staticmethod
-    def __getFaceTable(mesh, verticesTable):
-        r = []
-        for f, uv in zip(mesh.tessfaces, mesh.tessface_uv_textures.active.data):
-            if len(f.vertices) != 3:
-                raise Exception
-            t = []
-            for i in f.vertices:
-                t.append(verticesTable[i])
-            r.append((f, uv, t))
-        return r
+                    v.index = len(self.__model.vertices)
+                    pv = pmx.Vertex()
+                    pv.co = list(v.co)
+                    pv.normal = v.normal * -1
+                    pv.uv = self.flipUV_V(v.uv)
 
-    @staticmethod
-    def __convertFaceUVToVertexUV(vertex, uv, cloneVertexMap):
-        if vertex.uv is None:
-            vertex.uv = uv
-        elif (vertex.uv[0] - uv[0])**2 + (vertex.uv[1] - uv[1])**2 > 0.0001:
-            for i in cloneVertexMap.get(vertex, []):
-                if (i.uv[0] - uv[0])**2 + (i.uv[1] - uv[1])**2 < 0.0001:
-                    return i
-            n = copy.deepcopy(vertex)
-            n.uv = uv
-            if vertex not in cloneVertexMap:
-                cloneVertexMap[vertex] = [n]
-            else:
-                cloneVertexMap[vertex].append(n)
-            return n
-        return vertex
+                    t = len(v.groups)
+                    if t == 0:
+                        weight = pmx.BoneWeight()
+                        weight.type = pmx.BoneWeight.BDEF1
+                        weight.bones = [-1]
+                        pv.weight = weight
+                    elif t == 1:
+                        weight = pmx.BoneWeight()
+                        weight.type = pmx.BoneWeight.BDEF1
+                        weight.bones = [bone_map[vertex_group_names[v.groups[0][0]]]]
+                        pv.weight = weight
+                    elif t == 2:
+                        vg1, vg2 = v.groups
+                        weight = pmx.BoneWeight()
+                        weight.type = pmx.BoneWeight.BDEF2
+                        weight.bones = [
+                            bone_map[vertex_group_names[vg1[0]]],
+                            bone_map[vertex_group_names[vg2[0]]]
+                            ]
+                        weight.weights = [vg1[1]]
+                        pv.weight = weight
+                    else:
+                        weight = pmx.BoneWeight()
+                        weight.type = pmx.BoneWeight.BDEF4
+                        weight.bones = [-1, -1, -1, -1]
+                        weight.weights = [0.0, 0.0, 0.0, 0.0]
+                        for i in range(min(len(v.groups), 4)):
+                            gn, w = v.groups[i]
+                            weight.bones[i] = bone_map[vertex_group_names[gn]]
+                            weight.weights[i] = w
+                        pv.weight = weight
+                    self.__model.vertices.append(pv)
 
-    def __exportFaces(self, vertexTable, faceTable):
-        materialIndexDict = collections.defaultdict(list)
-        cloneVertexMap = {}
-        for f, uv, vertices in faceTable:
-            vertices[0] = self.__convertFaceUVToVertexUV(vertices[0], self.flipUV_V(uv.uv1), cloneVertexMap)
-            vertices[1] = self.__convertFaceUVToVertexUV(vertices[1], self.flipUV_V(uv.uv2), cloneVertexMap)
-            vertices[2] = self.__convertFaceUVToVertexUV(vertices[2], self.flipUV_V(uv.uv3), cloneVertexMap)
+                for face in mat_faces:
+                    self.__model.faces.append([x.index for x in face.vertices])
+                face_count += len(mat_faces)
+            self.__exportMaterial(bpy.data.materials[mat_name], face_count, texture_list)
 
-        verticesSet = set()
-        for f, uv, vertices in faceTable:
-            verticesSet.update(set(vertices))
-
-        self.__model.vertices = list(verticesSet)
-        invertMap = {}
-        for i, v in enumerate(self.__model.vertices):
-            invertMap[v] = i
-        for f, uv, vertices in faceTable:
-            v1 = invertMap[vertices[0]]
-            v2 = invertMap[vertices[1]]
-            v3 = invertMap[vertices[2]]
-            materialIndexDict[f.material_index].append([v1, v2, v3])
-
-        # make the map from vertex indices of Blender to them of pmx.
-        vertexIndexMap = {}
-        for i, v in enumerate(vertexTable):
-            vertexIndexMap[i] = [invertMap[v]]
-            if v in cloneVertexMap:
-                for c in cloneVertexMap[v]:
-                    vertexIndexMap[i].append(invertMap[c])
-
-        for i in sorted(materialIndexDict.keys()):
-            self.__model.faces.extend(materialIndexDict[i])
-        return (materialIndexDict, vertexIndexMap)
 
     def __exportTexture(self, texture):
         if not isinstance(texture, bpy.types.ImageTexture):
@@ -155,24 +134,29 @@ class __PmxExporter:
             logging.warning('  The texture file does not exist: %s', t.path)
         return len(self.__model.textures) - 1
 
-    def __exportMaterials(self, materialIndexDict):
-        mesh = self.__targetMesh
-        textureList = []
-        for m_index, i in enumerate(mesh.materials):
-            num_faces = len(materialIndexDict[m_index])
-            if num_faces == 0:
-                continue
-            p_mat = pmx.Material()
-            p_mat.name = i.name
-            p_mat.name_e = i.name
-            p_mat.diffuse = list(i.diffuse_color) + [i.alpha]
-            p_mat.ambient = i.mmd_ambient_color or [0.5, 0.5, 0.5]
-            p_mat.specular = list(i.specular_color) + [i.specular_alpha]
-            p_mat.edge_color = [0.25, 0.3, 0.5, 0.5]
-            p_mat.vertex_count = num_faces * 3
-            #p_mat.is_double_sided = True
-            if len(i.texture_slots) > 0 and i.texture_slots[0] is not None:
-                tex = i.texture_slots[0].texture
+    def __exportMaterial(self, material, num_faces, textureList):
+        p_mat = pmx.Material()
+        mmd_mat = material.mmd_material
+
+        p_mat.name = mmd_mat.name_j
+        p_mat.name_e = mmd_mat.name_e
+        p_mat.diffuse = list(material.diffuse_color) + [material.alpha]
+        p_mat.ambient = mmd_mat.ambient_color
+        p_mat.specular = list(material.specular_color) + [material.specular_alpha]
+        p_mat.is_double_sided = mmd_mat.is_double_sided
+        p_mat.enabled_drop_shadow = mmd_mat.enabled_drop_shadow
+        p_mat.enabled_self_shadow_map = mmd_mat.enabled_self_shadow_map
+        p_mat.enabled_self_shadow = mmd_mat.enabled_self_shadow
+        p_mat.enabled_toon_edge = mmd_mat.enabled_toon_edge
+        p_mat.edge_color = mmd_mat.edge_color
+        p_mat.edge_size = mmd_mat.edge_weight
+        p_mat.sphere_texture_type = int(mmd_mat.sphere_texture_type)
+        p_mat.comment = mmd_mat.comment
+
+        p_mat.vertex_count = num_faces * 3
+        if len(material.texture_slots) > 0:
+            if material.texture_slots[0] is not None:
+                tex = material.texture_slots[0].texture
                 index = -1
                 if tex not in textureList:
                     index = self.__exportTexture(tex)
@@ -181,7 +165,25 @@ class __PmxExporter:
                     index = textureList.index(tex)
                 p_mat.texture = index
                 p_mat.diffuse[3] = 1.0 # Set the alpha value to 1.0 if the material has textures.
-            self.__model.materials.append(p_mat)
+            if material.texture_slots[1] is not None:
+                tex = material.texture_slots[1].texture
+                index = -1
+                if tex not in textureList:
+                    index = self.__exportTexture(tex)
+                    textureList.append(tex)
+                else:
+                    index = textureList.index(tex)
+                p_mat.toon_texture = index
+            if material.texture_slots[2] is not None:
+                tex = material.texture_slots[2].texture
+                index = -1
+                if tex not in textureList:
+                    index = self.__exportTexture(tex)
+                    textureList.append(tex)
+                else:
+                    index = textureList.index(tex)
+                p_mat.sphere_texture = index
+        self.__model.materials.append(p_mat)
 
     def __exportBones(self):
         """ Export bones.
@@ -298,30 +300,51 @@ class __PmxExporter:
                     pmx_ik_bone.target = pmx_bones[bone_map[bone.name]].displayConnection
                     pmx_ik_bone.ik_links = self.__exportIKLinks(bone, pmx_bones, bone_map, [], c.chain_count)
 
+    def __exportVertexMorphs(self, meshes):
+        shape_key_names = []
+        for mesh in meshes:
+            for i in mesh.shape_key_names:
+                if i not in shape_key_names:
+                    shape_key_names.append(i)
 
+        for i in shape_key_names:
+            exported_vert = set()
+            morph = pmx.VertexMorph(i, '', 4)
+            for mesh in meshes:
+                vertices = []
+                for mf in mesh.material_faces.values():
+                    for f in mf:
+                        vertices.extend(f.vertices)
 
-    def __exportVertexMorphs(self, obj, vertexIndexMap):
-        """ Export VertexMorphs
-        @param obj the target mesh object
-        @param vertexIndexMap the dictionary to map vertex indices in blender to vertex indices in pmx.
-        """
-        if obj.data.shape_keys is None:
-            logging.info('%s has no shape keys', obj.name)
-            return
-        baseShape = obj.data.shape_keys.reference_key
-        for shapeKey in obj.data.shape_keys.key_blocks:
-            morph = pmx.VertexMorph(shapeKey.name, '', 4)
-            for i, v in enumerate(shapeKey.data):
-                offset = (v.co - baseShape.data[i].co)
-                if offset.length > 0.001:
-                    for j in vertexIndexMap[i]:
+                if i in mesh.shape_key_names:
+                    for v in vertices:
+                        if v.index in exported_vert:
+                            continue
+                        exported_vert.add(v.index)
+
+                        offset = v.offsets[mesh.shape_key_names.index(i)]
+                        if mathutils.Vector(offset).length < 0.001:
+                            continue
+
                         mo = pmx.VertexMorphOffset()
-                        mo.index = j
-                        mo.offset = offset * self.TO_PMX_MATRIX * self.__scale
+                        mo.index = v.index
+                        mo.offset = offset
                         morph.offsets.append(mo)
             self.__model.morphs.append(morph)
 
-
+    @staticmethod
+    def __convertFaceUVToVertexUV(vert_index, uv, vertices_map):
+        vertices = vertices_map[vert_index]
+        for i in vertices:
+            if i.uv is None:
+                i.uv = uv
+                return i
+            elif (i.uv[0] - uv[0])**2 + (i.uv[1] - uv[1])**2 < 0.0001:
+                return i
+        n = copy.deepcopy(i)
+        n.uv = uv
+        vertices.append(n)
+        return n
 
     @staticmethod
     def __triangulate(mesh):
@@ -331,6 +354,71 @@ class __PmxExporter:
         bm.to_mesh(mesh)
         bm.free()
 
+    def __loadMeshData(self, meshObj):
+        shape_key_weights = []
+        for i in meshObj.data.shape_keys.key_blocks:
+            shape_key_weights.append(i.value)
+            i.value = 0.0
+
+        vertex_group_names = list(map(lambda x: x.name, meshObj.vertex_groups))
+
+        base_mesh = meshObj.to_mesh(bpy.context.scene, True, 'PREVIEW', False)
+        base_mesh.transform(meshObj.matrix_world)
+        base_mesh.transform(self.TO_PMX_MATRIX*self.__scale)
+        self.__triangulate(base_mesh)
+        base_mesh.update(calc_tessface=True)
+
+        base_vertices = {}
+        for v in base_mesh.vertices:
+            base_vertices[v.index] = [_Vertex(
+                v.co,
+                list(map(lambda x: (x.group, x.weight), v.groups)),
+                v.normal,
+                [])]
+
+        # calculate offsets
+        shape_key_names = []
+        for i in meshObj.data.shape_keys.key_blocks[1:]:
+            shape_key_names.append(i.name)
+            i.value = 1.0
+            mesh = meshObj.to_mesh(bpy.context.scene, True, 'PREVIEW', False)
+            mesh.transform(meshObj.matrix_world)
+            mesh.transform(self.TO_PMX_MATRIX*self.__scale)
+            mesh.update(calc_tessface=True)
+            for key in base_vertices.keys():
+                base = base_vertices[key][0]
+                v = mesh.vertices[key]
+                base.offsets.append(mathutils.Vector(v.co) - mathutils.Vector(base.co))
+            bpy.data.meshes.remove(mesh)
+            i.value = 0.0
+
+        # load face data
+        materials = {}
+        for face, uv in zip(base_mesh.tessfaces, base_mesh.tessface_uv_textures.active.data):
+            if len(face.vertices) != 3:
+                raise Exception
+            v1 = self.__convertFaceUVToVertexUV(face.vertices[0], uv.uv1, base_vertices)
+            v2 = self.__convertFaceUVToVertexUV(face.vertices[1], uv.uv2, base_vertices)
+            v3 = self.__convertFaceUVToVertexUV(face.vertices[2], uv.uv3, base_vertices)
+
+            t = _Face(
+                [v1, v2, v3],
+                face.normal)
+            if face.material_index not in materials:
+                materials[face.material_index] = []
+            materials[face.material_index].append(t)
+
+        for i, sk in enumerate(meshObj.data.shape_keys.key_blocks):
+            sk.value = shape_key_weights[i]
+
+        return _Mesh(
+            base_mesh,
+            materials,
+            shape_key_names,
+            vertex_group_names,
+            base_mesh.materials)
+
+
     def execute(self, filepath, **args):
         self.__model = pmx.Model()
         self.__model.name = 'test'
@@ -338,37 +426,23 @@ class __PmxExporter:
 
         self.__model.comment = 'exported by mmd_tools'
 
-        target = None
-        arm = None
-        for i in bpy.context.selected_objects:
-            if i.type == 'MESH':
-                target = i
-            elif i.type == 'ARMATURE':
-                arm = i
+        meshes = args.get('meshes', [])
+        self.__armature = args.get('armature', None)
+        rigid_bodeis = args.get('rigid_bodeis', [])
+        joints = args.get('joints', [])
 
-        target = args.get('mesh', target)
-        self.__armature = args.get('armature', arm)
         self.__scale = 1.0/float(args.get('scale', 0.2))
-
-
-
-        mesh = target.to_mesh(bpy.context.scene, True, 'PREVIEW', False)
-        mesh.transform(target.matrix_world)
-        mesh.transform(self.TO_PMX_MATRIX*self.__scale)
-        self.__triangulate(mesh)
-        mesh.update(calc_tessface=True)
-
-        self.__targetMesh = mesh
 
 
         nameMap = self.__exportBones()
         self.__exportIK(nameMap)
-        vgi_to_pbi = self.__getVertexGroupIndexToPmxBoneIndexMap(target, nameMap)
-        verticesTable = self.__getVerticesTable(mesh, vgi_to_pbi)
-        facesTable = self.__getFaceTable(mesh, verticesTable)
-        materialIndexDict, vertexIndexMap = self.__exportFaces(verticesTable, facesTable)
-        self.__exportVertexMorphs(target, vertexIndexMap)
-        self.__exportMaterials(materialIndexDict)
+
+        mesh_data = []
+        for i in meshes:
+            mesh_data.append(self.__loadMeshData(i))
+
+        self.__exportMeshes(mesh_data, nameMap)
+        self.__exportVertexMorphs(mesh_data)
         pmx.save(filepath, self.__model)
 
 def export(filepath, **kwargs):
