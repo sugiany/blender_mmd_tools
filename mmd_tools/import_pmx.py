@@ -574,6 +574,26 @@ class PMXImporter:
                 offset = mathutils.Vector(md.offset) * self.TO_BLE_MATRIX
                 shapeKeyPoint.co = shapeKeyPoint.co + offset * self.__scale
 
+    def __importDisplayFrames(self):
+        pmxModel = self.__model
+        root = self.__rig.rootObject()
+
+        for i in pmxModel.display:
+            frame = root.mmd_root.display_item_frames.add()
+            frame.name = i.name
+            frame.name_e = i.name_e
+            for disp_type, index in i.data:
+                item = frame.items.add()
+                if disp_type == 0:
+                    item.type = 'BONE'
+                    item.name = self.__boneTable[index].name
+                elif disp_type == 1:
+                    item.type = 'MORPH'
+                    item.name = pmxModel.morphs[index].name
+                else:
+                    raise Exception('Unknown display item type.')
+        root.mmd_root.display_item_frames
+
     def __addArmatureModifier(self, meshObj, armObj):
         armModifier = meshObj.modifiers.new(name='Armature', type='ARMATURE')
         armModifier.object = armObj
@@ -619,6 +639,7 @@ class PMXImporter:
         self.__importFaces()
         self.__importRigids()
         self.__importJoints()
+        self.__importDisplayFrames()
 
         self.__importVertexMorphs()
 

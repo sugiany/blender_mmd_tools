@@ -11,6 +11,41 @@ from . import rigging
 from . import mmd_camera
 
 
+class MMDDisplayItem(PropertyGroup):
+    type = EnumProperty(
+        name='Type',
+        items = [
+            ('BONE', 'Bone', '', 1),
+            ('MORPH', 'Morph', '', 2),
+            ],
+        )
+
+bpy.utils.register_class(MMDDisplayItem)
+
+class MMDDisplayItemFrame(PropertyGroup):
+    name_e = StringProperty(
+        name='Name(Eng)',
+        description='English Name',
+        default='',
+        )
+
+    is_special = BoolProperty(
+        name='Special',
+        default=False,
+        )
+
+    items = CollectionProperty(
+        name='Display Items',
+        type=MMDDisplayItem,
+        )
+
+    active_item = IntProperty(
+        name='Active Display Item',
+        default=0,
+        )
+
+bpy.utils.register_class(MMDDisplayItemFrame)
+
 ############################################
 # Functions for MMD Root update callbacks. #
 ############################################
@@ -130,6 +165,16 @@ class MMDRoot(PropertyGroup):
 
     is_built = BoolProperty(
         name='Is Built',
+        )
+
+    display_item_frames = CollectionProperty(
+        name='Display Frames',
+        type=MMDDisplayItemFrame,
+        )
+
+    active_display_item_frame = IntProperty(
+        name='Active Display Item Frame',
+        default=0,
         )
 
 class MMDMaterial(PropertyGroup):
@@ -380,3 +425,4 @@ class MMDJoint(PropertyGroup):
         min=0,
         step=0.1,
         )
+

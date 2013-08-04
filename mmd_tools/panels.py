@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from bpy.types import Panel
+from bpy.types import Panel, UIList
 from . import operators
 from . import rigging
+
+import bpy
+
 
 class MMDToolsObjectPanel(Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_object'
@@ -44,6 +47,101 @@ class MMDToolsObjectPanel(Panel):
         c = col.column(align=True)
         c.operator('mmd_tools.set_frame_range', text='Set frame range')
 
+class MMD_ROOT_UL_display_item_frames(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        mmd_root = data
+        frame = item
+
+        if self.layout_type in {'DEFAULT'}:
+            layout.label(text=frame.name, translate=False, icon_value=icon)
+            if frame.is_special:
+                layout.label(text='', icon='LOCKED')
+        elif self.layout_type in {'COMPACT'}:
+            pass
+        elif self.layout_type in {'GRID'}:
+            layout.alignment = 'CENTER'
+            layout.label(text="", icon_value=icon)
+
+class MMD_ROOT_UL_display_items(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        mmd_root = data
+
+        if self.layout_type in {'DEFAULT'}:
+            if item.type == 'BONE':
+                ic = 'BONE_DATA'
+            else:
+                ic = 'SHAPEKEY_DATA'
+            layout.label(text=item.name, translate=False, icon=ic)
+        elif self.layout_type in {'COMPACT'}:
+            pass
+        elif self.layout_type in {'GRID'}:
+            layout.alignment = 'CENTER'
+            layout.label(text="", icon_value=icon)
+
+class MMDDisplayItemsPanel(Panel):
+    bl_idname = 'OBJECT_PT_mmd_tools_display_items'
+    bl_label = 'MMD Display Items Tool'
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'object'
+
+    def draw(self, context):
+        active_obj = context.active_object
+
+        root = rigging.Rig.findRoot(active_obj)
+        if root is None:
+            c = layout.column()
+            c.label('Select a MMD Model')
+            return
+
+        rig = rigging.Rig(root)
+        arm = rig.armature()
+        root = rig.rootObject()
+        mmd_root = root.mmd_root
+        col = self.layout.column()
+        c = col.column(align=True)
+        c.label('Frames')
+        row = c.row()
+        row.template_list(
+            "MMD_ROOT_UL_display_item_frames",
+            "",
+            mmd_root, "display_item_frames",
+            mmd_root, "active_display_item_frame",
+            )
+        tb = row.column()
+        tb1 = tb.column(align=True)
+        tb1.operator(operators.AddDisplayItemFrame.bl_idname, text='', icon='ZOOMIN')
+        tb1.operator(operators.RemoveDisplayItemFrame.bl_idname, text='', icon='ZOOMOUT')
+        tb.separator()
+        tb1 = tb.column(align=True)
+        tb1.operator(operators.MoveUpDisplayItemFrame.bl_idname, text='', icon='TRIA_UP')
+        tb1.operator(operators.MoveDownDisplayItemFrame.bl_idname, text='', icon='TRIA_DOWN')
+        frame = mmd_root.display_item_frames[mmd_root.active_display_item_frame]
+        c.prop(frame, 'name')
+
+        c = col.column(align=True)
+        row = c.row()
+        row.template_list(
+            "MMD_ROOT_UL_display_items",
+            "",
+            frame, "items",
+            frame, "active_item",
+            )
+        tb = row.column()
+        tb1 = tb.column(align=True)
+        tb1.operator(operators.AddDisplayItem.bl_idname, text='', icon='ZOOMIN')
+        tb1.operator(operators.RemoveDisplayItem.bl_idname, text='', icon='ZOOMOUT')
+        tb.separator()
+        tb1 = tb.column(align=True)
+        tb1.operator(operators.MoveUpDisplayItem.bl_idname, text='', icon='TRIA_UP')
+        tb1.operator(operators.MoveDownDisplayItem.bl_idname, text='', icon='TRIA_DOWN')
+        item = frame.items[frame.active_item]
+        row = col.row(align=True)
+        row.prop(item, 'type', text='')
+        if item.type == 'BONE':
+            row.prop_search(item, 'name', rig.armature().pose, 'bones', icon='BONE_DATA', text='')
+        else:
+            row.prop(item, 'name', text='')
 
 class MMDRootPanel(Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_root'
@@ -85,6 +183,8 @@ class MMDRootPanel(Panel):
         c = layout.column(align=True)
         c.prop(root.mmd_root, 'show_names_of_rigid_bodies')
         c.prop(root.mmd_root, 'show_names_of_joints')
+
+        
 
         col = self.layout.column(align=True)
 

@@ -51,6 +51,8 @@ def register():
     bpy.utils.register_class(properties.MMDBone)
     bpy.utils.register_class(properties.MMDRigid)
     bpy.utils.register_class(properties.MMDJoint)
+    bpy.utils.register_class(panels.MMD_ROOT_UL_display_item_frames)
+    bpy.utils.register_class(panels.MMD_ROOT_UL_display_items)
     bpy.types.INFO_MT_file_import.append(menu_func_import)
     bpy.types.INFO_MT_file_export.append(menu_func_export)
 
