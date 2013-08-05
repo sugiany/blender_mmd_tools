@@ -197,10 +197,10 @@ class __PmxExporter:
         r = {}
         with bpyutils.edit_object(arm) as data:
             for bone in data.edit_bones:
-                pmx_bone = pmx.Bone()
                 p_bone = pose_bones[bone.name]
                 if p_bone.is_mmd_shadow_bone:
                     continue
+                pmx_bone = pmx.Bone()
                 if p_bone.mmd_bone.name_j != '':
                     pmx_bone.name = p_bone.mmd_bone.name_j
                 else:
@@ -332,6 +332,28 @@ class __PmxExporter:
                         morph.offsets.append(mo)
             self.__model.morphs.append(morph)
 
+    def __exportDisplayItems(self, root, bone_map):
+        res = []
+        morph_map = {}
+        for i, m in enumerate(self.__model.morphs):
+            morph_map[m.name] = i
+        for i in root.mmd_root.display_item_frames:
+            d = pmx.Display()
+            d.name = i.name
+            d.name_e = i.name_e
+            d.isSpecial = i.is_special
+            items = []
+            for j in i.items:
+                if j.type == 'BONE' and j.name in bone_map:
+                    items.append((0, bone_map[j.name]))
+                elif j.type == 'MORPH' and j.name in morph_map:
+                    items.append((1, morph_map[j.name]))
+                else:
+                    logging.warning('Display item (%s, %s) was not found.', j.type, j.name)
+            d.data = items
+            res.append(d)
+        self.__model.display = res
+
     @staticmethod
     def __convertFaceUVToVertexUV(vert_index, uv, vertices_map):
         vertices = vertices_map[vert_index]
@@ -430,6 +452,7 @@ class __PmxExporter:
         self.__armature = args.get('armature', None)
         rigid_bodeis = args.get('rigid_bodeis', [])
         joints = args.get('joints', [])
+        root = args.get('root', None)
 
         self.__scale = 1.0/float(args.get('scale', 0.2))
 
@@ -443,6 +466,9 @@ class __PmxExporter:
 
         self.__exportMeshes(mesh_data, nameMap)
         self.__exportVertexMorphs(mesh_data)
+        if root is not None:
+            self.__exportDisplayItems(root, nameMap)
+
         pmx.save(filepath, self.__model)
 
 def export(filepath, **kwargs):

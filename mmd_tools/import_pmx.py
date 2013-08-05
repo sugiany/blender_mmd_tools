@@ -605,8 +605,8 @@ class PMXImporter:
             if i.is_mmd_shadow_bone:
                 continue
             i.mmd_bone.name_j = i.name
-            i.name = utils.convertNameToLR(i.name)
-            self.__meshObj.vertex_groups[i.mmd_bone.name_j].name = i.name
+            self.__rig.renameBone(i.name, utils.convertNameToLR(i.name))
+            # self.__meshObj.vertex_groups[i.mmd_bone.name_j].name = i.name
 
     def execute(self, **args):
         if 'pmx' in args:

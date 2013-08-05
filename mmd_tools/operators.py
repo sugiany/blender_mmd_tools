@@ -200,6 +200,7 @@ class ExportPmx(Operator, ImportHelper):
             export_pmx.export(
                 filepath=self.filepath,
                 scale=root.mmd_root.scale,
+                root=rig.rootObject(),
                 armature=rig.armature(),
                 meshes=rig.meshes(),
                 rigid_bodies=rig.rigidBodies(),

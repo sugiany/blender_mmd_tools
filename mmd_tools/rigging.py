@@ -392,6 +392,20 @@ class Rig:
     def temporaryObjects(self):
         return filter(isTemporaryObject, self.allObjects(self.rigidGroupObject())+self.allObjects(self.temporaryGroupObject()))
 
+    def renameBone(self, old_bone_name, new_bone_name):
+        armature = self.armature()
+        bone = armature.pose.bones[old_bone_name]
+
+        mmd_root = self.rootObject().mmd_root
+        for frame in mmd_root.display_item_frames:
+            for item in frame.items:
+                if item.type == 'BONE' and item.name == old_bone_name:
+                    item.name = new_bone_name
+        for mesh in self.meshes():
+            if old_bone_name in mesh.vertex_groups:
+                mesh.vertex_groups[old_bone_name].name = new_bone_name
+        bone.name = new_bone_name
+
     def build(self):
         logging.info('****************************************')
         logging.info(' Build rig')
