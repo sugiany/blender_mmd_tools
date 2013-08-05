@@ -179,7 +179,8 @@ class ExportPmx(Operator, ImportHelper):
     filename_ext = '.pmx'
     filter_glob = bpy.props.StringProperty(default='*.pmx', options={'HIDDEN'})
 
-    scale = bpy.props.FloatProperty(name='Scale', default=0.2)
+    # scale = bpy.props.FloatProperty(name='Scale', default=0.2)
+    copy_textures = bpy.props.BoolProperty(name='Copy textures', default=False)
 
     log_level = bpy.props.EnumProperty(items=LOG_LEVEL_ITEMS, name='Log level', default='DEBUG')
     save_log = bpy.props.BoolProperty(name='Create a log file', default=False)
@@ -205,6 +206,7 @@ class ExportPmx(Operator, ImportHelper):
                 meshes=rig.meshes(),
                 rigid_bodies=rig.rigidBodies(),
                 joints=rig.joints(),
+                copy_textures=self.copy_textures,
                 )
         finally:
             logger.removeHandler(handler)

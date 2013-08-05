@@ -261,6 +261,18 @@ class MMDMaterial(PropertyGroup):
             ],
         )
 
+    is_shared_toon_texture = BoolProperty(
+        name='Use Shared Toon Texture',
+        description='',
+        default=False,
+        )
+
+    shared_toon_texture = IntProperty(
+        name='Shared Toon Texture',
+        description='',
+        default=0,
+        )
+
     comment = StringProperty(
         name='Comment',
         )

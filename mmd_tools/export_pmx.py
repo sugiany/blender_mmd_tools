@@ -6,6 +6,7 @@ import collections
 import os
 import copy
 import logging
+import shutil
 
 import mathutils
 import bpy
@@ -127,8 +128,21 @@ class __PmxExporter:
     def __exportTexture(self, texture):
         if not isinstance(texture, bpy.types.ImageTexture):
             return -1
+
+        path = texture.image.filepath
+        if self.__copyTextures:
+            tex_dir = os.path.join(os.path.dirname(self.__filepath), 'textures')
+            if not os.path.isdir(tex_dir):
+                os.mkdir(tex_dir)
+                logging.info('Create a texture directory: %s', tex_dir)
+
+            dest_path = os.path.join(tex_dir, os.path.basename(path))
+            shutil.copyfile(path, dest_path)
+            logging.info('Copy file %s --> %s', path, dest_path)
+            path = dest_path
+
         t = pmx.Texture()
-        t.path = texture.image.filepath
+        t.path = path
         self.__model.textures.append(t)
         if not os.path.isfile(t.path):
             logging.warning('  The texture file does not exist: %s', t.path)
@@ -150,8 +164,12 @@ class __PmxExporter:
         p_mat.enabled_toon_edge = mmd_mat.enabled_toon_edge
         p_mat.edge_color = mmd_mat.edge_color
         p_mat.edge_size = mmd_mat.edge_weight
-        p_mat.sphere_texture_type = int(mmd_mat.sphere_texture_type)
+        p_mat.sphere_texture_mode = int(mmd_mat.sphere_texture_type)
+        p_mat.is_shared_toon_texture = mmd_mat.is_shared_toon_texture
         p_mat.comment = mmd_mat.comment
+
+        if mmd_mat.is_shared_toon_texture:
+            p_mat.toon_texture = mmd_mat.shared_toon_texture
 
         p_mat.vertex_count = num_faces * 3
         if len(material.texture_slots) > 0:
@@ -165,7 +183,7 @@ class __PmxExporter:
                     index = textureList.index(tex)
                 p_mat.texture = index
                 p_mat.diffuse[3] = 1.0 # Set the alpha value to 1.0 if the material has textures.
-            if material.texture_slots[1] is not None:
+            if not mmd_mat.is_shared_toon_texture and material.texture_slots[1] is not None:
                 tex = material.texture_slots[1].texture
                 index = -1
                 if tex not in textureList:
@@ -453,6 +471,8 @@ class __PmxExporter:
         rigid_bodeis = args.get('rigid_bodeis', [])
         joints = args.get('joints', [])
         root = args.get('root', None)
+        self.__copyTextures = args.get('copy_textures', False)
+        self.__filepath = filepath
 
         self.__scale = 1.0/float(args.get('scale', 0.2))
 

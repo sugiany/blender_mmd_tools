@@ -512,6 +512,7 @@ class PMXImporter:
             mmd_material.edge_color = i.edge_color
             mmd_material.edge_weight = i.edge_size
             mmd_material.sphere_texture_type = str(i.sphere_texture_mode)
+            mmd_material.is_shared_toon_texture = i.is_shared_toon_texture
             mmd_material.comment = i.comment
 
             self.__materialFaceCountTable.append(int(i.vertex_count/3))
@@ -533,6 +534,8 @@ class PMXImporter:
                 mat.use_transparency = True
                 mat.transparency_method = 'Z_TRANSPARENCY'
                 mat.alpha = 0
+            if i.is_shared_toon_texture:
+                mmd_material.shared_toon_texture = i.toon_texture
             if i.sphere_texture != -1:
                 texture_slot = mat.texture_slots.create(2)
                 texture_slot.use_map_alpha = True
