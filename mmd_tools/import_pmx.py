@@ -70,10 +70,6 @@ class PMXImporter:
         pmxModel = self.__model
         self.__rig = rigging.Rig.create(pmxModel.name, pmxModel.name_e, self.__scale)
 
-        # self.__root = bpy.data.objects.new(name=pmxModel.name, object_data=None)
-        # self.__root.mmd_type = 'ROOT'
-        # self.__targetScene.objects.link(self.__root)
-
         mesh = bpy.data.meshes.new(name=pmxModel.name)
         self.__meshObj = bpy.data.objects.new(name=pmxModel.name+'_mesh', object_data=mesh)
         self.__targetScene.objects.link(self.__meshObj)
@@ -81,24 +77,6 @@ class PMXImporter:
         self.__armObj = self.__rig.armature()
         self.__armObj.hide = True
         self.__meshObj.parent = self.__armObj
-
-        # arm = bpy.data.armatures.new(name=pmxModel.name)
-        # self.__armObj = bpy.data.objects.new(name=pmxModel.name+'_arm', object_data=arm)
-        # self.__meshObj.parent = self.__armObj
-
-        # self.__targetScene.objects.link(self.__meshObj)
-        # self.__targetScene.objects.link(self.__armObj)
-
-        # self.__armObj.parent = self.__root
-
-        # self.__rigidsSetObj = rigging.getRigidGroupObject(self.__root)
-        # self.__jointsSetObj = rigging.getJointGroupObject(self.__root)
-
-        # self.__allObjGroup.objects.link(self.__root)
-        # self.__allObjGroup.objects.link(self.__armObj)
-        # self.__allObjGroup.objects.link(self.__meshObj)
-        # self.__mainObjGroup.objects.link(self.__armObj)
-        # self.__mainObjGroup.objects.link(self.__meshObj)
 
     def __createGroups(self):
         pmxModel = self.__model

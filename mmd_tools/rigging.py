@@ -69,6 +69,36 @@ def findRelationalBone(rigid_body):
                 return (arm, bone.name)
         return (arm, '')
 
+def getRigidBodySize(obj):
+    if not isRigidBodyObject(obj):
+        raise ValueError
+
+    if obj.mmd_rigid.shape == 'SPHERE':
+        max_z = 0
+        for v in obj.data.vertices:
+            vc = v.co
+            if vc.z > max_z:
+                max_z = vc.z
+        return (max_z, 0.0, 0.0)
+    elif obj.mmd_rigid.shape == 'BOX':
+        v = obj.data.vertices[0].co
+        x, y, z = map(abs, v)
+        return (x, y, z)
+    elif obj.mmd_rigid.shape == 'CAPSULE':
+        max_z = 0
+        max_x = 0
+        for v in obj.data.vertices:
+            vc = v.co
+            if vc.z > max_z:
+                max_z = vc.z
+            if vc.x > max_x:
+                max_x = vc.x
+        radius = max_x
+        height = (max_z - radius) * 2
+        return (radius, height, 0.0)
+    else:
+        raise Exception('Invalid shape type.')
+
 class InvalidRigidSettingException(ValueError):
     pass
 

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from . import pmx
+from . import rigging
 from . import bpyutils
 
 import collections
@@ -372,6 +373,50 @@ class __PmxExporter:
             res.append(d)
         self.__model.display = res
 
+
+    def __exportRigidBodies(self, rigid_bodies, bone_map):
+        for obj in rigid_bodies:
+            p_rigid = pmx.Rigid()
+            p_rigid.name = obj.mmd_rigid.name
+            p_rigid.name_e = obj.mmd_rigid.name_e
+            p_rigid.location = mathutils.Vector(obj.location) * self.__scale * self.TO_PMX_MATRIX
+            p_rigid.rotation = mathutils.Vector(obj.rotation_euler) * self.TO_PMX_MATRIX * -1
+            p_rigid.mode = int(obj.mmd_rigid.type)
+
+            rigid_shape = obj.mmd_rigid.shape
+            shape_size = mathutils.Vector(rigging.getRigidBodySize(obj))
+            if rigid_shape == 'SPHERE':
+                p_rigid.type = 0
+                p_rigid.size = shape_size * self.__scale
+            elif rigid_shape == 'BOX':
+                p_rigid.type = 1
+                p_rigid.size = shape_size * self.__scale * self.TO_PMX_MATRIX
+            elif rigid_shape == 'CAPSULE':
+                p_rigid.type = 2
+                p_rigid.size = shape_size * self.__scale
+            else:
+                raise Exception('Invalid rigid body type: %s %s', obj.name, rigid_shape)
+
+            p_rigid.collision_group_number = obj.mmd_rigid.collision_group_number
+            mask = 0
+            for i, v in enumerate(obj.mmd_rigid.collision_group_mask):
+                if not v:
+                    mask += (1<<i)
+            p_rigid.collision_group_mask = mask
+
+            rb = obj.rigid_body
+            p_rigid.mass = rb.mass
+            p_rigid.friction = rb.friction
+            p_rigid.bounce = rb.restitution
+            p_rigid.velocity_attenuation = rb.linear_damping
+            p_rigid.rotation_attenuation = rb.angular_damping
+
+            if 'mmd_tools_rigid_parent' in obj.constraints:
+                constraint = obj.constraints['mmd_tools_rigid_parent']
+                bone = constraint.subtarget
+                p_rigid.bone = bone_map.get(bone, -1)
+            self.__model.rigids.append(p_rigid)
+
     @staticmethod
     def __convertFaceUVToVertexUV(vert_index, uv, vertices_map):
         vertices = vertices_map[vert_index]
@@ -468,7 +513,7 @@ class __PmxExporter:
 
         meshes = args.get('meshes', [])
         self.__armature = args.get('armature', None)
-        rigid_bodeis = args.get('rigid_bodeis', [])
+        rigid_bodeis = args.get('rigid_bodies', [])
         joints = args.get('joints', [])
         root = args.get('root', None)
         self.__copyTextures = args.get('copy_textures', False)
@@ -486,6 +531,7 @@ class __PmxExporter:
 
         self.__exportMeshes(mesh_data, nameMap)
         self.__exportVertexMorphs(mesh_data)
+        self.__exportRigidBodies(rigid_bodeis, nameMap)
         if root is not None:
             self.__exportDisplayItems(root, nameMap)
 

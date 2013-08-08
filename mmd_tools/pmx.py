@@ -635,15 +635,16 @@ comment(english):
         logging.info('exporting rigid bodies...')
         fs.writeInt(len(self.rigids))
         for i in self.rigids:
+            logging.debug('  Rigid: %s', i.name)
             i.save(fs)
-        logging.info('the number of rigid bodies: %d', len(self.display))
+        logging.info('the number of rigid bodies: %d', len(self.rigids))
         logging.info('finished exporting rigid bodies.')
 
         logging.info('exporting joints...')
         fs.writeInt(len(self.joints))
         for i in self.joints:
             i.save(fs)
-        logging.info('the number of joints: %d', len(self.display))
+        logging.info('the number of joints: %d', len(self.joints))
         logging.info('finished exporting joints.')
         logging.info('finished exporting the model.')
 
