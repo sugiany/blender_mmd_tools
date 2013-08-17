@@ -375,6 +375,8 @@ class __PmxExporter:
 
 
     def __exportRigidBodies(self, rigid_bodies, bone_map):
+        rigid_map = {}
+        rigid_cnt = 0
         for obj in rigid_bodies:
             p_rigid = pmx.Rigid()
             p_rigid.name = obj.mmd_rigid.name
@@ -416,6 +418,46 @@ class __PmxExporter:
                 bone = constraint.subtarget
                 p_rigid.bone = bone_map.get(bone, -1)
             self.__model.rigids.append(p_rigid)
+            rigid_map[obj] = rigid_cnt
+            rigid_cnt += 1
+        return rigid_map
+
+    def __exportJoints(self, joints, rigid_map):
+        for joint in joints:
+            rbc = joint.rigid_body_constraint
+            p_joint = pmx.Joint()
+            mmd_joint = joint.mmd_joint
+            p_joint.name = mmd_joint.name_j
+            p_joint.name_e = mmd_joint.name_e
+            p_joint.location = (mathutils.Vector(joint.location) * self.TO_PMX_MATRIX * self.__scale).xyz
+            p_joint.rotation = (mathutils.Vector(joint.rotation_euler) * self.TO_PMX_MATRIX * -1).xyz
+            p_joint.src_rigid = rigid_map.get(rbc.object1, -1)
+            p_joint.dest_rigid = rigid_map.get(rbc.object2, -1)
+            p_joint.maximum_location = (mathutils.Vector([
+                rbc.limit_lin_x_upper,
+                rbc.limit_lin_y_upper,
+                rbc.limit_lin_z_upper,
+                ]) * self.TO_PMX_MATRIX * self.__scale).xyz
+            p_joint.minimum_location =(mathutils.Vector([
+                rbc.limit_lin_x_lower,
+                rbc.limit_lin_y_lower,
+                rbc.limit_lin_z_lower,
+                ]) * self.TO_PMX_MATRIX * self.__scale).xyz
+            p_joint.maximum_rotation = (mathutils.Vector([
+                rbc.limit_ang_x_lower,
+                rbc.limit_ang_y_lower,
+                rbc.limit_ang_z_lower,
+                ]) * self.TO_PMX_MATRIX * -1).xyz
+            p_joint.minimum_rotation = (mathutils.Vector([
+                rbc.limit_ang_x_upper,
+                rbc.limit_ang_y_upper,
+                rbc.limit_ang_z_upper,
+                ]) * self.TO_PMX_MATRIX * -1).xyz
+
+            p_joint.spring_constant = (mathutils.Vector(mmd_joint.spring_linear) * self.TO_PMX_MATRIX).xyz
+            p_joint.spring_rotation_constant = (mathutils.Vector(mmd_joint.spring_angular) * self.TO_PMX_MATRIX).xyz
+            self.__model.joints.append(p_joint)
+
 
     @staticmethod
     def __convertFaceUVToVertexUV(vert_index, uv, vertices_map):
@@ -531,7 +573,8 @@ class __PmxExporter:
 
         self.__exportMeshes(mesh_data, nameMap)
         self.__exportVertexMorphs(mesh_data)
-        self.__exportRigidBodies(rigid_bodeis, nameMap)
+        rigid_map = self.__exportRigidBodies(rigid_bodeis, nameMap)
+        self.__exportJoints(joints, rigid_map)
         if root is not None:
             self.__exportDisplayItems(root, nameMap)
 
