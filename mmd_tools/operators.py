@@ -8,6 +8,7 @@ from . import import_pmx
 from . import import_pmd
 from . import export_pmx
 from . import import_vmd
+from . import bpyutils
 
 from . import mmd_camera
 from . import utils
@@ -490,3 +491,60 @@ class MoveDownDisplayItem(Operator):
         frame.active_item += 1
         return {'FINISHED'}
 
+class SelectCurrentDisplayItem(Operator):
+    bl_idname = 'mmd_tools.select_current_display_item'
+    bl_label = 'Select Current Display Item Frame'
+    bl_description = ''
+    bl_options = {'PRESET'}
+
+    def execute(self, context):
+        obj = context.active_object
+        root = rigging.Rig.findRoot(obj)
+        rig = rigging.Rig(root)
+        mmd_root = root.mmd_root
+
+        try:
+            bpy.ops.object.mode_set(mode='OBJECT')
+        except Exception:
+            pass
+
+        arm = rig.armature()
+        for i in context.scene.objects:
+            i.select = False
+        arm.hide = False
+        arm.select = True
+        context.scene.objects.active = arm
+
+        bpy.ops.object.mode_set(mode='POSE')
+        frame = mmd_root.display_item_frames[mmd_root.active_display_item_frame]
+        item = frame.items[frame.active_item]
+        bone_name = item.name
+        for i in arm.pose.bones:
+            i.bone.select = (i.name == bone_name)
+        return {'FINISHED'}
+
+#######################
+# Edit Menu Operators #
+#######################
+
+class CreateMMDModelRoot(Operator):
+    bl_idname = 'mmd_tools.create_mmd_model_root_object'
+    bl_label = 'Create a MMD Model Root Object'
+    bl_description = ''
+    bl_options = {'PRESET'}
+
+    scale = bpy.props.FloatProperty(name='Scale', default=0.2)
+
+    def execute(self, context):
+        rig = rigging.Rig.create('New MMD Model', 'New MMD Model', self.scale)
+        arm = rig.armature()
+        with bpyutils.edit_object(arm) as data:
+            bone = data.edit_bones.new(name=u'全ての親')
+            bone.head = [0.0, 0.0, 0.0]
+            bone.tail = [0.0, 0.0, 1.0*self.scale]
+
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        vm = context.window_manager
+        return vm.invoke_props_dialog(self)

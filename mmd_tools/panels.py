@@ -81,9 +81,8 @@ class MMD_ROOT_UL_display_items(UIList):
 class MMDDisplayItemsPanel(Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_display_items'
     bl_label = 'MMD Display Items Tool'
-    bl_space_type = 'PROPERTIES'
-    bl_region_type = 'WINDOW'
-    bl_context = 'object'
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
 
     def draw(self, context):
         active_obj = context.active_object
@@ -140,8 +139,20 @@ class MMDDisplayItemsPanel(Panel):
         row.prop(item, 'type', text='')
         if item.type == 'BONE':
             row.prop_search(item, 'name', rig.armature().pose, 'bones', icon='BONE_DATA', text='')
-        else:
+
+            row = col.row(align=True)
+            row.operator(operators.SelectCurrentDisplayItem.bl_idname, text='Select')
+        elif item.type == 'MORPH':
             row.prop(item, 'name', text='')
+
+            for i in rig.meshes():
+                if item.name in i.data.shape_keys.key_blocks:
+                    row = col.row(align=True)
+                    row.label(i.name+':')
+                    row.prop(i.data.shape_keys.key_blocks[item.name], 'value')
+
+
+
 
 class MMDRootPanel(Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_root'
@@ -184,7 +195,7 @@ class MMDRootPanel(Panel):
         c.prop(root.mmd_root, 'show_names_of_rigid_bodies')
         c.prop(root.mmd_root, 'show_names_of_joints')
 
-        
+
 
         col = self.layout.column(align=True)
 

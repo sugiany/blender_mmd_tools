@@ -44,6 +44,9 @@ def menu_func_import(self, context):
 def menu_func_export(self, context):
     self.layout.operator(operators.ExportPmx.bl_idname, text="MikuMikuDance model (.pmx)")
 
+def menu_func_armature(self, context):
+    self.layout.operator(operators.CreateMMDModelRoot.bl_idname, text='Create MMD Model')
+
 def register():
     bpy.utils.register_class(properties.MMDRoot)
     bpy.utils.register_class(properties.MMDMaterial)
@@ -55,6 +58,7 @@ def register():
     bpy.utils.register_class(panels.MMD_ROOT_UL_display_items)
     bpy.types.INFO_MT_file_import.append(menu_func_import)
     bpy.types.INFO_MT_file_export.append(menu_func_export)
+    bpy.types.INFO_MT_armature_add.append(menu_func_armature)
 
 
     #bpy.types.Object.is_mmd_root = bpy.props.BoolProperty(name='is_mmd_root', default=False)
