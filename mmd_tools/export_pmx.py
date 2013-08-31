@@ -204,6 +204,13 @@ class __PmxExporter:
                 p_mat.sphere_texture = index
         self.__model.materials.append(p_mat)
 
+    @classmethod
+    def __countBoneDepth(cls, bone):
+        if bone.parent is None:
+            return 0
+        else:
+            return cls.__countBoneDepth(bone.parent) + 1
+
     def __exportBones(self):
         """ Export bones.
         @return the dictionary to map Blender bone names to bone indices of the pmx.model instance.
@@ -214,9 +221,17 @@ class __PmxExporter:
         pose_bones = arm.pose.bones
         world_mat = arm.matrix_world
         r = {}
+
+        # sort by a depth of bones.
+        t = []
+        for i in pose_bones:
+            t.append((i, self.__countBoneDepth(i)))
+
+        sorted_bones = [i[0] for i in sorted(t, key=lambda x: x[1])]
+
         with bpyutils.edit_object(arm) as data:
-            for bone in data.edit_bones:
-                p_bone = pose_bones[bone.name]
+            for p_bone in sorted_bones:
+                bone = data.edit_bones[p_bone.name]
                 if p_bone.is_mmd_shadow_bone:
                     continue
                 pmx_bone = pmx.Bone()
@@ -224,6 +239,14 @@ class __PmxExporter:
                     pmx_bone.name = p_bone.mmd_bone.name_j
                 else:
                     pmx_bone.name = bone.name
+
+                for i in filter(lambda x: x.type == 'CHILD_OF', p_bone.constraints):
+                    if i.target == arm and i.subtarget in pose_bones:
+                        t = pose_bones[i.subtarget]
+                        if t.mmd_shadow_bone_type == 'ADDITIONAL_TRANSFORM':
+                            add_bone = pose_bones[t.constraints[0].subtarget]
+                            pmx_bone.additionalTransform = (add_bone, i.influence)
+
                 pmx_bone_e = p_bone.mmd_bone.name_e or ''
                 pmx_bone.location = world_mat * mathutils.Vector(bone.head) * self.__scale * self.TO_PMX_MATRIX
                 pmx_bone.parent = bone.parent
@@ -252,6 +275,11 @@ class __PmxExporter:
                     i.displayConnection = pmx_bones.index(i.displayConnection)
                 elif isinstance(i.displayConnection, bpy.types.EditBone):
                     i.displayConnection = pmx_bones.index(boneMap[i.displayConnection])
+
+                if i.additionalTransform is not None:
+                    b, influ = i.additionalTransform
+                    i.additionalTransform = (r[b.name], influ)
+                    i.hasAdditionalRotate = True
 
             self.__model.bones = pmx_bones
         return r
