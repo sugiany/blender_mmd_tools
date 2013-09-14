@@ -466,7 +466,7 @@ def unregister():
     del bpy.types.PoseBone.mmd_local_axis_z
 
     del bpy.types.PoseBone.is_mmd_tip_bone
-    del bpy.types.PoseBone.mmd_shadow_bone
+    del bpy.types.PoseBone.is_mmd_shadow_bone
     del bpy.types.Object.is_mmd_glsl_light
     del bpy.types.PoseBone.mmd_bone_name_j
     del bpy.types.PoseBone.mmd_bone_name_e
