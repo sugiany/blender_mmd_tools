@@ -691,15 +691,31 @@ class PMXImporter:
             self.__meshObj.data.materials.append(mat)
             if i.texture != -1:
                 texture_slot = mat.texture_slots.add()
-                texture_slot.use_map_alpha = True
                 texture_slot.texture = self.__textureTable[i.texture]
-                if re.search("\.sph$", texture_slot.texture.image.filepath, flags=re.I):
-                    texture_slot.texture_coords = 'NORMAL'
+                m = re.search('\.sp([ha])$', texture_slot.texture.image.filepath, flags=re.I)
+                if m:
+                    texture_slot.texture_coords = 'NORMAL' # sphere map in pmd file
+                    texture_slot.scale = mathutils.Vector((0.98, 0.98, 0.98))
                 else:
                     texture_slot.texture_coords = 'UV'
-                texture_slot.blend_type = 'MULTIPLY'
-                mat.use_transparency = True
-                mat.transparency_method = 'Z_TRANSPARENCY'
+                    texture_slot.use_map_alpha = True
+                    mat.use_transparency = True
+                    mat.transparency_method = 'Z_TRANSPARENCY'
+                if m and 'aA'.find(m.group(1)) != -1:
+                    texture_slot.blend_type = 'ADD'
+                    texture_slot.diffuse_color_factor = 10.0
+                else:
+                    texture_slot.blend_type = 'MULTIPLY'
+            if i.sphere_texture != -1:
+                texture_slot = mat.texture_slots.add()     # sphere map in pmx file
+                texture_slot.texture = self.__textureTable[i.sphere_texture]
+                texture_slot.texture_coords = 'NORMAL'
+                texture_slot.scale = mathutils.Vector((0.98, 0.98, 0.98))
+                if i.sphere_texture_mode == 2:
+                    texture_slot.blend_type = 'ADD'
+                    texture_slot.diffuse_color_factor = 10.0
+                else:
+                    texture_slot.blend_type = 'MULTIPLY'
 
     def __importFaces(self):
         pmxModel = self.__model
