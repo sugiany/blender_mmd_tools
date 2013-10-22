@@ -7,6 +7,7 @@ import math
 
 import bpy
 import os
+import re
 import mathutils
 import collections
 import logging
@@ -692,7 +693,10 @@ class PMXImporter:
                 texture_slot = mat.texture_slots.add()
                 texture_slot.use_map_alpha = True
                 texture_slot.texture = self.__textureTable[i.texture]
-                texture_slot.texture_coords = 'UV'
+                if re.search("\.sph$", texture_slot.texture.image.filepath, flags=re.I):
+                    texture_slot.texture_coords = 'NORMAL'
+                else:
+                    texture_slot.texture_coords = 'UV'
                 texture_slot.blend_type = 'MULTIPLY'
                 mat.use_transparency = True
                 mat.transparency_method = 'Z_TRANSPARENCY'
