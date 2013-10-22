@@ -693,9 +693,9 @@ class PMXImporter:
                 texture_slot.use_map_alpha = True
                 texture_slot.texture = self.__textureTable[i.texture]
                 texture_slot.texture_coords = 'UV'
+                texture_slot.blend_type = 'MULTIPLY'
                 mat.use_transparency = True
                 mat.transparency_method = 'Z_TRANSPARENCY'
-                mat.alpha = 0
 
     def __importFaces(self):
         pmxModel = self.__model
