@@ -700,10 +700,9 @@ class PMXImporter:
                 texture_slot = mat.texture_slots.add()
                 texture_slot.texture = self.__textureTable[i.sphere_texture]
                 texture_slot.texture_coords = 'NORMAL'
-                texture_slot.scale = mathutils.Vector((0.98, 0.98, 0.98))
                 if i.sphere_texture_mode == 2:
                     texture_slot.blend_type = 'ADD'
-                    texture_slot.diffuse_color_factor = 10.0
+                    texture_slot.diffuse_color_factor = 3.0
                 else:
                     texture_slot.blend_type = 'MULTIPLY'
 
