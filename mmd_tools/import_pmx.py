@@ -686,6 +686,9 @@ class PMXImporter:
             mat.ambient_color = i.ambient
             mat.specular_color = i.specular[0:3]
             mat.specular_alpha = i.specular[3]
+            if mat.alpha < 1.0 or mat.specular_alpha < 1.0 or i.texture != -1:
+                mat.use_transparency = True
+                mat.transparency_method = 'Z_TRANSPARENCY'
             self.__materialFaceCountTable.append(int(i.vertex_count/3))
             self.__meshObj.data.materials.append(mat)
             if i.texture != -1:
@@ -694,8 +697,6 @@ class PMXImporter:
                 texture_slot.texture = self.__textureTable[i.texture]
                 texture_slot.texture_coords = 'UV'
                 texture_slot.blend_type = 'MULTIPLY'
-                mat.use_transparency = True
-                mat.transparency_method = 'Z_TRANSPARENCY'
             if i.sphere_texture != -1:
                 texture_slot = mat.texture_slots.add()
                 texture_slot.texture = self.__textureTable[i.sphere_texture]
