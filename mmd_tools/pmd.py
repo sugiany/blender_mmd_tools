@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import struct
 import os
+import re
 import logging
 import collections
 
@@ -148,6 +149,7 @@ class Material:
         self.vertex_count = 0
         self.texture_path = ''
         self.sphere_path = ''
+        self.sphere_mode = 1
 
     def load(self, fs):
         self.diffuse = fs.readVector(4)
@@ -159,9 +161,12 @@ class Material:
         self.vertex_count = fs.readUnsignedInt()
         tex_path = fs.readStr(20)
         t = tex_path.split('*')
-        self.texture_path = t.pop(0)
+        if not re.search('\.sp([ha])$', t[0], flags=re.I):
+            self.texture_path = t.pop(0)
         if len(t) > 0:
             self.sphere_path = t.pop(0)
+            if 'aA'.find(self.sphere_path[-1]) != -1:
+                self.sphere_mode = 2
 
 class Bone:
     def __init__(self):
