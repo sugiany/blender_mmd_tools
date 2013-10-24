@@ -697,15 +697,18 @@ class PMXImporter:
                 texture_slot.texture = self.__textureTable[i.texture]
                 texture_slot.texture_coords = 'UV'
                 texture_slot.blend_type = 'MULTIPLY'
-            if i.sphere_texture != -1:
+            if i.sphere_texture_mode == 2:
+                amount = self.__spa_blend_factor
+                blend = 'ADD'
+            else:
+                amount = self.__sph_blend_factor
+                blend = 'MULTIPLY'
+            if i.sphere_texture != -1 and amount != 0.0:
                 texture_slot = mat.texture_slots.add()
                 texture_slot.texture = self.__textureTable[i.sphere_texture]
                 texture_slot.texture_coords = 'NORMAL'
-                if i.sphere_texture_mode == 2:
-                    texture_slot.blend_type = 'ADD'
-                    texture_slot.diffuse_color_factor = 3.0
-                else:
-                    texture_slot.blend_type = 'MULTIPLY'
+                texture_slot.diffuse_color_factor = amount
+                texture_slot.blend_type = blend
 
     def __importFaces(self):
         pmxModel = self.__model
@@ -771,6 +774,8 @@ class PMXImporter:
         self.__ignoreNonCollisionGroups = args.get('ignore_non_collision_groups', True)
         self.__distance_of_ignore_collisions = args.get('distance_of_ignore_collisions', 1) # 衝突を考慮しない距離（非衝突グループ設定を無視する距離）
         self.__distance_of_ignore_collisions /= 2
+        self.__sph_blend_factor = args.get('sph_blend_factor', 1.0)
+        self.__spa_blend_factor = args.get('spa_blend_factor', 1.0)
 
         logging.info('****************************************')
         logging.info(' mmd_tools.import_pmx module')
