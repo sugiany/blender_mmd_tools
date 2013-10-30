@@ -164,6 +164,7 @@ def import_pmd(**kwargs):
         pmx_mat.diffuse = mat.diffuse
         pmx_mat.specular = mat.specular + [mat.specular_intensity]
         pmx_mat.ambient = mat.ambient
+        pmx_mat.enabled_self_shadow = True # pmd doesn't support this
         pmx_mat.vertex_count = mat.vertex_count
         if len(mat.texture_path) > 0:
             tex_path = mat.texture_path

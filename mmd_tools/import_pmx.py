@@ -686,7 +686,8 @@ class PMXImporter:
             mat.ambient_color = i.ambient
             mat.specular_color = i.specular[0:3]
             mat.specular_alpha = i.specular[3]
-            mat.use_transparent_shadows = True
+            mat.use_shadows = i.enabled_self_shadow
+            mat.use_transparent_shadows = i.enabled_self_shadow
             if mat.alpha < 1.0 or mat.specular_alpha < 1.0 or i.texture != -1:
                 mat.use_transparency = True
                 mat.transparency_method = 'Z_TRANSPARENCY'
