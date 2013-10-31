@@ -74,6 +74,7 @@ class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     only_collisions = bpy.props.BoolProperty(name='import only non dynamics rigid bodies', default=False)
     ignore_non_collision_groups = bpy.props.BoolProperty(name='ignore  non collision groups', default=False)
     distance_of_ignore_collisions = bpy.props.FloatProperty(name='distance of ignore collisions', default=1.5)
+    use_mipmap = bpy.props.BoolProperty(name='use MIP maps for UV textures', default=True)
     sph_blend_factor = bpy.props.FloatProperty(name='influence of .sph textures', default=1.0)
     spa_blend_factor = bpy.props.FloatProperty(name='influence of .spa textures', default=3.0)
     save_log = bpy.props.BoolProperty(name='create a log file', default=False)
@@ -102,6 +103,7 @@ class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
                     only_collisions=self.only_collisions,
                     ignore_non_collision_groups=self.ignore_non_collision_groups,
                     distance_of_ignore_collisions=self.distance_of_ignore_collisions,
+                    use_mipmap=self.use_mipmap,
                     sph_blend_factor=self.sph_blend_factor,
                     spa_blend_factor=self.spa_blend_factor
                     )
@@ -115,6 +117,7 @@ class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
                     only_collisions=self.only_collisions,
                     ignore_non_collision_groups=self.ignore_non_collision_groups,
                     distance_of_ignore_collisions=self.distance_of_ignore_collisions,
+                    use_mipmap=self.use_mipmap,
                     sph_blend_factor=self.sph_blend_factor,
                     spa_blend_factor=self.spa_blend_factor
                     )

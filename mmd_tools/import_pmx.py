@@ -698,6 +698,7 @@ class PMXImporter:
                 texture_slot = mat.texture_slots.add()
                 texture_slot.use_map_alpha = True
                 texture_slot.texture = self.__textureTable[i.texture]
+                texture_slot.texture.use_mipmap = self.__use_mipmap
                 texture_slot.texture_coords = 'UV'
                 texture_slot.blend_type = 'MULTIPLY'
             if i.sphere_texture_mode == 2:
@@ -777,6 +778,7 @@ class PMXImporter:
         self.__ignoreNonCollisionGroups = args.get('ignore_non_collision_groups', True)
         self.__distance_of_ignore_collisions = args.get('distance_of_ignore_collisions', 1) # 衝突を考慮しない距離（非衝突グループ設定を無視する距離）
         self.__distance_of_ignore_collisions /= 2
+        self.__use_mipmap = args.get('use_mipmap', True)
         self.__sph_blend_factor = args.get('sph_blend_factor', 1.0)
         self.__spa_blend_factor = args.get('spa_blend_factor', 1.0)
 
