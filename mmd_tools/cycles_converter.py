@@ -87,8 +87,8 @@ def convertToCyclesShader(obj):
         texture = None
         outplug = shader.outputs[0]
 
-        for j, use in zip(i.material.texture_slots, i.material.use_textures):
-            if j is not None and isinstance(j.texture, bpy.types.ImageTexture) and use:
+        for j in i.material.texture_slots:
+            if j is not None and isinstance(j.texture, bpy.types.ImageTexture) and j.use:
                 if j.texture_coords == 'UV':  # don't use sphere maps for now
                     texture = i.material.node_tree.nodes.new('ShaderNodeTexImage')
                     texture.image = j.texture.image
