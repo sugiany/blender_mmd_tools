@@ -76,7 +76,7 @@ class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     distance_of_ignore_collisions = bpy.props.FloatProperty(name='distance of ignore collisions', default=1.5)
     use_mipmap = bpy.props.BoolProperty(name='use MIP maps for UV textures', default=True)
     sph_blend_factor = bpy.props.FloatProperty(name='influence of .sph textures', default=1.0)
-    spa_blend_factor = bpy.props.FloatProperty(name='influence of .spa textures', default=3.0)
+    spa_blend_factor = bpy.props.FloatProperty(name='influence of .spa textures', default=1.0)
     save_log = bpy.props.BoolProperty(name='create a log file', default=False)
     log_level = bpy.props.EnumProperty(items=[
             ('DEBUG', '4. DEBUG', '', 1),
@@ -227,6 +227,7 @@ class SetShadelessGLSLShading_Op(bpy.types.Operator):
         for i in filter(lambda x: x.is_mmd_glsl_light, context.scene.objects):
             context.scene.objects.unlink(i)
 
+        bpy.context.scene.display_settings.display_device = 'None'
         context.area.spaces[0].viewport_shade='TEXTURED'
         bpy.context.scene.game_settings.material_mode = 'GLSL'
         return {'FINISHED'}
@@ -261,6 +262,7 @@ class ResetShading_Op(bpy.types.Operator):
         for i in filter(lambda x: x.is_mmd_glsl_light, context.scene.objects):
             context.scene.objects.unlink(i)
 
+        bpy.context.scene.display_settings.display_device = 'sRGB'
         context.area.spaces[0].viewport_shade='SOLID'
         bpy.context.scene.game_settings.material_mode = 'MULTITEXTURE'
         return {'FINISHED'}
