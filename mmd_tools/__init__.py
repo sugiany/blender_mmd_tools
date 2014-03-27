@@ -286,6 +286,7 @@ class MMDToolsObjectPanel(bpy.types.Panel):
     bl_label = 'MMD Tools'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'TOOLS'
+    bl_category = 'MMD'
     bl_context = ''
 
     def draw(self, context):
@@ -398,6 +399,7 @@ class MMDToolsRiggingPanel(bpy.types.Panel):
     bl_label = 'MMD Rig Tools'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'TOOLS'
+    bl_category = 'MMD'
     bl_context = ''
 
 
