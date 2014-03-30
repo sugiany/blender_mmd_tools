@@ -9,9 +9,10 @@ import bpy
 
 class MMDToolsObjectPanel(Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_object'
-    bl_label = 'MMD Tools'
+    bl_label = 'Object'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'TOOLS'
+    bl_category = 'MMD Tools'
     bl_context = ''
 
     def draw(self, context):
@@ -19,28 +20,21 @@ class MMDToolsObjectPanel(Panel):
 
         layout = self.layout
 
-        col = layout.column(align=True)
-        col.label('Import:')
+        col = layout.column()
+        col.label('Model:')
         c = col.column()
-        r = c.row()
-        r.operator('mmd_tools.import_model', text='Model')
-        r.operator('mmd_tools.import_vmd', text='Motion')
+        c.operator('mmd_tools.import_model', text='Import')
 
-        col.label('Export:')
+        col.label('Motion(vmd):')
         c = col.column()
-        r = c.row()
-        r.operator('mmd_tools.export_pmx', text='Model')
+        c.operator('mmd_tools.import_vmd', text='Import')
+
 
         if active_obj is not None and active_obj.type == 'MESH':
             col = layout.column(align=True)
             col.label('Mesh:')
             c = col.column()
             c.operator('mmd_tools.separate_by_materials', text='Separate by materials')
-        if active_obj is not None and active_obj.type == 'MESH':
-            col = layout.column(align=True)
-            col.label('Material:')
-            c = col.column()
-            c.operator('mmd_tools.set_shadeless_materials', text='Shadeless')
 
         col = layout.column(align=True)
         col.label('Scene:')
@@ -80,9 +74,11 @@ class MMD_ROOT_UL_display_items(UIList):
 
 class MMDDisplayItemsPanel(Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_display_items'
-    bl_label = 'MMD Display Items Tool'
+    bl_label = 'MMD Display Items'
     bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
+    bl_region_type = 'TOOLS'
+    bl_category = 'MMD Tools'
+
 
     def draw(self, context):
         active_obj = context.active_object
@@ -158,7 +154,8 @@ class MMDRootPanel(Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_root'
     bl_label = 'MMD Model Tools'
     bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
+    bl_region_type = 'TOOLS'
+    bl_category = 'MMD Tools'
     bl_context = ''
 
     def draw(self, context):
@@ -214,19 +211,20 @@ class MMDViewPanel(Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_view'
     bl_label = 'MMD View Tools'
     bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
+    bl_region_type = 'TOOLS'
+    bl_category = 'MMD Tools'
     bl_context = ''
 
     def draw(self, context):
         layout = self.layout
 
-        col = layout.column(align=True)
+        col = layout.column()
         col.label('View:')
         c = col.column(align=True)
-        r = c.row()
+        r = c.row(align=True)
         r.operator('mmd_tools.set_glsl_shading', text='GLSL')
         r.operator('mmd_tools.set_shadeless_glsl_shading', text='Shadeless')
-        r = c.row()
+        r = c.row(align=True)
         r.operator('mmd_tools.set_cycles_rendering', text='Cycles')
         r.operator('mmd_tools.reset_shading', text='Reset')
 

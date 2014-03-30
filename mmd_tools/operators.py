@@ -132,6 +132,7 @@ class ImportVmd(Operator, ImportHelper):
         wm.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
+
 class ImportVmdToMMDModel(Operator, ImportHelper):
     bl_idname = 'mmd_tools.import_vmd_to_mmd_model'
     bl_label = 'Import VMD file To MMD Model'
@@ -315,23 +316,6 @@ class ResetShading(Operator):
         context.area.spaces[0].viewport_shade='SOLID'
         bpy.context.scene.game_settings.material_mode = 'MULTITEXTURE'
         return {'FINISHED'}
-
-
-######################
-# Material Operators #
-######################
-class SetShadelessMaterials(Operator):
-    bl_idname = 'mmd_tools.set_shadeless_materials'
-    bl_label = 'GLSL View'
-    bl_description = 'Set the materials of selected objects to shadeless.'
-    bl_options = {'PRESET'}
-
-    def execute(self, context):
-        for i in context.selected_objects:
-            for s in i.material_slots:
-                s.material.use_shadeless = True
-        return {'FINISHED'}
-
 
 ########################
 # MMD Camera Oparators #

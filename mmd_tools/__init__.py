@@ -9,8 +9,8 @@ from . import panels
 bl_info= {
     "name": "mmd_tools",
     "author": "sugiany",
-    "version": (0, 4, 3),
-    "blender": (2, 67, 0),
+    "version": (0, 5, 0),
+    "blender": (2, 70, 0),
     "location": "View3D > Tool Shelf > MMD Tools Panel",
     "description": "Utility tools for MMD model editing.",
     "warning": "",
