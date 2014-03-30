@@ -20,7 +20,7 @@ from . import rigging
 bl_info= {
     "name": "mmd_tools",
     "author": "sugiany",
-    "version": (0, 4, 3),
+    "version": (0, 4, 5),
     "blender": (2, 67, 0),
     "location": "View3D > Tool Shelf > MMD Tools Panel",
     "description": "Utility tools for MMD model editing.",
@@ -294,20 +294,20 @@ class MMDToolsObjectPanel(bpy.types.Panel):
 
         layout = self.layout
 
-        col = layout.column(align=True)
+        col = layout.column()
         col.label('Import:')
         c = col.column()
-        r = c.row()
+        r = c.row(align=True)
         r.operator('mmd_tools.import_model', text='Model')
         r.operator('mmd_tools.import_vmd', text='Motion')
 
-        col = layout.column(align=True)
+        col = layout.column()
         col.label('View:')
         c = col.column(align=True)
-        r = c.row()
+        r = c.row(align=True)
         r.operator('mmd_tools.set_glsl_shading', text='GLSL')
         r.operator('mmd_tools.set_shadeless_glsl_shading', text='Shadeless')
-        r = c.row()
+        r = c.row(align=True)
         r.operator('mmd_tools.set_cycles_rendering', text='Cycles')
         r.operator('mmd_tools.reset_shading', text='Reset')
 
@@ -404,18 +404,18 @@ class MMDToolsRiggingPanel(bpy.types.Panel):
 
 
     def draw(self, context):
-        col = self.layout.column(align=True)
+        col = self.layout.column()
         col.label('Show/Hide:')
-        c = col.column(align=True)
-        r = c.row()
+        c = col.column()
+        r = c.row(align=True)
         r.label('Rigid:')
         r.operator('mmd_tools.show_rigid_bodies', text='Show')
         r.operator('mmd_tools.hide_rigid_bodies', text='Hide')
-        r = c.row()
+        r = c.row(align=True)
         r.label('Joint:')
         r.operator('mmd_tools.show_joints', text='Show')
         r.operator('mmd_tools.hide_joints', text='Hide')
-        r = c.row()
+        r = c.row(align=True)
         r.label('Temp:')
         r.operator('mmd_tools.show_temporary_objects', text='Show')
         r.operator('mmd_tools.hide_temporary_objects', text='Hide')
