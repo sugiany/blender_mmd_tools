@@ -22,8 +22,9 @@ class MMDToolsObjectPanel(Panel):
 
         col = layout.column()
         col.label('Model:')
-        c = col.column()
-        c.operator('mmd_tools.import_model', text='Import')
+        c = col.column(align=True)
+        c.operator(operators.CreateMMDModelRoot.bl_idname, text='Create')
+        c.operator(operators.ImportPmx.bl_idname, text='Import')
 
         col.label('Motion(vmd):')
         c = col.column()
