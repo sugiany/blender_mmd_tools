@@ -433,6 +433,11 @@ class Model:
                 logging.debug('  Texture Index: %d', m.texture)
             else:
                 logging.debug('  Texture: None')
+            if m.sphere_texture != -1:
+                logging.debug('  Sphere Texture Index: %d', m.sphere_texture)
+                logging.debug('  Sphere Texture Mode: %d', m.sphere_texture_mode)
+            else:
+                logging.debug('  Sphere Texture: None')
             logging.debug('')
 
         logging.info('----- Loaded %d  materials.', len(self.materials))

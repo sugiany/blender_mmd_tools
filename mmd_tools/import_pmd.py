@@ -156,7 +156,7 @@ def import_pmd(**kwargs):
     texture_map = {}
     logging.info('')
     logging.info('------------------------------')
-    logging.info(' Convert Bones')
+    logging.info(' Convert Materials')
     logging.info('------------------------------')
     for i, mat in enumerate(pmd_model.materials):
         pmx_mat = pmx.Material()
@@ -164,6 +164,8 @@ def import_pmd(**kwargs):
         pmx_mat.diffuse = mat.diffuse
         pmx_mat.specular = mat.specular + [mat.specular_intensity]
         pmx_mat.ambient = mat.ambient
+        pmx_mat.enabled_self_shadow = True # pmd doesn't support this
+        pmx_mat.enabled_self_shadow_map = abs(mat.diffuse[3] - 0.98) > 1e-7 # consider precision error
         pmx_mat.vertex_count = mat.vertex_count
         if len(mat.texture_path) > 0:
             tex_path = mat.texture_path
@@ -174,6 +176,16 @@ def import_pmd(**kwargs):
                 pmx_model.textures.append(tex)
                 texture_map[tex_path] = len(pmx_model.textures) - 1
             pmx_mat.texture = texture_map[tex_path]
+        if len(mat.sphere_path) > 0:
+            tex_path = mat.sphere_path
+            if tex_path not in texture_map:
+                logging.info('  Create pmx.Texture %s', tex_path)
+                tex = pmx.Texture()
+                tex.path = os.path.normpath(os.path.join(os.path.dirname(target_path), tex_path))
+                pmx_model.textures.append(tex)
+                texture_map[tex_path] = len(pmx_model.textures) - 1
+            pmx_mat.sphere_texture = texture_map[tex_path]
+            pmx_mat.sphere_texture_mode = mat.sphere_mode
         pmx_model.materials.append(pmx_mat)
     logging.info('----- Converted %d materials', len(pmx_model.materials))
 

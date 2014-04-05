@@ -478,6 +478,12 @@ class PMXImporter:
             mat.alpha = i.diffuse[3]
             mat.specular_color = i.specular[0:3]
             mat.specular_alpha = i.specular[3]
+            mat.use_shadows = i.enabled_self_shadow
+            mat.use_transparent_shadows = i.enabled_self_shadow
+            mat.use_cast_buffer_shadows = i.enabled_self_shadow_map # only buffer shadows
+            if mat.alpha < 1.0 or mat.specular_alpha < 1.0 or i.texture != -1:
+                mat.use_transparency = True
+                mat.transparency_method = 'Z_TRANSPARENCY'
 
             mmd_material.name_j = i.name
             mmd_material.name_e = i.name_e
@@ -499,30 +505,21 @@ class PMXImporter:
                 texture_slot = mat.texture_slots.create(0)
                 texture_slot.use_map_alpha = True
                 texture_slot.texture = self.__textureTable[i.texture]
+                texture_slot.texture.use_mipmap = self.__use_mipmap
                 texture_slot.texture_coords = 'UV'
-                mat.use_transparency = True
-                mat.transparency_method = 'Z_TRANSPARENCY'
-                mat.alpha = 0
-            if not i.is_shared_toon_texture and i.toon_texture != -1:
-                texture_slot = mat.texture_slots.create(1)
-                texture_slot.use_map_alpha = True
-                texture_slot.texture = self.__textureTable[i.toon_texture]
-                texture_slot.texture_coords = 'UV'
-                mat.use_textures[1] = False
-                mat.use_transparency = True
-                mat.transparency_method = 'Z_TRANSPARENCY'
-                mat.alpha = 0
-            if i.is_shared_toon_texture:
-                mmd_material.shared_toon_texture = i.toon_texture
-            if i.sphere_texture != -1:
-                texture_slot = mat.texture_slots.create(2)
-                texture_slot.use_map_alpha = True
+                texture_slot.blend_type = 'MULTIPLY'
+            if i.sphere_texture_mode == 2:
+                amount = self.__spa_blend_factor
+                blend = 'ADD'
+            else:
+                amount = self.__sph_blend_factor
+                blend = 'MULTIPLY'
+            if i.sphere_texture != -1 and amount != 0.0:
+                texture_slot = mat.texture_slots.add()
                 texture_slot.texture = self.__textureTable[i.sphere_texture]
-                texture_slot.texture_coords = 'UV'
-                mat.use_textures[2] = False
-                mat.use_transparency = True
-                mat.transparency_method = 'Z_TRANSPARENCY'
-                mat.alpha = 0
+                texture_slot.texture_coords = 'NORMAL'
+                texture_slot.diffuse_color_factor = amount
+                texture_slot.blend_type = blend
 
     def __importFaces(self):
         pmxModel = self.__model
@@ -601,6 +598,9 @@ class PMXImporter:
         self.__ignoreNonCollisionGroups = args.get('ignore_non_collision_groups', True)
         self.__distance_of_ignore_collisions = args.get('distance_of_ignore_collisions', 1) # 衝突を考慮しない距離（非衝突グループ設定を無視する距離）
         self.__distance_of_ignore_collisions /= 2
+        self.__use_mipmap = args.get('use_mipmap', True)
+        self.__sph_blend_factor = args.get('sph_blend_factor', 1.0)
+        self.__spa_blend_factor = args.get('spa_blend_factor', 1.0)
 
         logging.info('****************************************')
         logging.info(' mmd_tools.import_pmx module')

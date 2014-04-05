@@ -57,6 +57,9 @@ class ImportPmx(Operator, ImportHelper):
     only_collisions = bpy.props.BoolProperty(name='Ignore rigid bodies', default=False)
     ignore_non_collision_groups = bpy.props.BoolProperty(name='Ignore  non collision groups', default=False)
     distance_of_ignore_collisions = bpy.props.FloatProperty(name='Distance of ignore collisions', default=1.5)
+    use_mipmap = bpy.props.BoolProperty(name='use MIP maps for UV textures', default=True)
+    sph_blend_factor = bpy.props.FloatProperty(name='influence of .sph textures', default=1.0)
+    spa_blend_factor = bpy.props.FloatProperty(name='influence of .spa textures', default=1.0)
     log_level = bpy.props.EnumProperty(items=LOG_LEVEL_ITEMS, name='Log level', default='DEBUG')
     save_log = bpy.props.BoolProperty(name='Create a log file', default=False)
 
@@ -69,7 +72,7 @@ class ImportPmx(Operator, ImportHelper):
             handler = log_handler(self.log_level)
         logger.addHandler(handler)
         try:
-            if re.search('\.pmd', self.filepath):
+            if re.search('\.pmd', self.filepath, flags=re.I):
                 import_pmd.import_pmd(
                     filepath=self.filepath,
                     scale=self.scale,
@@ -77,7 +80,10 @@ class ImportPmx(Operator, ImportHelper):
                     hide_rigids=self.hide_rigids,
                     only_collisions=self.only_collisions,
                     ignore_non_collision_groups=self.ignore_non_collision_groups,
-                    distance_of_ignore_collisions=self.distance_of_ignore_collisions
+                    distance_of_ignore_collisions=self.distance_of_ignore_collisions,
+                    use_mipmap=self.use_mipmap,
+                    sph_blend_factor=self.sph_blend_factor,
+                    spa_blend_factor=self.spa_blend_factor
                     )
             else:
                 importer = import_pmx.PMXImporter()
@@ -88,7 +94,10 @@ class ImportPmx(Operator, ImportHelper):
                     hide_rigids=self.hide_rigids,
                     only_collisions=self.only_collisions,
                     ignore_non_collision_groups=self.ignore_non_collision_groups,
-                    distance_of_ignore_collisions=self.distance_of_ignore_collisions
+                    distance_of_ignore_collisions=self.distance_of_ignore_collisions,
+                    use_mipmap=self.use_mipmap,
+                    sph_blend_factor=self.sph_blend_factor,
+                    spa_blend_factor=self.spa_blend_factor
                     )
         except Exception as e:
             logging.error(traceback.format_exc())
@@ -279,6 +288,7 @@ class SetShadelessGLSLShading(Operator):
         for i in filter(lambda x: x.is_mmd_glsl_light, context.scene.objects):
             context.scene.objects.unlink(i)
 
+        bpy.context.scene.display_settings.display_device = 'None'
         context.area.spaces[0].viewport_shade='TEXTURED'
         bpy.context.scene.game_settings.material_mode = 'GLSL'
         return {'FINISHED'}
@@ -313,6 +323,7 @@ class ResetShading(Operator):
         for i in filter(lambda x: x.is_mmd_glsl_light, context.scene.objects):
             context.scene.objects.unlink(i)
 
+        bpy.context.scene.display_settings.display_device = 'sRGB'
         context.area.spaces[0].viewport_shade='SOLID'
         bpy.context.scene.game_settings.material_mode = 'MULTITEXTURE'
         return {'FINISHED'}

@@ -18,7 +18,6 @@ bl_info= {
     "tracker_url": "",
     "category": "Object"}
 
-
 # if "bpy" in locals():
 #     import imp
 #     if "import_pmx" in locals():

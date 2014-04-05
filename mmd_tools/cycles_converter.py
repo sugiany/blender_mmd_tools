@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import bpy
+import mathutils
 
 def __exposeNodeTreeInput(in_socket, name, default_value, node_input, shader):
     t = len(node_input.outputs)-1
@@ -87,17 +88,38 @@ def convertToCyclesShader(obj):
         outplug = shader.outputs[0]
 
         for j in i.material.texture_slots:
-            if j is not None and isinstance(j.texture, bpy.types.ImageTexture):
-                texture = i.material.node_tree.nodes.new('ShaderNodeTexImage')
-                texture.image = j.texture.image
-                break
-        if texture is not None:
-            i.material.node_tree.links.new(shader.inputs[0], texture.outputs['Color'])
+            if j is not None and isinstance(j.texture, bpy.types.ImageTexture) and j.use:
+                if j.texture_coords == 'UV':  # don't use sphere maps for now
+                    texture = i.material.node_tree.nodes.new('ShaderNodeTexImage')
+                    texture.image = j.texture.image
+
+        if texture is not None or i.material.alpha < 1.0:
             alpha_shader = i.material.node_tree.nodes.new('ShaderNodeGroup')
             alpha_shader.node_tree = mmd_alpha_shader_grp
             i.material.node_tree.links.new(alpha_shader.inputs[0], outplug)
-            i.material.node_tree.links.new(alpha_shader.inputs[1], texture.outputs['Alpha'])
             outplug = alpha_shader.outputs[0]
+
+        if texture is not None:
+            if i.material.diffuse_color == mathutils.Color((1.0, 1.0, 1.0)):
+                i.material.node_tree.links.new(shader.inputs[0], texture.outputs['Color'])
+            else:
+                mix_rgb = i.material.node_tree.nodes.new('ShaderNodeMixRGB')
+                mix_rgb.blend_type = 'MULTIPLY'
+                mix_rgb.inputs[0].default_value = 1.0
+                mix_rgb.inputs[1].default_value = list(i.material.diffuse_color) + [1.0]
+                i.material.node_tree.links.new(mix_rgb.inputs[2], texture.outputs['Color'])
+                i.material.node_tree.links.new(shader.inputs[0], mix_rgb.outputs['Color'])
+            if i.material.alpha == 1.0:
+                i.material.node_tree.links.new(alpha_shader.inputs[1], texture.outputs['Alpha'])
+            else:
+                mix_alpha = i.material.node_tree.nodes.new('ShaderNodeMath')
+                mix_alpha.operation = 'MULTIPLY'
+                mix_alpha.inputs[0].default_value = i.material.alpha
+                i.material.node_tree.links.new(mix_alpha.inputs[1], texture.outputs['Alpha'])
+                i.material.node_tree.links.new(alpha_shader.inputs[1], mix_alpha.outputs['Value'])
         else:
             shader.inputs[0].default_value = list(i.material.diffuse_color) + [1.0]
+            if i.material.alpha < 1.0:
+                alpha_shader.inputs[1].default_value = i.material.alpha
+
         i.material.node_tree.links.new(i.material.node_tree.nodes['Material Output'].inputs['Surface'], outplug)
