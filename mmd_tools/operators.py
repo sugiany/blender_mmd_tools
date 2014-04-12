@@ -288,7 +288,11 @@ class SetShadelessGLSLShading(Operator):
         for i in filter(lambda x: x.is_mmd_glsl_light, context.scene.objects):
             context.scene.objects.unlink(i)
 
-        bpy.context.scene.display_settings.display_device = 'None'
+        try:
+            bpy.context.scene.display_settings.display_device = 'None'
+        except TypeError:
+            pass # Blender was built without OpenColorIO:
+
         context.area.spaces[0].viewport_shade='TEXTURED'
         bpy.context.scene.game_settings.material_mode = 'GLSL'
         return {'FINISHED'}

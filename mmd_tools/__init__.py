@@ -35,7 +35,6 @@ bl_info= {
 #     if "auto_scene_setup" in locals():
 #         imp.reload(auto_scene_setup)
 
-
 def menu_func_import(self, context):
     self.layout.operator(operators.ImportPmx.bl_idname, text="MikuMikuDance Model (.pmd, .pmx)")
     self.layout.operator(operators.ImportVmd.bl_idname, text="MikuMikuDance Motion (.vmd)")

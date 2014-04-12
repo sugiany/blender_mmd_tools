@@ -517,6 +517,8 @@ class PMXImporter:
             if i.sphere_texture != -1 and amount != 0.0:
                 texture_slot = mat.texture_slots.add()
                 texture_slot.texture = self.__textureTable[i.sphere_texture]
+                if isinstance(texture_slot.texture.image, bpy.types.Image):
+                    texture_slot.texture.image.use_alpha = False
                 texture_slot.texture_coords = 'NORMAL'
                 texture_slot.diffuse_color_factor = amount
                 texture_slot.blend_type = blend
