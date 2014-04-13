@@ -541,6 +541,13 @@ class CreateMMDModelRoot(Operator):
             bone = data.edit_bones.new(name=u'全ての親')
             bone.head = [0.0, 0.0, 0.0]
             bone.tail = [0.0, 0.0, 1.0*self.scale]
+        mmd_root = rig.rootObject().mmd_root
+        frame_root = mmd_root.display_item_frames.add()
+        frame_root.name = 'Root'
+        frame_root.is_special = True
+        frame_facial = mmd_root.display_item_frames.add()
+        frame_facial.name = u'表情'
+        frame_facial.is_special = True
 
         return {'FINISHED'}
 
