@@ -139,10 +139,10 @@ class PMXImporter:
 
         self.__textureTable = []
         for i in pmxModel.textures:
-            name = os.path.basename(i.path).split('.')[0]
+            name = os.path.basename(i.path.replace('\\', os.path.sep)).split('.')[0]
             tex = bpy.data.textures.new(name=name, type='IMAGE')
             try:
-                tex.image = bpy.data.images.load(filepath=i.path)
+                tex.image = bpy.data.images.load(filepath=bpy.path.resolve_ncase(path=i.path))
             except Exception:
                 logging.warning('failed to load %s', str(i.path))
             self.__textureTable.append(tex)
