@@ -139,10 +139,10 @@ class PMXImporter:
 
         self.__textureTable = []
         for i in pmxModel.textures:
-            name = os.path.basename(i.path).split('.')[0]
+            name = os.path.basename(i.path.replace('\\', os.path.sep)).split('.')[0]
             tex = bpy.data.textures.new(name=name, type='IMAGE')
             try:
-                tex.image = bpy.data.images.load(filepath=i.path)
+                tex.image = bpy.data.images.load(filepath=bpy.path.resolve_ncase(path=i.path))
             except Exception:
                 logging.warning('failed to load %s', str(i.path))
             self.__textureTable.append(tex)
@@ -689,6 +689,10 @@ class PMXImporter:
             mat.use_shadows = i.enabled_self_shadow
             mat.use_transparent_shadows = i.enabled_self_shadow
             mat.use_cast_buffer_shadows = i.enabled_self_shadow_map # only buffer shadows
+            if hasattr(mat, 'use_cast_shadows'):
+                # "use_cast_shadows" is not supported in older Blender (< 2.71),
+                # so we still use "use_cast_buffer_shadows".
+                mat.use_cast_shadows = i.enabled_self_shadow_map
             if mat.alpha < 1.0 or mat.specular_alpha < 1.0 or i.texture != -1:
                 mat.use_transparency = True
                 mat.transparency_method = 'Z_TRANSPARENCY'
