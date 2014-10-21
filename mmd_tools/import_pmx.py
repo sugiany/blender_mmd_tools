@@ -39,7 +39,6 @@ class PMXImporter:
         self.__jointTable = []
 
         self.__materialFaceCountTable = None
-        self.__nonCollisionConstraints = []
 
         # object groups
         self.__allObjGroup = None    # a group which contains all objects created for the target model by mmd_tools.
@@ -403,7 +402,7 @@ class PMXImporter:
 
     def __importRigids(self):
         self.__rigidTable = []
-        self.__nonCollisionJointTable = {}
+        self.__nonCollisionJointTable = []
         start_time = time.time()
         collisionGroups = []
         for i in range(16):
@@ -519,25 +518,61 @@ class PMXImporter:
     def __makeNonCollisionConstraint(self, obj_a, obj_b):
         if (mathutils.Vector(obj_a.location) - mathutils.Vector(obj_b.location)).length > self.__distance_of_ignore_collisions * (self.__getRigidRange(obj_a) + self.__getRigidRange(obj_b)):
             return
-        t = bpy.data.objects.new(
-            'ncc.%d'%len(self.__nonCollisionConstraints),
-            None)
-        bpy.context.scene.objects.link(t)
-        t.location = [0, 0, 0]
-        t.empty_draw_size = 0.5 * self.__scale
-        t.empty_draw_type = 'ARROWS'
-        t.is_mmd_non_collision_constraint = True
-        t.hide_render = True
-        t.parent = self.__root
-        utils.selectAObject(t)
+
+        self.__nonCollisionJointTable.append(frozenset((obj_a, obj_b)))
+
+
+    def __createNonCollisionConstraint(self):
+        total_len = len(self.__nonCollisionJointTable)
+        if total_len < 1:
+            return
+            
+        start_time = time.time()
+        logging.debug('-'*60)
+        logging.debug(' creating ncc, counts: %d', total_len)
+                        
+        ncc_root = bpy.data.objects.new(name='ncc_root', object_data=None)
+        self.__targetScene.objects.link(ncc_root)
+        ncc_root.parent = self.__root
+        self.__tempObjGroup.objects.link(ncc_root)
+
+        ncc_obj = bpy.data.objects.new('ncc', None)
+        bpy.context.scene.objects.link(ncc_obj)
+        ncc_obj.location = [0, 0, 0]
+        ncc_obj.empty_draw_size = 0.5 * self.__scale
+        ncc_obj.empty_draw_type = 'ARROWS'
+        ncc_obj.is_mmd_non_collision_constraint = True
+        ncc_obj.hide_render = True
+        ncc_obj.parent = ncc_root
+        utils.selectAObject(ncc_obj)
         bpy.ops.rigidbody.constraint_add(type='GENERIC')
-        rb = t.rigid_body_constraint
+        rb = ncc_obj.rigid_body_constraint
         rb.disable_collisions = True
-        rb.object1 = obj_a
-        rb.object2 = obj_b
-        self.__nonCollisionConstraints.append(t)
-        self.__nonCollisionJointTable[frozenset((obj_a, obj_b))] = t
-        self.__tempObjGroup.objects.link(t)
+        self.__tempObjGroup.objects.link(ncc_obj)
+        
+        last_selected = [ncc_obj]
+        while len(ncc_root.children) < total_len:
+            bpy.ops.object.duplicate()
+            remain = total_len - len(ncc_root.children) - len(bpy.context.selected_objects)
+            if remain < 0:
+                last_selected = bpy.context.selected_objects
+                for i in range(-remain):
+                    last_selected[i].select = False
+            else:
+                for i in range(min(remain, len(last_selected))):
+                    last_selected[i].select = True
+            last_selected = bpy.context.selected_objects                
+        logging.debug(' created %d ncc.', len(ncc_root.children))
+
+        ncc_objs = ncc_root.children
+        for i in range(total_len):
+            rb = ncc_objs[i].rigid_body_constraint
+            rb.object1, rb.object2 = self.__nonCollisionJointTable[i]
+        
+        ncc_root.hide_render = True
+        ncc_root.hide = True
+        logging.debug(' finish in %f seconds.', time.time() - start_time)
+        logging.debug('-'*60)
 
     def __makeSpring(self, target, base_obj, spring_stiffness):
         utils.selectAObject(target)
@@ -606,12 +641,11 @@ class PMXImporter:
             rbc.object2 = rigid2
 
             if not self.__ignoreNonCollisionGroups:
-                non_collision_joint = self.__nonCollisionJointTable.get(frozenset((rigid1, rigid2)), None)
-                if non_collision_joint is None:
+                non_collision_joint = frozenset((rigid1, rigid2))
+                if non_collision_joint not in self.__nonCollisionJointTable:
                     rbc.disable_collisions = False
                 else:
-                    utils.selectAObject(non_collision_joint)
-                    bpy.ops.object.delete(use_global=False)
+                    self.__nonCollisionJointTable.remove(non_collision_joint)
                     rbc.disable_collisions = True
             elif rigid1.rigid_body.kinematic and not rigid2.rigid_body.kinematic or not rigid1.rigid_body.kinematic and rigid2.rigid_body.kinematic:
                 rbc.disable_collisions = False
@@ -667,6 +701,7 @@ class PMXImporter:
             if rigid2.rigid_body.kinematic:
                 self.__makeSpring(rigid1, rigid2, mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX)
 
+        self.__createNonCollisionConstraint()
 
 
 
