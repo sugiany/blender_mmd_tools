@@ -613,6 +613,7 @@ class PMXImporter:
 
     def __importJoints(self):
         if self.__onlyCollisions:
+            self.__createNonCollisionConstraint()
             return
         self.__jointTable = []
         for joint in self.__model.joints:
