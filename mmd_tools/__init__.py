@@ -68,22 +68,22 @@ class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     filename_ext = '.pmx'
     filter_glob = bpy.props.StringProperty(default='*.pmx;*.pmd', options={'HIDDEN'})
 
-    scale = bpy.props.FloatProperty(name='scale', default=0.2)
-    renameBones = bpy.props.BoolProperty(name='rename bones', default=True)
-    hide_rigids = bpy.props.BoolProperty(name='hide rigid bodies and joints', default=True)
-    only_collisions = bpy.props.BoolProperty(name='import only non dynamics rigid bodies', default=False)
-    ignore_non_collision_groups = bpy.props.BoolProperty(name='ignore  non collision groups', default=False)
-    distance_of_ignore_collisions = bpy.props.FloatProperty(name='distance of ignore collisions', default=1.5)
-    use_mipmap = bpy.props.BoolProperty(name='use MIP maps for UV textures', default=True)
-    sph_blend_factor = bpy.props.FloatProperty(name='influence of .sph textures', default=1.0)
-    spa_blend_factor = bpy.props.FloatProperty(name='influence of .spa textures', default=1.0)
-    save_log = bpy.props.BoolProperty(name='create a log file', default=False)
+    scale = bpy.props.FloatProperty(name='Scale', default=0.2)
+    renameBones = bpy.props.BoolProperty(name='Rename Bones', default=True)
+    hide_rigids = bpy.props.BoolProperty(name='Hide Rigid Bodies and Joints', default=True)
+    only_collisions = bpy.props.BoolProperty(name='Import Only Non Dynamics Rigid Bodies', default=False)
+    ignore_non_collision_groups = bpy.props.BoolProperty(name='Ignore Non Collision Groups', default=False)
+    distance_of_ignore_collisions = bpy.props.FloatProperty(name='Distance of Ignore Collisions', default=1.5)
+    use_mipmap = bpy.props.BoolProperty(name='Use MIP Maps for UV Textures', default=True)
+    sph_blend_factor = bpy.props.FloatProperty(name='Influence of .sph Textures', default=1.0)
+    spa_blend_factor = bpy.props.FloatProperty(name='Influence of .spa Textures', default=1.0)
+    save_log = bpy.props.BoolProperty(name='Create a Log File', default=False)
     log_level = bpy.props.EnumProperty(items=[
             ('DEBUG', '4. DEBUG', '', 1),
             ('INFO', '3. INFO', '', 2),
             ('WARNING', '2. WARNING', '', 3),
             ('ERROR', '1. ERROR', '', 4),
-            ], name='log level', default='INFO')
+            ], name='Log Level', default='INFO')
 
     def execute(self, context):
         logger = logging.getLogger()
