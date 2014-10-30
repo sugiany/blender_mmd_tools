@@ -448,6 +448,7 @@ def _custom_props():
             ('is_mmd_spring_joint', bpy.props.BoolProperty(name='is_mmd_spring_joint', default=False)),
             ('is_mmd_spring_goal', bpy.props.BoolProperty(name='is_mmd_spring_goal', default=False)),
             ('is_mmd_glsl_light', bpy.props.BoolProperty(name='is_mmd_glsl_light', default=False)),
+            ('pmx_import_scale', bpy.props.FloatProperty(name='pmx_import_scale')),
         ),
         bpy.types.PoseBone:(
             ('mmd_enabled_local_axis', bpy.props.BoolProperty(name='mmd_enabled_local_axis', default=False)),
@@ -457,6 +458,9 @@ def _custom_props():
             ('is_mmd_shadow_bone', bpy.props.BoolProperty(name='is_mmd_shadow_bone', default=False)),
             ('mmd_bone_name_j', bpy.props.StringProperty(name='mmd_bone_name_j', description='the bone name in japanese.')),
             ('mmd_bone_name_e', bpy.props.StringProperty(name='mmd_bone_name_e', description='the bone name in english.')),
+        ),
+        bpy.types.Material:(
+            ('ambient_color', bpy.props.FloatVectorProperty(name='ambient color')),
         ),
     }
 

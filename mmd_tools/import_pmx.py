@@ -526,11 +526,11 @@ class PMXImporter:
         total_len = len(self.__nonCollisionJointTable)
         if total_len < 1:
             return
-            
+
         start_time = time.time()
         logging.debug('-'*60)
         logging.debug(' creating ncc, counts: %d', total_len)
-                        
+
         ncc_root = bpy.data.objects.new(name='ncc_root', object_data=None)
         self.__targetScene.objects.link(ncc_root)
         ncc_root.parent = self.__root
@@ -549,7 +549,7 @@ class PMXImporter:
         rb = ncc_obj.rigid_body_constraint
         rb.disable_collisions = True
         self.__tempObjGroup.objects.link(ncc_obj)
-        
+
         last_selected = [ncc_obj]
         while len(ncc_root.children) < total_len:
             bpy.ops.object.duplicate()
@@ -561,14 +561,14 @@ class PMXImporter:
             else:
                 for i in range(min(remain, len(last_selected))):
                     last_selected[i].select = True
-            last_selected = bpy.context.selected_objects                
+            last_selected = bpy.context.selected_objects
         logging.debug(' created %d ncc.', len(ncc_root.children))
 
         ncc_objs = ncc_root.children
         for i in range(total_len):
             rb = ncc_objs[i].rigid_body_constraint
             rb.object1, rb.object2 = self.__nonCollisionJointTable[i]
-        
+
         ncc_root.hide_render = True
         ncc_root.hide = True
         logging.debug(' finish in %f seconds.', time.time() - start_time)
@@ -709,7 +709,6 @@ class PMXImporter:
 
     def __importMaterials(self):
         self.__importTextures()
-        bpy.types.Material.ambient_color = bpy.props.FloatVectorProperty(name='ambient color')
 
         pmxModel = self.__model
 
@@ -850,7 +849,6 @@ class PMXImporter:
         self.__addArmatureModifier(self.__meshObj, self.__armObj)
         self.__meshObj.data.update()
 
-        bpy.types.Object.pmx_import_scale = bpy.props.FloatProperty(name='pmx_import_scale')
         if args.get('hide_rigids', False):
             self.__hideRigidsAndJoints(self.__root)
         self.__armObj.pmx_import_scale = self.__scale
