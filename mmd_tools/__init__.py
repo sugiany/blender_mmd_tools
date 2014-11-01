@@ -428,49 +428,45 @@ def menu_func_import(self, context):
     self.layout.operator(ImportVmd_Op.bl_idname, text="MikuMikuDance Motion (.vmd)")
 
 
-def _custom_props():
-    return {
-        bpy.types.Scene:(
-            ('mmd_tools', bpy.props.PointerProperty(type=MMDToolsPropertyGroup)),
-        ),
-        bpy.types.Object:(
-            ('is_mmd_camera', bpy.props.BoolProperty(name='is_mmd_camera', default=False)),
-            ('mmd_camera_location', bpy.props.FloatVectorProperty(name='mmd_camera_location')),
-            ('mmd_camera_rotation', bpy.props.FloatVectorProperty(name='mmd_camera_rotation')),
-            ('mmd_camera_distance', bpy.props.FloatProperty(name='mmd_camera_distance')),
-            ('mmd_camera_angle', bpy.props.FloatProperty(name='mmd_camera_angle')),
-            ('mmd_camera_persp', bpy.props.BoolProperty(name='mmd_camera_persp')),
-            ('is_mmd_lamp', bpy.props.BoolProperty(name='is_mmd_lamp', default=False)),
-            ('is_mmd_rigid', bpy.props.BoolProperty(name='is_mmd_rigid', default=False)),
-            ('is_mmd_joint', bpy.props.BoolProperty(name='is_mmd_joint', default=False)),
-            ('is_mmd_rigid_track_target', bpy.props.BoolProperty(name='is_mmd_rigid_track_target', default=False)),
-            ('is_mmd_non_collision_constraint', bpy.props.BoolProperty(name='is_mmd_non_collision_constraint', default=False)),
-            ('is_mmd_spring_joint', bpy.props.BoolProperty(name='is_mmd_spring_joint', default=False)),
-            ('is_mmd_spring_goal', bpy.props.BoolProperty(name='is_mmd_spring_goal', default=False)),
-            ('is_mmd_glsl_light', bpy.props.BoolProperty(name='is_mmd_glsl_light', default=False)),
-            ('pmx_import_scale', bpy.props.FloatProperty(name='pmx_import_scale')),
-        ),
-        bpy.types.PoseBone:(
-            ('mmd_enabled_local_axis', bpy.props.BoolProperty(name='mmd_enabled_local_axis', default=False)),
-            ('mmd_local_axis_x', bpy.props.FloatVectorProperty(name='mmd_local_axis_x')),
-            ('mmd_local_axis_z', bpy.props.FloatVectorProperty(name='mmd_local_axis_z')),
-            ('is_mmd_tip_bone', bpy.props.BoolProperty(name='is_mmd_tip_bone', default=False)),
-            ('is_mmd_shadow_bone', bpy.props.BoolProperty(name='is_mmd_shadow_bone', default=False)),
-            ('mmd_bone_name_j', bpy.props.StringProperty(name='mmd_bone_name_j', description='the bone name in japanese.')),
-            ('mmd_bone_name_e', bpy.props.StringProperty(name='mmd_bone_name_e', description='the bone name in english.')),
-        ),
-        bpy.types.Material:(
-            ('ambient_color', bpy.props.FloatVectorProperty(name='ambient color')),
-        ),
-    }
+_custom_props = {
+    bpy.types.Scene:(
+        ('mmd_tools', bpy.props.PointerProperty(type=MMDToolsPropertyGroup)),
+    ),
+    bpy.types.Object:(
+        ('is_mmd_camera', bpy.props.BoolProperty(name='is_mmd_camera', default=False)),
+        ('mmd_camera_location', bpy.props.FloatVectorProperty(name='mmd_camera_location')),
+        ('mmd_camera_rotation', bpy.props.FloatVectorProperty(name='mmd_camera_rotation')),
+        ('mmd_camera_distance', bpy.props.FloatProperty(name='mmd_camera_distance')),
+        ('mmd_camera_angle', bpy.props.FloatProperty(name='mmd_camera_angle')),
+        ('mmd_camera_persp', bpy.props.BoolProperty(name='mmd_camera_persp')),
+        ('is_mmd_lamp', bpy.props.BoolProperty(name='is_mmd_lamp', default=False)),
+        ('is_mmd_rigid', bpy.props.BoolProperty(name='is_mmd_rigid', default=False)),
+        ('is_mmd_joint', bpy.props.BoolProperty(name='is_mmd_joint', default=False)),
+        ('is_mmd_rigid_track_target', bpy.props.BoolProperty(name='is_mmd_rigid_track_target', default=False)),
+        ('is_mmd_non_collision_constraint', bpy.props.BoolProperty(name='is_mmd_non_collision_constraint', default=False)),
+        ('is_mmd_spring_joint', bpy.props.BoolProperty(name='is_mmd_spring_joint', default=False)),
+        ('is_mmd_spring_goal', bpy.props.BoolProperty(name='is_mmd_spring_goal', default=False)),
+        ('is_mmd_glsl_light', bpy.props.BoolProperty(name='is_mmd_glsl_light', default=False)),
+        ('pmx_import_scale', bpy.props.FloatProperty(name='pmx_import_scale')),
+    ),
+    bpy.types.PoseBone:(
+        ('mmd_enabled_local_axis', bpy.props.BoolProperty(name='mmd_enabled_local_axis', default=False)),
+        ('mmd_local_axis_x', bpy.props.FloatVectorProperty(name='mmd_local_axis_x')),
+        ('mmd_local_axis_z', bpy.props.FloatVectorProperty(name='mmd_local_axis_z')),
+        ('is_mmd_tip_bone', bpy.props.BoolProperty(name='is_mmd_tip_bone', default=False)),
+        ('is_mmd_shadow_bone', bpy.props.BoolProperty(name='is_mmd_shadow_bone', default=False)),
+        ('mmd_bone_name_j', bpy.props.StringProperty(name='mmd_bone_name_j', description='the bone name in japanese.')),
+        ('mmd_bone_name_e', bpy.props.StringProperty(name='mmd_bone_name_e', description='the bone name in english.')),
+    ),
+    bpy.types.Material:(
+        ('ambient_color', bpy.props.FloatVectorProperty(name='ambient color')),
+    ),
+}
 
 def register():
     bpy.utils.register_module(__name__)
     bpy.types.INFO_MT_file_import.append(menu_func_import)
 
-    global _custom_props
-    if not isinstance(_custom_props, dict):
-        _custom_props = _custom_props()
     for t in _custom_props:
         for (n, v) in _custom_props[t]:
             setattr(t, n, v)
