@@ -36,9 +36,9 @@ Extract the archive and put the folder mmd__tools into the addon folder of blend
     .../blender-2.67-windows64/2.67/scripts/addons/
 
 ### Loading Addon
-1. User PrefernceのAddonsから"Object: mmd_tools"探してチェックを入れてください。
-   (検索ボックスにmmdと入力すると簡単に探せます。)
-2. 3D View左のパネルにMMD Toolsのパネルが表示されます。
+1. In User Preferences, under addon tab, select User filter and click the checkbox before mmd_tools
+   (you can also find the addon my search)
+2. After installation, you can find the panel called MMD on the left of 3D view
 
 ### MMDモデルデータ読み込み
 1. mmd_toolsパネルの"import/Model"ボタンを選択してください。
@@ -159,18 +159,18 @@ GLSLボタンで変更した内容を初期状態に戻します。
     * 現状、解決が難しいため、オブジェクトモードでの移動操作は行わないことをおすすめします。
 
 
-バグ・要望・質問等
+Bug・Request・Questions etc.
 ------------------
-GitHubのIssueに登録するか、twitterでどうぞ。  
+Please submit a GitHub issue or contact me using twitter 
 [@sugiany](https://twitter.com/sugiany)
 
 
-変更履歴
+Changelog
 --------
-CHANGELOG.mdを参照してください。
+Please refer to CHANGELOG.md
 
 
-ライセンス
+License
 ----------
 &copy; 2012-2014 sugiany  
 Distributed under the MIT License.  

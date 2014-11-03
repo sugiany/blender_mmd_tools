@@ -61,8 +61,8 @@ class MMDToolsPropertyGroup(bpy.types.PropertyGroup):
 ## Import-Export
 class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     bl_idname = 'mmd_tools.import_model'
-    bl_label = 'Import PMX file (.pmx)'
-    bl_description = 'Import a Model file (.pmd, .pmx)'
+    bl_label = 'Import PMX File (.pmx)'
+    bl_description = 'Import a Model File (.pmd, .pmx)'
     bl_options = {'PRESET'}
 
     filename_ext = '.pmx'
@@ -137,16 +137,16 @@ class ImportPmx_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 
 class ImportVmd_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     bl_idname = 'mmd_tools.import_vmd'
-    bl_label = 'Import VMD file (.vmd)'
-    bl_description = 'Import a VMD file (.vmd)'
+    bl_label = 'Import VMD File (.vmd)'
+    bl_description = 'Import a VMD File (.vmd)'
     bl_options = {'PRESET'}
 
     filename_ext = '.vmd'
     filter_glob = bpy.props.StringProperty(default='*.vmd', options={'HIDDEN'})
 
-    scale = bpy.props.FloatProperty(name='scale', default=0.2)
-    margin = bpy.props.IntProperty(name='margin', default=5, min=0)
-    update_scene_settings = bpy.props.BoolProperty(name='update scene settings', default=True)
+    scale = bpy.props.FloatProperty(name='Scale', default=0.2)
+    margin = bpy.props.IntProperty(name='Margin', default=5, min=0)
+    update_scene_settings = bpy.props.BoolProperty(name='Update Scene Settings', default=True)
 
     def execute(self, context):
         importer = import_vmd.VMDImporter(filepath=self.filepath, scale=self.scale, frame_margin=self.margin)
@@ -167,7 +167,7 @@ class ImportVmd_Op(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 ## Others
 class SeparateByMaterials_Op(bpy.types.Operator):
     bl_idname = 'mmd_tools.separate_by_materials'
-    bl_label = 'Separate by materials'
+    bl_label = 'Separate by Materials'
     bl_description = 'Separate by materials'
     bl_options = {'PRESET'}
 
@@ -181,8 +181,8 @@ class SeparateByMaterials_Op(bpy.types.Operator):
 
 class SetFrameRange_Op(bpy.types.Operator):
     bl_idname = 'mmd_tools.set_frame_range'
-    bl_label = 'set range'
-    bl_description = 'set the frame range to best values to play the animation from start to finish. And set the frame rate to 30.0.'
+    bl_label = 'Set Range'
+    bl_description = 'Set the frame range to best values to play the animation from start to finish. And set the frame rate to 30.0.'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -238,7 +238,7 @@ class SetShadelessGLSLShading_Op(bpy.types.Operator):
 class SetCyclesRendering_Op(bpy.types.Operator):
     bl_idname = 'mmd_tools.set_cycles_rendering'
     bl_label = 'Cycles'
-    bl_description = 'Convert blender render shader to Cycles shader'
+    bl_description = 'Convert Blender render shader to Cycles shader'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -334,7 +334,7 @@ class MMDToolsObjectPanel(bpy.types.Panel):
 class ShowRigidBodies_Op(bpy.types.Operator):
     bl_idname = 'mmd_tools.show_rigid_bodies'
     bl_label = 'Show Rigid Bodies'
-    bl_description = 'Show Rigid bodies'
+    bl_description = 'Show Rigid Bodies'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -345,7 +345,7 @@ class ShowRigidBodies_Op(bpy.types.Operator):
 class HideRigidBodies_Op(bpy.types.Operator):
     bl_idname = 'mmd_tools.hide_rigid_bodies'
     bl_label = 'Hide Rigid Bodies'
-    bl_description = 'Hide Rigid bodies'
+    bl_description = 'Hide Rigid Bodies'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -355,8 +355,8 @@ class HideRigidBodies_Op(bpy.types.Operator):
 
 class ShowJoints_Op(bpy.types.Operator):
     bl_idname = 'mmd_tools.show_joints'
-    bl_label = 'Show joints'
-    bl_description = 'Show joints'
+    bl_label = 'Show Joints'
+    bl_description = 'Show Joints'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -366,8 +366,8 @@ class ShowJoints_Op(bpy.types.Operator):
 
 class HideJoints_Op(bpy.types.Operator):
     bl_idname = 'mmd_tools.hide_joints'
-    bl_label = 'Hide joints'
-    bl_description = 'Hide joints'
+    bl_label = 'Hide Joints'
+    bl_description = 'Hide Joints'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -377,8 +377,8 @@ class HideJoints_Op(bpy.types.Operator):
 
 class ShowTemporaryObjects_Op(bpy.types.Operator):
     bl_idname = 'mmd_tools.show_temporary_objects'
-    bl_label = 'Show temporary objects'
-    bl_description = 'Show temporary objects'
+    bl_label = 'Show Temporary Objects'
+    bl_description = 'Show Temporary Objects'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -388,8 +388,8 @@ class ShowTemporaryObjects_Op(bpy.types.Operator):
 
 class HideTemporaryObjects_Op(bpy.types.Operator):
     bl_idname = 'mmd_tools.hide_temporary_objects'
-    bl_label = 'Hide temporary objects'
-    bl_description = 'Hide temporary objects'
+    bl_label = 'Hide Temporary Objects'
+    bl_description = 'Hide Temporary Objects'
     bl_options = {'PRESET'}
 
     def execute(self, context):
