@@ -36,8 +36,7 @@ class PMXImporter:
         self.__mutedIkConsts = []
         self.__boneTable = []
         self.__rigidTable = []
-        self.__nonCollisionJointTable = None
-        self.__jointTable = []
+        self.__nonCollisionJointTable = []
 
         self.__materialFaceCountTable = None
 
@@ -405,11 +404,8 @@ class PMXImporter:
 
     def __importRigids(self):
         self.__rigidTable = []
-        self.__nonCollisionJointTable = []
         start_time = time.time()
-        collisionGroups = []
-        for i in range(16):
-            collisionGroups.append([])
+        collisionGroups = [[] for i in range(16)]
         imported_rigids = []
         for rigid in self.__model.rigids:
             if self.__onlyCollisions and rigid.mode != pmx.Rigid.MODE_STATIC:
@@ -461,10 +457,7 @@ class PMXImporter:
                 bpy.ops.object.modifier_add(type='COLLISION')
                 utils.setParentToBone(obj, self.__armObj, self.__boneTable[rigid.bone].name)
             elif rigid.bone is not None:
-                bpy.ops.object.select_all(action='DESELECT')
-                obj.select = True
-                bpy.context.scene.objects.active = self.__root
-                bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=True)
+                obj.parent = self.__root
 
                 target_bone = self.__boneTable[rigid.bone]
                 empty = bpy.data.objects.new(
@@ -491,12 +484,9 @@ class PMXImporter:
                 const.target = empty
             else:
                 obj.parent = self.__armObj
-                bpy.ops.object.select_all(action='DESELECT')
-                obj.select = True
 
-            obj.rigid_body.collision_shape = rigid_type
-            group_flags = []
             rb = obj.rigid_body
+            rb.collision_shape = rigid_type
             rb.friction = rigid.friction
             rb.mass = rigid.mass
             rb.angular_damping = rigid.rotation_attenuation
@@ -629,7 +619,7 @@ class PMXImporter:
         if self.__onlyCollisions:
             self.__createNonCollisionConstraint()
             return
-        self.__jointTable = []
+
         for joint in self.__model.joints:
             loc = mathutils.Vector(joint.location) * self.TO_BLE_MATRIX * self.__scale
             rot = mathutils.Vector(joint.rotation) * self.TO_BLE_MATRIX * -1
@@ -643,7 +633,7 @@ class PMXImporter:
             obj.empty_draw_type = 'ARROWS'
             obj.hide_render = True
             obj.is_mmd_joint = True
-            obj.parent = self.__root
+            obj.parent = self.__armObj
             self.__jointObjGroup.objects.link(obj)
 
             utils.selectAObject(obj)
@@ -662,7 +652,7 @@ class PMXImporter:
                 else:
                     self.__nonCollisionJointTable.remove(non_collision_joint)
                     rbc.disable_collisions = True
-            elif rigid1.rigid_body.kinematic and not rigid2.rigid_body.kinematic or not rigid1.rigid_body.kinematic and rigid2.rigid_body.kinematic:
+            elif rigid1.rigid_body.kinematic != rigid2.rigid_body.kinematic:
                 rbc.disable_collisions = False
 
             rbc.use_limit_ang_x = True
@@ -699,12 +689,6 @@ class PMXImporter:
             # rbc.spring_damping_x = spring_damp[0]
             # rbc.spring_damping_y = spring_damp[1]
             # rbc.spring_damping_z = spring_damp[2]
-
-            self.__jointTable.append(obj)
-            bpy.ops.object.select_all(action='DESELECT')
-            obj.select = True
-            bpy.context.scene.objects.active = self.__armObj
-            bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=True)
 
             # spring_stiff = mathutils.Vector()
             # rbc.spring_stiffness_x = spring_stiff[0]
