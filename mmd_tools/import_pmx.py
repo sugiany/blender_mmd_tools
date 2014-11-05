@@ -526,6 +526,35 @@ class PMXImporter:
         self.__nonCollisionJointTable.append(pair)
 
 
+    def __createTempRootObject(self, obj_name, obj_parent):
+        tmp = bpy.data.objects.new(name=obj_name, object_data=None)
+        self.__targetScene.objects.link(tmp)
+        tmp.parent = obj_parent
+        self.__tempObjGroup.objects.link(tmp)
+        tmp.hide_render = True
+        return tmp
+
+    def __duplicateObjects(self, obj, counts):
+        utils.selectAObject(obj)
+        last_selected = bpy.context.selected_objects
+        curr_len = len(last_selected)
+        if curr_len != 1: # debug purpose
+            logging.info('selected_objects: %d, %s', len(last_selected), last_selected)
+            raise Exception('* Failed to duplicate objects *')
+
+        while curr_len < counts:
+            bpy.ops.object.duplicate()
+            curr_len += len(bpy.context.selected_objects)
+            remain = counts - curr_len - len(bpy.context.selected_objects)
+            if remain < 0:
+                last_selected = bpy.context.selected_objects
+                for i in range(-remain):
+                    last_selected[i].select = False
+            else:
+                for i in range(min(remain, len(last_selected))):
+                    last_selected[i].select = True
+            last_selected = bpy.context.selected_objects
+
     def __createNonCollisionConstraint(self):
         total_len = len(self.__nonCollisionJointTable)
         if total_len < 1:
@@ -535,10 +564,8 @@ class PMXImporter:
         logging.debug('-'*60)
         logging.debug(' creating ncc, counts: %d', total_len)
 
-        ncc_root = bpy.data.objects.new(name='ncc_root', object_data=None)
-        self.__targetScene.objects.link(ncc_root)
-        ncc_root.parent = self.__root
-        self.__tempObjGroup.objects.link(ncc_root)
+        ncc_root = self.__createTempRootObject('ncc_grp', self.__root)
+        ncc_root.hide = True
 
         ncc_obj = bpy.data.objects.new('ncc', None)
         bpy.context.scene.objects.link(ncc_obj)
@@ -554,18 +581,7 @@ class PMXImporter:
         rb.disable_collisions = True
         self.__tempObjGroup.objects.link(ncc_obj)
 
-        last_selected = [ncc_obj]
-        while len(ncc_root.children) < total_len:
-            bpy.ops.object.duplicate()
-            remain = total_len - len(ncc_root.children) - len(bpy.context.selected_objects)
-            if remain < 0:
-                last_selected = bpy.context.selected_objects
-                for i in range(-remain):
-                    last_selected[i].select = False
-            else:
-                for i in range(min(remain, len(last_selected))):
-                    last_selected[i].select = True
-            last_selected = bpy.context.selected_objects
+        self.__duplicateObjects(ncc_obj, total_len)
         logging.debug(' created %d ncc.', len(ncc_root.children))
 
         for ncc_obj, pair in zip(ncc_root.children, self.__nonCollisionJointTable):
@@ -573,8 +589,6 @@ class PMXImporter:
             rbc.object1, rbc.object2 = pair
             ncc_obj.hide = True
 
-        ncc_root.hide_render = True
-        ncc_root.hide = True
         logging.debug(' finish in %f seconds.', time.time() - start_time)
         logging.debug('-'*60)
 
@@ -616,28 +630,45 @@ class PMXImporter:
         rbc.spring_stiffness_z = spring_stiffness[2]
 
     def __importJoints(self):
-        if self.__onlyCollisions:
+        total_len = len(self.__model.joints)
+        if self.__onlyCollisions or total_len < 1:
             self.__createNonCollisionConstraint()
             return
 
-        for joint in self.__model.joints:
+        logging.debug(' importing joints, counts: %d', total_len)
+        joint_root = self.__createTempRootObject('joints', self.__armObj)
+
+        obj = bpy.data.objects.new('joint', None)
+        bpy.context.scene.objects.link(obj)
+        obj.empty_draw_size = 0.5 * self.__scale
+        obj.empty_draw_type = 'ARROWS'
+        obj.hide_render = True
+        obj.is_mmd_joint = True
+        obj.parent = joint_root
+        self.__jointObjGroup.objects.link(obj)
+        utils.selectAObject(obj)
+        bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
+        rbc = obj.rigid_body_constraint
+        rbc.use_limit_ang_x = True
+        rbc.use_limit_ang_y = True
+        rbc.use_limit_ang_z = True
+        rbc.use_limit_lin_x = True
+        rbc.use_limit_lin_y = True
+        rbc.use_limit_lin_z = True
+        rbc.use_spring_x = True
+        rbc.use_spring_y = True
+        rbc.use_spring_z = True
+
+        self.__duplicateObjects(obj, total_len)
+        logging.debug(' created %d joints.', len(joint_root.children))
+
+        for obj, joint in zip(joint_root.children, self.__model.joints):
             loc = mathutils.Vector(joint.location) * self.TO_BLE_MATRIX * self.__scale
             rot = mathutils.Vector(joint.rotation) * self.TO_BLE_MATRIX * -1
-            obj = bpy.data.objects.new(
-                'J.'+joint.name,
-                None)
-            bpy.context.scene.objects.link(obj)
+            obj.name = 'J.'+joint.name
             obj.location = loc
             obj.rotation_euler = rot
-            obj.empty_draw_size = 0.5 * self.__scale
-            obj.empty_draw_type = 'ARROWS'
-            obj.hide_render = True
-            obj.is_mmd_joint = True
-            obj.parent = self.__armObj
-            self.__jointObjGroup.objects.link(obj)
 
-            utils.selectAObject(obj)
-            bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
             rbc = obj.rigid_body_constraint
 
             rigid1 = self.__rigidTable[joint.src_rigid]
@@ -654,16 +685,6 @@ class PMXImporter:
                     rbc.disable_collisions = True
             elif rigid1.rigid_body.kinematic != rigid2.rigid_body.kinematic:
                 rbc.disable_collisions = False
-
-            rbc.use_limit_ang_x = True
-            rbc.use_limit_ang_y = True
-            rbc.use_limit_ang_z = True
-            rbc.use_limit_lin_x = True
-            rbc.use_limit_lin_y = True
-            rbc.use_limit_lin_z = True
-            rbc.use_spring_x = True
-            rbc.use_spring_y = True
-            rbc.use_spring_z = True
 
             max_loc = mathutils.Vector(joint.maximum_location) * self.TO_BLE_MATRIX * self.__scale
             min_loc = mathutils.Vector(joint.minimum_location) * self.TO_BLE_MATRIX * self.__scale
@@ -701,8 +722,6 @@ class PMXImporter:
                 self.__makeSpring(rigid1, rigid2, mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX)
 
         self.__createNonCollisionConstraint()
-
-
 
 
     def __importMaterials(self):
