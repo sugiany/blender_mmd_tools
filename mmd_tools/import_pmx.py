@@ -33,6 +33,7 @@ class PMXImporter:
         self.__vertexGroupTable = None
         self.__textureTable = None
 
+        self.__mutedIkConsts = []
         self.__boneTable = []
         self.__rigidTable = []
         self.__nonCollisionJointTable = None
@@ -233,6 +234,8 @@ class PMXImporter:
             target_bone.is_mmd_shadow_bone = True
 
         ikConst = ik_bone.constraints.new('IK')
+        ikConst.mute = True
+        self.__mutedIkConsts.append(ikConst)
         ikConst.chain_count = len(pmx_bone.ik_links)
         ikConst.target = self.__armObj
         ikConst.subtarget = target_bone.name
@@ -407,6 +410,7 @@ class PMXImporter:
         collisionGroups = []
         for i in range(16):
             collisionGroups.append([])
+        imported_rigids = []
         for rigid in self.__model.rigids:
             if self.__onlyCollisions and rigid.mode != pmx.Rigid.MODE_STATIC:
                 continue
@@ -482,7 +486,7 @@ class PMXImporter:
 
                 for i in target_bone.constraints:
                     if i.type == 'IK':
-                        i.influence = 0
+                        self.__mutedIkConsts.remove(i)
                 const = target_bone.constraints.new('DAMPED_TRACK')
                 const.target = empty
             else:
@@ -501,14 +505,19 @@ class PMXImporter:
             if rigid.mode == pmx.Rigid.MODE_STATIC:
                 rb.kinematic = True
 
+            imported_rigids.append(rigid)
+            collisionGroups[rigid.collision_group_number].append(obj)
+            self.__rigidTable.append(obj)
+
+        for rigid, obj in zip(imported_rigids, self.__rigidTable):
             for i in range(16):
                 if rigid.collision_group_mask & (1<<i) == 0:
                     for j in collisionGroups[i]:
-                        s = time.time()
                         self.__makeNonCollisionConstraint(obj, j)
 
-            collisionGroups[rigid.collision_group_number].append(obj)
-            self.__rigidTable.append(obj)
+        for c in self.__mutedIkConsts:
+            c.mute = False
+
         logging.debug('Finished importing rigid bodies in %f seconds.', time.time() - start_time)
 
 
@@ -516,10 +525,15 @@ class PMXImporter:
         return (mathutils.Vector(obj.bound_box[0]) - mathutils.Vector(obj.bound_box[6])).length
 
     def __makeNonCollisionConstraint(self, obj_a, obj_b):
+        if obj_a == obj_b:
+            return
+        pair = frozenset((obj_a, obj_b))
+        if pair in self.__nonCollisionJointTable:
+            return
         if (mathutils.Vector(obj_a.location) - mathutils.Vector(obj_b.location)).length > self.__distance_of_ignore_collisions * (self.__getRigidRange(obj_a) + self.__getRigidRange(obj_b)):
             return
 
-        self.__nonCollisionJointTable.append(frozenset((obj_a, obj_b)))
+        self.__nonCollisionJointTable.append(pair)
 
 
     def __createNonCollisionConstraint(self):
