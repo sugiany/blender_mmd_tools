@@ -407,6 +407,7 @@ class PMXImporter:
         start_time = time.time()
         collisionGroups = [[] for i in range(16)]
         imported_rigids = []
+        bone_tracks = []
         for rigid in self.__model.rigids:
             if self.__onlyCollisions and rigid.mode != pmx.Rigid.MODE_STATIC:
                 continue
@@ -480,8 +481,9 @@ class PMXImporter:
                 for i in target_bone.constraints:
                     if i.type == 'IK':
                         self.__mutedIkConsts.remove(i)
-                const = target_bone.constraints.new('DAMPED_TRACK')
-                const.target = empty
+                # const = target_bone.constraints.new('DAMPED_TRACK')
+                # const.target = empty
+                bone_tracks.append((target_bone, empty)) # Not sure why this way could run faster on my computer?!
             else:
                 obj.parent = self.__armObj
 
@@ -504,6 +506,12 @@ class PMXImporter:
                 if rigid.collision_group_mask & (1<<i) == 0:
                     for j in collisionGroups[i]:
                         self.__makeNonCollisionConstraint(obj, j)
+
+        for (b, t) in bone_tracks:
+            c = b.constraints.new('DAMPED_TRACK')
+            c.target = t
+            b.bone.layers[16] = True
+            b.bone.layers[0] = False
 
         for c in self.__mutedIkConsts:
             c.mute = False
@@ -706,20 +714,21 @@ class PMXImporter:
             rbc.limit_ang_y_lower = -max_rot[1]
             rbc.limit_ang_z_lower = -max_rot[2]
 
-            # spring_damp = mathutils.Vector(joint.spring_constant) * self.TO_BLE_MATRIX
-            # rbc.spring_damping_x = spring_damp[0]
-            # rbc.spring_damping_y = spring_damp[1]
-            # rbc.spring_damping_z = spring_damp[2]
+            if True: # This could be an import option... (but can't really see the difference)
+                spring_damp = mathutils.Vector(joint.spring_constant) * self.TO_BLE_MATRIX * 0.001
+                rbc.spring_damping_x = spring_damp[0]
+                rbc.spring_damping_y = spring_damp[1]
+                rbc.spring_damping_z = spring_damp[2]
 
-            # spring_stiff = mathutils.Vector()
-            # rbc.spring_stiffness_x = spring_stiff[0]
-            # rbc.spring_stiffness_y = spring_stiff[1]
-            # rbc.spring_stiffness_z = spring_stiff[2]
-
-            if rigid1.rigid_body.kinematic:
-                self.__makeSpring(rigid2, rigid1, mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX)
-            if rigid2.rigid_body.kinematic:
-                self.__makeSpring(rigid1, rigid2, mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX)
+                spring_stiff = mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX
+                rbc.spring_stiffness_x = spring_stiff[0]
+                rbc.spring_stiffness_y = spring_stiff[1]
+                rbc.spring_stiffness_z = spring_stiff[2]
+            else:
+                if rigid1.rigid_body.kinematic:
+                    self.__makeSpring(rigid2, rigid1, mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX)
+                if rigid2.rigid_body.kinematic:
+                    self.__makeSpring(rigid1, rigid2, mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX)
 
         self.__createNonCollisionConstraint()
 
