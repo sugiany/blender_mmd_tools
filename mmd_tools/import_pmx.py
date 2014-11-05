@@ -578,10 +578,10 @@ class PMXImporter:
             last_selected = bpy.context.selected_objects
         logging.debug(' created %d ncc.', len(ncc_root.children))
 
-        ncc_objs = ncc_root.children
-        for i in range(total_len):
-            rb = ncc_objs[i].rigid_body_constraint
-            rb.object1, rb.object2 = self.__nonCollisionJointTable[i]
+        for ncc_obj, pair in zip(ncc_root.children, self.__nonCollisionJointTable):
+            rbc = ncc_obj.rigid_body_constraint
+            rbc.object1, rbc.object2 = pair
+            ncc_obj.hide = True
 
         ncc_root.hide_render = True
         ncc_root.hide = True
@@ -807,6 +807,14 @@ class PMXImporter:
         for i in obj.children:
             self.__hideRigidsAndJoints(i)
 
+    def __hideObjectsByDefault(self):
+        utils.selectAObject(self.__root)
+        bpy.ops.object.select_grouped(extend=True, type='CHILDREN_RECURSIVE')
+        self.__root.select = False
+        self.__armObj.select = False
+        self.__meshObj.select = False
+        bpy.ops.object.hide_view_set()
+
     def __addArmatureModifier(self, meshObj, armObj):
         armModifier = meshObj.modifiers.new(name='Armature', type='ARMATURE')
         armModifier.object = armObj
@@ -864,7 +872,7 @@ class PMXImporter:
         self.__meshObj.data.update()
 
         if args.get('hide_rigids', False):
-            self.__hideRigidsAndJoints(self.__root)
+            self.__hideObjectsByDefault()
         self.__armObj.pmx_import_scale = self.__scale
 
         for i in [self.__rigidObjGroup.objects, self.__jointObjGroup.objects, self.__tempObjGroup.objects]:
