@@ -36,6 +36,7 @@ class PMXImporter:
         self.__vertexGroupTable = None
         self.__textureTable = None
 
+        self.__mutedIkConsts = []
         self.__boneTable = []
         self.__rigidTable = []
         self.__nonCollisionJointTable = None
@@ -225,6 +226,8 @@ class PMXImporter:
             target_bone.mmd_shadow_bone_type = 'IK_PROXY'
 
         ikConst = ik_bone.constraints.new('IK')
+        ikConst.mute = True
+        self.__mutedIkConsts.append(ikConst)
         ikConst.chain_count = len(pmx_bone.ik_links)
         ikConst.target = self.__armObj
         ikConst.subtarget = target_bone.name
@@ -430,8 +433,10 @@ class PMXImporter:
                 )
             obj.hide = True
             self.__rigidObjGroup.objects.link(obj)
-
             self.__rigidTable.append(obj)
+
+        for c in self.__mutedIkConsts:
+            c.mute = False
         logging.debug('Finished importing rigid bodies in %f seconds.', time.time() - start_time)
 
     def __importJoints(self):

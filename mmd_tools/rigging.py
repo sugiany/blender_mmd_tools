@@ -526,7 +526,7 @@ class Rig:
 
             for i in target_bone.constraints:
                 if i.type == 'IK':
-                    i.influence = 0
+                    i.mute = True
             const = target_bone.constraints.new('DAMPED_TRACK')
             const.name='mmd_tools_rigid_track'
             const.target = empty
