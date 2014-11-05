@@ -541,27 +541,50 @@ class Rig:
     def __getRigidRange(self, obj):
         return (mathutils.Vector(obj.bound_box[0]) - mathutils.Vector(obj.bound_box[6])).length
 
-    def __makeNonCollisionConstraint(self, obj_a, obj_b, cnt=0):
-        if obj_a == obj_b:
+    def __createNonCollisionConstraint(self, nonCollisionJointTable):
+        total_len = len(nonCollisionJointTable)
+        if total_len < 1:
             return
-        t = bpy.data.objects.new(
-            'ncc.%d'%cnt,
-            None)
-        bpy.context.scene.objects.link(t)
-        t.location = [0, 0, 0]
-        t.empty_draw_size = 0.5
-        t.empty_draw_type = 'ARROWS'
-        t.mmd_type = 'NON_COLLISION_CONSTRAINT'
-        t.hide_render = True
-        t.select = False
-        t.hide = True
-        t.parent = self.temporaryGroupObject()
-        with bpyutils.select_object(t):
+            
+        start_time = time.time()
+        logging.debug('-'*60)
+        logging.debug(' creating ncc, counts: %d', total_len)
+                        
+        ncc_obj = bpy.data.objects.new('ncc', None)
+        bpy.context.scene.objects.link(ncc_obj)
+        ncc_obj.location = [0, 0, 0]
+        ncc_obj.empty_draw_size = 0.5
+        ncc_obj.empty_draw_type = 'ARROWS'
+        ncc_obj.mmd_type = 'NON_COLLISION_CONSTRAINT'
+        ncc_obj.hide_render = True
+        ncc_obj.parent = self.temporaryGroupObject()
+        with bpyutils.select_object(ncc_obj):
             bpy.ops.rigidbody.constraint_add(type='GENERIC')
-        rb = t.rigid_body_constraint
+        rb = ncc_obj.rigid_body_constraint
         rb.disable_collisions = True
-        rb.object1 = obj_a
-        rb.object2 = obj_b
+        
+        ncc_objs = []
+        last_selected = [ncc_obj]
+        while len(ncc_objs) < total_len:
+            bpy.ops.object.duplicate()
+            ncc_objs.extend(bpy.context.selected_objects)
+            remain = total_len - len(ncc_objs) - len(bpy.context.selected_objects)
+            if remain < 0:
+                last_selected = bpy.context.selected_objects
+                for i in range(-remain):
+                    last_selected[i].select = False
+            else:
+                for i in range(min(remain, len(last_selected))):
+                    last_selected[i].select = True
+            last_selected = bpy.context.selected_objects
+        logging.debug(' created %d ncc.', len(ncc_objs))
+
+        for i in range(total_len):
+            rb = ncc_objs[i].rigid_body_constraint
+            rb.object1, rb.object2 = nonCollisionJointTable[i]
+        
+        logging.debug(' finish in %f seconds.', time.time() - start_time)
+        logging.debug('-'*60)
 
     def buildRigids(self, distance_of_ignore_collisions=1.5):
         logging.debug('--------------------------------')
@@ -584,7 +607,7 @@ class Rig:
 
         logging.info('Creating non collision constraints')
         # create non collision constraints
-        non_collision_constraint_cnt = 0
+        nonCollisionJointTable = []
         non_collision_pairs = set()
         rigid_object_cnt = len(rigid_objects)
         for cnt, obj_a in enumerate(rigid_objects):
@@ -602,10 +625,11 @@ class Rig:
                     else:
                         distance = (mathutils.Vector(obj_a.location) - mathutils.Vector(obj_b.location)).length
                         if distance < distance_of_ignore_collisions * (self.__getRigidRange(obj_a) + self.__getRigidRange(obj_b)) * 0.5:
-                            self.__makeNonCollisionConstraint(obj_a, obj_b, non_collision_constraint_cnt)
-                            non_collision_constraint_cnt += 1
+                            nonCollisionJointTable.append((obj_a, obj_b))
                     non_collision_pairs.add(pair)
                     non_collision_pairs.add(frozenset((obj_b, obj_a)))
+        
+        self.__createNonCollisionConstraint(nonCollisionJointTable)
         return rigid_objects
 
     def __makeSpring(self, target, base_obj, spring_stiffness):

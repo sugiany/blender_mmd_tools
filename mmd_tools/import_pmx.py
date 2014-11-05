@@ -42,7 +42,6 @@ class PMXImporter:
         self.__jointTable = []
 
         self.__materialFaceCountTable = None
-        self.__nonCollisionConstraints = []
 
         # object groups
         self.__allObjGroup = None    # a group which contains all objects created for the target model by mmd_tools.
@@ -435,9 +434,9 @@ class PMXImporter:
             self.__rigidTable.append(obj)
         logging.debug('Finished importing rigid bodies in %f seconds.', time.time() - start_time)
 
-    
     def __importJoints(self):
         if self.__onlyCollisions:
+            self.__createNonCollisionConstraint()
             return
         self.__jointTable = []
         for joint in self.__model.joints:
@@ -599,7 +598,6 @@ class PMXImporter:
             self.__model = pmx.load(args['filepath'])
 
         self.__scale = args.get('scale', 1.0)
-        renameLRBones = args.get('rename_LR_bones', False)
         self.__onlyCollisions = args.get('only_collisions', False)
         self.__ignoreNonCollisionGroups = args.get('ignore_non_collision_groups', True)
         self.__distance_of_ignore_collisions = args.get('distance_of_ignore_collisions', 1) # 衝突を考慮しない距離（非衝突グループ設定を無視する距離）
@@ -630,7 +628,7 @@ class PMXImporter:
 
         self.__importVertexMorphs()
 
-        if renameLRBones:
+        if args.get('rename_LR_bones', False):
             self.__renameLRBones()
 
         self.__addArmatureModifier(self.__meshObj, self.__armObj)

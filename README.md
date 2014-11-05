@@ -65,6 +65,13 @@ MMDモデルデータをインポートします。対応形式はpmdファイ�
     * 非衝突グループを読み込みません。モデルの読み込み時にフリーズしてしまう場合に使用してください。
 * distance of ignore collisions
     * 非衝突グループの解決範囲を指定します。
+* use MIP map for UV textures
+    * Blenderの自動ミップマップ生成機能のオンオフを指定します。
+    * 一部アルファチャンネルを持つテクスチャで紫色のノイズが発生する場合はオフにしてください。
+* influence of .sph textures
+    * スフィアマップの強度を指定します。(0.0～1.0)
+* influence of .spa textures
+    * スフィアマップの強度を指定します。(0.0～1.0)
 
 ### Import Motion
 現在選択中のArmature、MeshおよびCameraにvmdファイルのモーションを適用します。
@@ -160,5 +167,5 @@ CHANGELOG.mdを参照してください。
 
 ライセンス
 ----------
-Copyright &copy; 2012-2013 sugiany  
+&copy; 2012-2014 sugiany  
 Distributed under the MIT License.  
