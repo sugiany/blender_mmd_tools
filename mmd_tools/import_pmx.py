@@ -235,6 +235,7 @@ class PMXImporter:
         ikConst = ik_bone.constraints.new('IK')
         ikConst.mute = True
         self.__mutedIkConsts.append(ikConst)
+        ikConst.iterations = pmx_bone.loopCount
         ikConst.chain_count = len(pmx_bone.ik_links)
         ikConst.target = self.__armObj
         ikConst.subtarget = target_bone.name
@@ -528,7 +529,7 @@ class PMXImporter:
         pair = frozenset((obj_a, obj_b))
         if pair in self.__nonCollisionJointTable:
             return
-        if (mathutils.Vector(obj_a.location) - mathutils.Vector(obj_b.location)).length > self.__distance_of_ignore_collisions * (self.__getRigidRange(obj_a) + self.__getRigidRange(obj_b)):
+        if (obj_a.location - obj_b.location).length > self.__distance_of_ignore_collisions * (self.__getRigidRange(obj_a) + self.__getRigidRange(obj_b)):
             return
 
         self.__nonCollisionJointTable.append(pair)
