@@ -228,6 +228,7 @@ class PMXImporter:
         ikConst = ik_bone.constraints.new('IK')
         ikConst.mute = True
         self.__mutedIkConsts.append(ikConst)
+        ikConst.iterations = pmx_bone.loopCount
         ikConst.chain_count = len(pmx_bone.ik_links)
         ikConst.target = self.__armObj
         ikConst.subtarget = target_bone.name
@@ -438,6 +439,7 @@ class PMXImporter:
         for c in self.__mutedIkConsts:
             c.mute = False
         logging.debug('Finished importing rigid bodies in %f seconds.', time.time() - start_time)
+
 
     def __importJoints(self):
         if self.__onlyCollisions:

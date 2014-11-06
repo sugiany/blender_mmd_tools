@@ -623,7 +623,7 @@ class Rig:
                         joint = jointMap[pair]
                         joint.rigid_body_constraint.disable_collisions = True
                     else:
-                        distance = (mathutils.Vector(obj_a.location) - mathutils.Vector(obj_b.location)).length
+                        distance = (obj_a.location - obj_b.location).length
                         if distance < distance_of_ignore_collisions * (self.__getRigidRange(obj_a) + self.__getRigidRange(obj_b)) * 0.5:
                             nonCollisionJointTable.append((obj_a, obj_b))
                     non_collision_pairs.add(pair)
