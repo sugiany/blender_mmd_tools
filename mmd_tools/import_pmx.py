@@ -29,7 +29,6 @@ class PMXImporter:
         self.__armObj = None
         self.__meshObj = None
 
-        self.__vertexTable = None
         self.__vertexGroupTable = None
         self.__textureTable = None
 
@@ -526,12 +525,12 @@ class PMXImporter:
     def __makeNonCollisionConstraint(self, obj_a, obj_b):
         if obj_a == obj_b:
             return
-        pair = frozenset((obj_a, obj_b))
-        if pair in self.__nonCollisionJointTable:
-            return
         if (obj_a.location - obj_b.location).length > self.__distance_of_ignore_collisions * (self.__getRigidRange(obj_a) + self.__getRigidRange(obj_b)):
             return
 
+        pair = frozenset((obj_a, obj_b))
+        if pair in self.__nonCollisionJointTable:
+            return
         self.__nonCollisionJointTable.append(pair)
 
 
@@ -739,7 +738,6 @@ class PMXImporter:
 
         pmxModel = self.__model
 
-        self.__materialTable = []
         self.__materialFaceCountTable = []
         for i in pmxModel.materials:
             mat = bpy.data.materials.new(name=i.name)
@@ -792,7 +790,7 @@ class PMXImporter:
             bf = mesh.tessfaces[i]
             bf.vertices_raw = list(f) + [0]
             bf.use_smooth = True
-            face_count = 0
+
             uv = uvLayer.data[i]
             uv.uv1 = self.flipUV_V(pmxModel.vertices[f[0]].uv)
             uv.uv2 = self.flipUV_V(pmxModel.vertices[f[1]].uv)
