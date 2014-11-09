@@ -29,14 +29,13 @@ class PMXImporter:
         self.__armObj = None
         self.__meshObj = None
 
-        self.__vertexTable = None
         self.__vertexGroupTable = None
         self.__textureTable = None
 
+        self.__mutedIkConsts = []
         self.__boneTable = []
         self.__rigidTable = []
-        self.__nonCollisionJointTable = None
-        self.__jointTable = []
+        self.__nonCollisionJointTable = []
 
         self.__materialFaceCountTable = None
 
@@ -233,6 +232,9 @@ class PMXImporter:
             target_bone.is_mmd_shadow_bone = True
 
         ikConst = ik_bone.constraints.new('IK')
+        ikConst.mute = True
+        self.__mutedIkConsts.append(ikConst)
+        ikConst.iterations = pmx_bone.loopCount
         ikConst.chain_count = len(pmx_bone.ik_links)
         ikConst.target = self.__armObj
         ikConst.subtarget = target_bone.name
@@ -402,11 +404,10 @@ class PMXImporter:
 
     def __importRigids(self):
         self.__rigidTable = []
-        self.__nonCollisionJointTable = []
         start_time = time.time()
-        collisionGroups = []
-        for i in range(16):
-            collisionGroups.append([])
+        collisionGroups = [[] for i in range(16)]
+        imported_rigids = []
+        bone_tracks = []
         for rigid in self.__model.rigids:
             if self.__onlyCollisions and rigid.mode != pmx.Rigid.MODE_STATIC:
                 continue
@@ -457,10 +458,7 @@ class PMXImporter:
                 bpy.ops.object.modifier_add(type='COLLISION')
                 utils.setParentToBone(obj, self.__armObj, self.__boneTable[rigid.bone].name)
             elif rigid.bone is not None:
-                bpy.ops.object.select_all(action='DESELECT')
-                obj.select = True
-                bpy.context.scene.objects.active = self.__root
-                bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=True)
+                obj.parent = self.__root
 
                 target_bone = self.__boneTable[rigid.bone]
                 empty = bpy.data.objects.new(
@@ -482,17 +480,15 @@ class PMXImporter:
 
                 for i in target_bone.constraints:
                     if i.type == 'IK':
-                        i.influence = 0
-                const = target_bone.constraints.new('DAMPED_TRACK')
-                const.target = empty
+                        self.__mutedIkConsts.remove(i)
+                # const = target_bone.constraints.new('DAMPED_TRACK')
+                # const.target = empty
+                bone_tracks.append((target_bone, empty)) # Not sure why this way could run faster on my computer?!
             else:
                 obj.parent = self.__armObj
-                bpy.ops.object.select_all(action='DESELECT')
-                obj.select = True
 
-            obj.rigid_body.collision_shape = rigid_type
-            group_flags = []
             rb = obj.rigid_body
+            rb.collision_shape = rigid_type
             rb.friction = rigid.friction
             rb.mass = rigid.mass
             rb.angular_damping = rigid.rotation_attenuation
@@ -501,14 +497,25 @@ class PMXImporter:
             if rigid.mode == pmx.Rigid.MODE_STATIC:
                 rb.kinematic = True
 
+            imported_rigids.append(rigid)
+            collisionGroups[rigid.collision_group_number].append(obj)
+            self.__rigidTable.append(obj)
+
+        for rigid, obj in zip(imported_rigids, self.__rigidTable):
             for i in range(16):
                 if rigid.collision_group_mask & (1<<i) == 0:
                     for j in collisionGroups[i]:
-                        s = time.time()
                         self.__makeNonCollisionConstraint(obj, j)
 
-            collisionGroups[rigid.collision_group_number].append(obj)
-            self.__rigidTable.append(obj)
+        for (b, t) in bone_tracks:
+            c = b.constraints.new('DAMPED_TRACK')
+            c.target = t
+            b.bone.layers[16] = True
+            b.bone.layers[0] = False
+
+        for c in self.__mutedIkConsts:
+            c.mute = False
+
         logging.debug('Finished importing rigid bodies in %f seconds.', time.time() - start_time)
 
 
@@ -516,11 +523,45 @@ class PMXImporter:
         return (mathutils.Vector(obj.bound_box[0]) - mathutils.Vector(obj.bound_box[6])).length
 
     def __makeNonCollisionConstraint(self, obj_a, obj_b):
-        if (mathutils.Vector(obj_a.location) - mathutils.Vector(obj_b.location)).length > self.__distance_of_ignore_collisions * (self.__getRigidRange(obj_a) + self.__getRigidRange(obj_b)):
+        if obj_a == obj_b:
+            return
+        if (obj_a.location - obj_b.location).length > self.__distance_of_ignore_collisions * (self.__getRigidRange(obj_a) + self.__getRigidRange(obj_b)):
             return
 
-        self.__nonCollisionJointTable.append(frozenset((obj_a, obj_b)))
+        pair = frozenset((obj_a, obj_b))
+        if pair in self.__nonCollisionJointTable:
+            return
+        self.__nonCollisionJointTable.append(pair)
 
+
+    def __createTempRootObject(self, obj_name, obj_parent):
+        tmp = bpy.data.objects.new(name=obj_name, object_data=None)
+        self.__targetScene.objects.link(tmp)
+        tmp.parent = obj_parent
+        self.__tempObjGroup.objects.link(tmp)
+        tmp.hide_render = True
+        return tmp
+
+    def __duplicateObjects(self, obj, counts):
+        utils.selectAObject(obj)
+        last_selected = bpy.context.selected_objects
+        curr_len = len(last_selected)
+        if curr_len != 1: # debug purpose
+            logging.info('selected_objects: %d, %s', len(last_selected), last_selected)
+            raise Exception('* Failed to duplicate objects *')
+
+        while curr_len < counts:
+            bpy.ops.object.duplicate()
+            curr_len += len(bpy.context.selected_objects)
+            remain = counts - curr_len - len(bpy.context.selected_objects)
+            if remain < 0:
+                last_selected = bpy.context.selected_objects
+                for i in range(-remain):
+                    last_selected[i].select = False
+            else:
+                for i in range(min(remain, len(last_selected))):
+                    last_selected[i].select = True
+            last_selected = bpy.context.selected_objects
 
     def __createNonCollisionConstraint(self):
         total_len = len(self.__nonCollisionJointTable)
@@ -531,10 +572,8 @@ class PMXImporter:
         logging.debug('-'*60)
         logging.debug(' creating ncc, counts: %d', total_len)
 
-        ncc_root = bpy.data.objects.new(name='ncc_root', object_data=None)
-        self.__targetScene.objects.link(ncc_root)
-        ncc_root.parent = self.__root
-        self.__tempObjGroup.objects.link(ncc_root)
+        ncc_root = self.__createTempRootObject('ncc_grp', self.__root)
+        ncc_root.hide = True
 
         ncc_obj = bpy.data.objects.new('ncc', None)
         bpy.context.scene.objects.link(ncc_obj)
@@ -550,27 +589,14 @@ class PMXImporter:
         rb.disable_collisions = True
         self.__tempObjGroup.objects.link(ncc_obj)
 
-        last_selected = [ncc_obj]
-        while len(ncc_root.children) < total_len:
-            bpy.ops.object.duplicate()
-            remain = total_len - len(ncc_root.children) - len(bpy.context.selected_objects)
-            if remain < 0:
-                last_selected = bpy.context.selected_objects
-                for i in range(-remain):
-                    last_selected[i].select = False
-            else:
-                for i in range(min(remain, len(last_selected))):
-                    last_selected[i].select = True
-            last_selected = bpy.context.selected_objects
+        self.__duplicateObjects(ncc_obj, total_len)
         logging.debug(' created %d ncc.', len(ncc_root.children))
 
-        ncc_objs = ncc_root.children
-        for i in range(total_len):
-            rb = ncc_objs[i].rigid_body_constraint
-            rb.object1, rb.object2 = self.__nonCollisionJointTable[i]
+        for ncc_obj, pair in zip(ncc_root.children, self.__nonCollisionJointTable):
+            rbc = ncc_obj.rigid_body_constraint
+            rbc.object1, rbc.object2 = pair
+            ncc_obj.hide = True
 
-        ncc_root.hide_render = True
-        ncc_root.hide = True
         logging.debug(' finish in %f seconds.', time.time() - start_time)
         logging.debug('-'*60)
 
@@ -612,28 +638,45 @@ class PMXImporter:
         rbc.spring_stiffness_z = spring_stiffness[2]
 
     def __importJoints(self):
-        if self.__onlyCollisions:
+        total_len = len(self.__model.joints)
+        if self.__onlyCollisions or total_len < 1:
             self.__createNonCollisionConstraint()
             return
-        self.__jointTable = []
-        for joint in self.__model.joints:
+
+        logging.debug(' importing joints, counts: %d', total_len)
+        joint_root = self.__createTempRootObject('joints', self.__armObj)
+
+        obj = bpy.data.objects.new('joint', None)
+        bpy.context.scene.objects.link(obj)
+        obj.empty_draw_size = 0.5 * self.__scale
+        obj.empty_draw_type = 'ARROWS'
+        obj.hide_render = True
+        obj.is_mmd_joint = True
+        obj.parent = joint_root
+        self.__jointObjGroup.objects.link(obj)
+        utils.selectAObject(obj)
+        bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
+        rbc = obj.rigid_body_constraint
+        rbc.use_limit_ang_x = True
+        rbc.use_limit_ang_y = True
+        rbc.use_limit_ang_z = True
+        rbc.use_limit_lin_x = True
+        rbc.use_limit_lin_y = True
+        rbc.use_limit_lin_z = True
+        rbc.use_spring_x = True
+        rbc.use_spring_y = True
+        rbc.use_spring_z = True
+
+        self.__duplicateObjects(obj, total_len)
+        logging.debug(' created %d joints.', len(joint_root.children))
+
+        for obj, joint in zip(joint_root.children, self.__model.joints):
             loc = mathutils.Vector(joint.location) * self.TO_BLE_MATRIX * self.__scale
             rot = mathutils.Vector(joint.rotation) * self.TO_BLE_MATRIX * -1
-            obj = bpy.data.objects.new(
-                'J.'+joint.name,
-                None)
-            bpy.context.scene.objects.link(obj)
+            obj.name = 'J.'+joint.name
             obj.location = loc
             obj.rotation_euler = rot
-            obj.empty_draw_size = 0.5 * self.__scale
-            obj.empty_draw_type = 'ARROWS'
-            obj.hide_render = True
-            obj.is_mmd_joint = True
-            obj.parent = self.__root
-            self.__jointObjGroup.objects.link(obj)
 
-            utils.selectAObject(obj)
-            bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
             rbc = obj.rigid_body_constraint
 
             rigid1 = self.__rigidTable[joint.src_rigid]
@@ -648,18 +691,8 @@ class PMXImporter:
                 else:
                     self.__nonCollisionJointTable.remove(non_collision_joint)
                     rbc.disable_collisions = True
-            elif rigid1.rigid_body.kinematic and not rigid2.rigid_body.kinematic or not rigid1.rigid_body.kinematic and rigid2.rigid_body.kinematic:
+            elif rigid1.rigid_body.kinematic != rigid2.rigid_body.kinematic:
                 rbc.disable_collisions = False
-
-            rbc.use_limit_ang_x = True
-            rbc.use_limit_ang_y = True
-            rbc.use_limit_ang_z = True
-            rbc.use_limit_lin_x = True
-            rbc.use_limit_lin_y = True
-            rbc.use_limit_lin_z = True
-            rbc.use_spring_x = True
-            rbc.use_spring_y = True
-            rbc.use_spring_z = True
 
             max_loc = mathutils.Vector(joint.maximum_location) * self.TO_BLE_MATRIX * self.__scale
             min_loc = mathutils.Vector(joint.minimum_location) * self.TO_BLE_MATRIX * self.__scale
@@ -681,30 +714,23 @@ class PMXImporter:
             rbc.limit_ang_y_lower = -max_rot[1]
             rbc.limit_ang_z_lower = -max_rot[2]
 
-            # spring_damp = mathutils.Vector(joint.spring_constant) * self.TO_BLE_MATRIX
-            # rbc.spring_damping_x = spring_damp[0]
-            # rbc.spring_damping_y = spring_damp[1]
-            # rbc.spring_damping_z = spring_damp[2]
+            if True: # This could be an import option... (but can't really see the difference)
+                spring_damp = mathutils.Vector(joint.spring_constant) * self.TO_BLE_MATRIX * 0.001
+                rbc.spring_damping_x = spring_damp[0]
+                rbc.spring_damping_y = spring_damp[1]
+                rbc.spring_damping_z = spring_damp[2]
 
-            self.__jointTable.append(obj)
-            bpy.ops.object.select_all(action='DESELECT')
-            obj.select = True
-            bpy.context.scene.objects.active = self.__armObj
-            bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=True)
-
-            # spring_stiff = mathutils.Vector()
-            # rbc.spring_stiffness_x = spring_stiff[0]
-            # rbc.spring_stiffness_y = spring_stiff[1]
-            # rbc.spring_stiffness_z = spring_stiff[2]
-
-            if rigid1.rigid_body.kinematic:
-                self.__makeSpring(rigid2, rigid1, mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX)
-            if rigid2.rigid_body.kinematic:
-                self.__makeSpring(rigid1, rigid2, mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX)
+                spring_stiff = mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX
+                rbc.spring_stiffness_x = spring_stiff[0]
+                rbc.spring_stiffness_y = spring_stiff[1]
+                rbc.spring_stiffness_z = spring_stiff[2]
+            else:
+                if rigid1.rigid_body.kinematic:
+                    self.__makeSpring(rigid2, rigid1, mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX)
+                if rigid2.rigid_body.kinematic:
+                    self.__makeSpring(rigid1, rigid2, mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX)
 
         self.__createNonCollisionConstraint()
-
-
 
 
     def __importMaterials(self):
@@ -712,7 +738,6 @@ class PMXImporter:
 
         pmxModel = self.__model
 
-        self.__materialTable = []
         self.__materialFaceCountTable = []
         for i in pmxModel.materials:
             mat = bpy.data.materials.new(name=i.name)
@@ -765,7 +790,7 @@ class PMXImporter:
             bf = mesh.tessfaces[i]
             bf.vertices_raw = list(f) + [0]
             bf.use_smooth = True
-            face_count = 0
+
             uv = uvLayer.data[i]
             uv.uv1 = self.flipUV_V(pmxModel.vertices[f[0]].uv)
             uv.uv2 = self.flipUV_V(pmxModel.vertices[f[1]].uv)
@@ -792,6 +817,14 @@ class PMXImporter:
 
         for i in obj.children:
             self.__hideRigidsAndJoints(i)
+
+    def __hideObjectsByDefault(self):
+        utils.selectAObject(self.__root)
+        bpy.ops.object.select_grouped(extend=True, type='CHILDREN_RECURSIVE')
+        self.__root.select = False
+        self.__armObj.select = False
+        self.__meshObj.select = False
+        bpy.ops.object.hide_view_set()
 
     def __addArmatureModifier(self, meshObj, armObj):
         armModifier = meshObj.modifiers.new(name='Armature', type='ARMATURE')
@@ -850,7 +883,7 @@ class PMXImporter:
         self.__meshObj.data.update()
 
         if args.get('hide_rigids', False):
-            self.__hideRigidsAndJoints(self.__root)
+            self.__hideObjectsByDefault()
         self.__armObj.pmx_import_scale = self.__scale
 
         for i in [self.__rigidObjGroup.objects, self.__jointObjGroup.objects, self.__tempObjGroup.objects]:

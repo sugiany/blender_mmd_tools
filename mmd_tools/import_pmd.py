@@ -140,7 +140,7 @@ def import_pmd(**kwargs):
         logging.debug('Add IK settings to the bone %s', pmx_bone.name)
         pmx_bone.isIK = True
         pmx_bone.target = ik.target_bone
-        pmx_bone.loopCount = ik.ik_chain
+        pmx_bone.loopCount = ik.iterations
         for i in ik.ik_child_bones:
             ik_link = pmx.IKLink()
             ik_link.target = i
@@ -166,6 +166,7 @@ def import_pmd(**kwargs):
         pmx_mat.ambient = mat.ambient
         pmx_mat.enabled_self_shadow = True # pmd doesn't support this
         pmx_mat.enabled_self_shadow_map = abs(mat.diffuse[3] - 0.98) > 1e-7 # consider precision error
+        pmx_mat.enabled_toon_edge = (mat.edge_flag != 0)
         pmx_mat.vertex_count = mat.vertex_count
         if len(mat.texture_path) > 0:
             tex_path = mat.texture_path
