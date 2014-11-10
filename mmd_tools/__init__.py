@@ -428,55 +428,64 @@ def menu_func_import(self, context):
     self.layout.operator(ImportVmd_Op.bl_idname, text="MikuMikuDance Motion (.vmd)")
 
 
-_custom_props = {
-    bpy.types.Scene:(
-        ('mmd_tools', bpy.props.PointerProperty(type=MMDToolsPropertyGroup)),
-    ),
-    bpy.types.Object:(
-        ('is_mmd_camera', bpy.props.BoolProperty(name='is_mmd_camera', default=False)),
-        ('mmd_camera_location', bpy.props.FloatVectorProperty(name='mmd_camera_location')),
-        ('mmd_camera_rotation', bpy.props.FloatVectorProperty(name='mmd_camera_rotation')),
-        ('mmd_camera_distance', bpy.props.FloatProperty(name='mmd_camera_distance')),
-        ('mmd_camera_angle', bpy.props.FloatProperty(name='mmd_camera_angle')),
-        ('mmd_camera_persp', bpy.props.BoolProperty(name='mmd_camera_persp')),
-        ('is_mmd_lamp', bpy.props.BoolProperty(name='is_mmd_lamp', default=False)),
-        ('is_mmd_rigid', bpy.props.BoolProperty(name='is_mmd_rigid', default=False)),
-        ('is_mmd_joint', bpy.props.BoolProperty(name='is_mmd_joint', default=False)),
-        ('is_mmd_rigid_track_target', bpy.props.BoolProperty(name='is_mmd_rigid_track_target', default=False)),
-        ('is_mmd_non_collision_constraint', bpy.props.BoolProperty(name='is_mmd_non_collision_constraint', default=False)),
-        ('is_mmd_spring_joint', bpy.props.BoolProperty(name='is_mmd_spring_joint', default=False)),
-        ('is_mmd_spring_goal', bpy.props.BoolProperty(name='is_mmd_spring_goal', default=False)),
-        ('is_mmd_glsl_light', bpy.props.BoolProperty(name='is_mmd_glsl_light', default=False)),
-        ('pmx_import_scale', bpy.props.FloatProperty(name='pmx_import_scale')),
-    ),
-    bpy.types.PoseBone:(
-        ('mmd_enabled_local_axis', bpy.props.BoolProperty(name='mmd_enabled_local_axis', default=False)),
-        ('mmd_local_axis_x', bpy.props.FloatVectorProperty(name='mmd_local_axis_x')),
-        ('mmd_local_axis_z', bpy.props.FloatVectorProperty(name='mmd_local_axis_z')),
-        ('is_mmd_tip_bone', bpy.props.BoolProperty(name='is_mmd_tip_bone', default=False)),
-        ('is_mmd_shadow_bone', bpy.props.BoolProperty(name='is_mmd_shadow_bone', default=False)),
-        ('mmd_bone_name_j', bpy.props.StringProperty(name='mmd_bone_name_j', description='the bone name in japanese.')),
-        ('mmd_bone_name_e', bpy.props.StringProperty(name='mmd_bone_name_e', description='the bone name in english.')),
-    ),
-    bpy.types.Material:(
-        ('ambient_color', bpy.props.FloatVectorProperty(name='ambient color')),
-    ),
-}
-
 def register():
-    bpy.utils.register_module(__name__)
+    bpy.utils.register_class(MMDToolsPropertyGroup)
     bpy.types.INFO_MT_file_import.append(menu_func_import)
 
-    for t in _custom_props:
-        for (n, v) in _custom_props[t]:
-            setattr(t, n, v)
+    bpy.types.Scene.mmd_tools = bpy.props.PointerProperty(type=MMDToolsPropertyGroup)
+
+    bpy.types.Object.is_mmd_camera = bpy.props.BoolProperty(name='is_mmd_camera', default=False)
+    bpy.types.Object.mmd_camera_location = bpy.props.FloatVectorProperty(name='mmd_camera_location')
+    bpy.types.Object.mmd_camera_rotation = bpy.props.FloatVectorProperty(name='mmd_camera_rotation')
+    bpy.types.Object.mmd_camera_distance = bpy.props.FloatProperty(name='mmd_camera_distance')
+    bpy.types.Object.mmd_camera_angle = bpy.props.FloatProperty(name='mmd_camera_angle')
+    bpy.types.Object.mmd_camera_persp = bpy.props.BoolProperty(name='mmd_camera_persp')
+    bpy.types.Object.is_mmd_lamp = bpy.props.BoolProperty(name='is_mmd_lamp', default=False)
+    bpy.types.Object.is_mmd_rigid = bpy.props.BoolProperty(name='is_mmd_rigid', default=False)
+    bpy.types.Object.is_mmd_joint = bpy.props.BoolProperty(name='is_mmd_joint', default=False)
+    bpy.types.Object.is_mmd_rigid_track_target = bpy.props.BoolProperty(name='is_mmd_rigid_track_target', default=False)
+    bpy.types.Object.is_mmd_non_collision_constraint = bpy.props.BoolProperty(name='is_mmd_non_collision_constraint', default=False)
+    bpy.types.Object.is_mmd_spring_joint = bpy.props.BoolProperty(name='is_mmd_spring_joint', default=False)
+    bpy.types.Object.is_mmd_spring_goal = bpy.props.BoolProperty(name='is_mmd_spring_goal', default=False)
+    bpy.types.PoseBone.mmd_enabled_local_axis = bpy.props.BoolProperty(name='mmd_enabled_local_axis', default=False)
+    bpy.types.PoseBone.mmd_local_axis_x = bpy.props.FloatVectorProperty(name='mmd_local_axis_x')
+    bpy.types.PoseBone.mmd_local_axis_z = bpy.props.FloatVectorProperty(name='mmd_local_axis_z')
+
+    bpy.types.PoseBone.is_mmd_tip_bone = bpy.props.BoolProperty(name='is_mmd_tip_bone', default=False)
+    bpy.types.PoseBone.is_mmd_shadow_bone = bpy.props.BoolProperty(name='is_mmd_shadow_bone', default=False)
+
+    bpy.types.Object.is_mmd_glsl_light = bpy.props.BoolProperty(name='is_mmd_glsl_light', default=False)
+
+    bpy.types.PoseBone.mmd_bone_name_j = bpy.props.StringProperty(name='mmd_bone_name_j', description='the bone name in japanese.')
+    bpy.types.PoseBone.mmd_bone_name_e = bpy.props.StringProperty(name='mmd_bone_name_e', description='the bone name in english.')
+
+    bpy.utils.register_module(__name__)
 
 def unregister():
     bpy.types.INFO_MT_file_import.remove(menu_func_import)
 
-    for t in _custom_props:
-        for (n, v) in _custom_props[t]:
-            delattr(t, n)
+    del bpy.types.Object.is_mmd_camera
+    del bpy.types.Object.mmd_camera_location
+    del bpy.types.Object.mmd_camera_rotation
+    del bpy.types.Object.mmd_camera_distance
+    del bpy.types.Object.mmd_camera_angle
+    del bpy.types.Object.mmd_camera_persp
+    del bpy.types.Object.is_mmd_lamp
+    del bpy.types.Object.is_mmd_rigid
+    del bpy.types.Object.is_mmd_joint
+    del bpy.types.Object.is_mmd_rigid_track_target
+    del bpy.types.Object.is_mmd_non_collision_constraint
+    del bpy.types.Object.is_mmd_spring_joint
+    del bpy.types.Object.is_mmd_spring_goal
+    del bpy.types.PoseBone.mmd_enabled_local_axis
+    del bpy.types.PoseBone.mmd_local_axis_x
+    del bpy.types.PoseBone.mmd_local_axis_z
+
+    del bpy.types.PoseBone.is_mmd_tip_bone
+    del bpy.types.PoseBone.is_mmd_shadow_bone
+    del bpy.types.Object.is_mmd_glsl_light
+    del bpy.types.PoseBone.mmd_bone_name_j
+    del bpy.types.PoseBone.mmd_bone_name_e
 
     bpy.utils.unregister_module(__name__)
 
