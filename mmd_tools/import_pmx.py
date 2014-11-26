@@ -452,6 +452,7 @@ class PMXImporter:
             utils.selectAObject(obj)
             bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
             obj.location = loc
+            obj.rotation_mode = 'YXZ'
             obj.rotation_euler = rot
             bpy.ops.rigidbody.object_add(type='ACTIVE')
             if rigid.mode == pmx.Rigid.MODE_STATIC and rigid.bone is not None:
