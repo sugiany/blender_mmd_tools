@@ -886,6 +886,7 @@ class PMXImporter:
         if args.get('hide_rigids', False):
             self.__hideObjectsByDefault()
         self.__armObj.pmx_import_scale = self.__scale
+        self.__armObj.data.layers[16] = True
 
         for i in [self.__rigidObjGroup.objects, self.__jointObjGroup.objects, self.__tempObjGroup.objects]:
             for j in i:
