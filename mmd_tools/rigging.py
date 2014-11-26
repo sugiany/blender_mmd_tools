@@ -205,6 +205,7 @@ class Rig:
         obj = bpy.context.active_object
         bpy.ops.rigidbody.object_add(type='ACTIVE')
         obj.location = location
+        obj.rotation_mode = 'YXZ'
         obj.rotation_euler = rotation
         obj.scale = size
         obj.hide_render = True
