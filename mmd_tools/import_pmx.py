@@ -634,7 +634,6 @@ class PMXImporter:
         self.__addArmatureModifier(self.__meshObj, self.__armObj)
         self.__meshObj.data.update()
 
-        bpy.types.Object.pmx_import_scale = bpy.props.FloatProperty(name='pmx_import_scale')
         self.__armObj.pmx_import_scale = self.__scale
 
         for i in [self.__rigidObjGroup.objects, self.__jointObjGroup.objects, self.__tempObjGroup.objects]:
