@@ -26,8 +26,12 @@ def create_MMDAlphaShader():
 
     node_input = shader.nodes.new('NodeGroupInput')
     node_output = shader.nodes.new('NodeGroupOutput')
+    node_output.location.x += 250
+    node_input.location.x -= 500
 
     trans = shader.nodes.new('ShaderNodeBsdfTransparent')
+    trans.location.x -= 250
+    trans.location.y += 150
     mix = shader.nodes.new('ShaderNodeMixShader')
 
     shader.links.new(mix.inputs[1], trans.outputs['BSDF'])
@@ -49,11 +53,17 @@ def create_MMDBasicShader():
 
     node_input = shader.nodes.new('NodeGroupInput')
     node_output = shader.nodes.new('NodeGroupOutput')
+    node_output.location.x += 250
+    node_input.location.x -= 500
 
     dif = shader.nodes.new('ShaderNodeBsdfDiffuse')
+    dif.location.x -= 250
+    dif.location.y += 150
     glo = shader.nodes.new('ShaderNodeBsdfGlossy')
+    glo.location.x -= 250
+    glo.location.y -= 150
     mix = shader.nodes.new('ShaderNodeMixShader')
-
+    
     shader.links.new(mix.inputs[1], dif.outputs['BSDF'])
     shader.links.new(mix.inputs[2], glo.outputs['BSDF'])
 
@@ -91,10 +101,14 @@ def convertToCyclesShader(obj):
             if j is not None and isinstance(j.texture, bpy.types.ImageTexture) and j.use:
                 if j.texture_coords == 'UV':  # don't use sphere maps for now
                     texture = i.material.node_tree.nodes.new('ShaderNodeTexImage')
+                    texture.location.x  = shader.location.x - 250
+                    texture.location.y  = shader.location.y - 150
                     texture.image = j.texture.image
 
         if texture is not None or i.material.alpha < 1.0:
             alpha_shader = i.material.node_tree.nodes.new('ShaderNodeGroup')
+            alpha_shader.location.x = shader.location.x + 250
+            alpha_shader.location.y = shader.location.y - 150
             alpha_shader.node_tree = mmd_alpha_shader_grp
             i.material.node_tree.links.new(alpha_shader.inputs[0], outplug)
             outplug = alpha_shader.outputs[0]
@@ -107,6 +121,9 @@ def convertToCyclesShader(obj):
                 mix_rgb.blend_type = 'MULTIPLY'
                 mix_rgb.inputs[0].default_value = 1.0
                 mix_rgb.inputs[1].default_value = list(i.material.diffuse_color) + [1.0]
+                mix_rgb.location.x = shader.location.x -250
+                texture.location.x  = shader.location.x - 500
+                mix_rgb.location.y = shader.location.y
                 i.material.node_tree.links.new(mix_rgb.inputs[2], texture.outputs['Color'])
                 i.material.node_tree.links.new(shader.inputs[0], mix_rgb.outputs['Color'])
             if i.material.alpha == 1.0:
@@ -115,6 +132,8 @@ def convertToCyclesShader(obj):
                 mix_alpha = i.material.node_tree.nodes.new('ShaderNodeMath')
                 mix_alpha.operation = 'MULTIPLY'
                 mix_alpha.inputs[0].default_value = i.material.alpha
+                mix_alpha.location.x = shader.location.x
+                mix_alpha.location.y = shader.location.y -300
                 i.material.node_tree.links.new(mix_alpha.inputs[1], texture.outputs['Alpha'])
                 i.material.node_tree.links.new(alpha_shader.inputs[1], mix_alpha.outputs['Value'])
         else:
@@ -123,3 +142,5 @@ def convertToCyclesShader(obj):
                 alpha_shader.inputs[1].default_value = i.material.alpha
 
         i.material.node_tree.links.new(i.material.node_tree.nodes['Material Output'].inputs['Surface'], outplug)
+        i.material.node_tree.nodes['Material Output'].location.x = alpha_shader.location.x + 250
+        i.material.node_tree.nodes['Material Output'].location.y = alpha_shader.location.y
