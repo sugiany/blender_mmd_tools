@@ -63,7 +63,6 @@ def create_MMDBasicShader():
     glo.location.x -= 250
     glo.location.y -= 150
     mix = shader.nodes.new('ShaderNodeMixShader')
-    
     shader.links.new(mix.inputs[1], dif.outputs['BSDF'])
     shader.links.new(mix.inputs[2], glo.outputs['BSDF'])
 
@@ -142,5 +141,5 @@ def convertToCyclesShader(obj):
                 alpha_shader.inputs[1].default_value = i.material.alpha
 
         i.material.node_tree.links.new(i.material.node_tree.nodes['Material Output'].inputs['Surface'], outplug)
-        i.material.node_tree.nodes['Material Output'].location.x = alpha_shader.location.x + 250
-        i.material.node_tree.nodes['Material Output'].location.y = alpha_shader.location.y
+        i.material.node_tree.nodes['Material Output'].location.x = shader.location.x + 500
+        i.material.node_tree.nodes['Material Output'].location.y = shader.location.y - 150
