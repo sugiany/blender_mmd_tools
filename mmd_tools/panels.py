@@ -86,7 +86,7 @@ class MMDDisplayItemsPanel(Panel):
 
         root = rigging.Rig.findRoot(active_obj)
         if root is None:
-            c = layout.column()
+            c = self.layout.column()
             c.label('Select a MMD Model')
             return
 
