@@ -202,6 +202,7 @@ class MMDRootPanel(Panel):
         row = col.row(align=True)
         row.operator('mmd_tools.build_rig')
         row.operator('mmd_tools.clean_rig')
+        col.operator('mmd_tools.apply_additioinal_transform')
 
         col = self.layout.column(align=True)
         col.operator(operators.ImportVmdToMMDModel.bl_idname, text='Import Motion')
@@ -384,6 +385,18 @@ class MMDBonePanel(Panel):
         c.prop(pose_bone.mmd_bone, 'local_axis_x')
         c = row.column()
         c.prop(pose_bone.mmd_bone, 'local_axis_z')
+
+        c = layout.column()
+
+        c.label('Additional Transformation:')
+        if pose_bone.mmd_bone.is_additional_transform_dirty:
+            c.label(text='Changes has not been applied.', icon='ERROR')
+        row = c.row()
+        row.prop(pose_bone.mmd_bone, 'has_additional_rotation', text='Rotation')
+        row.prop(pose_bone.mmd_bone, 'has_additional_location', text='Location')
+        c.prop_search(pose_bone.mmd_bone, 'additional_transform_bone', pose_bone.id_data.pose, 'bones', icon='BONE_DATA', text='')
+        c.prop(pose_bone.mmd_bone, 'additional_transform_influence', text='Influence')
+
 
 class MMDRigidPanel(Panel):
     bl_idname = 'RIGID_PT_mmd_tools_bone'

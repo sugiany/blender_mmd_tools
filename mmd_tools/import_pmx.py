@@ -248,109 +248,6 @@ class PMXImporter:
                 bone.ik_min_y = i.minimumAngle[1]
                 bone.ik_min_z = i.minimumAngle[2]
 
-    @staticmethod
-    def __findNoneAdditionalBone(target, pose_bones, visited_bones=None):
-        if visited_bones is None:
-            visited_bones = []
-        if target in visited_bones:
-            raise ValueError('Detected cyclic dependency.')
-        for i in filter(lambda x: x.type == 'CHILD_OF', target.constraints):
-            if i.subtarget != target.parent.name:
-                return PMXImporter.__findNoneAdditionalBone(pose_bones[i.subtarget], pose_bones, visited_bones)
-        return target
-
-    def __applyAdditionalTransform(self, obj, src, dest, influence, pose_bones, rotation=False, location=False):
-        """ apply additional transform to the bone.
-         @param obj the object of the target armature
-         @param src the PoseBone that apply the transform to another bone.
-         @param dest the PoseBone that another bone apply the transform to.
-        """
-        if not rotation and not location:
-            return
-        bone_name = None
-
-        # If src has been applied the additional transform by another bone,
-        # copy the constraint of it to dest.
-        src = self.__findNoneAdditionalBone(src, pose_bones)
-
-        with bpyutils.edit_object(obj) as data:
-            src_bone = data.edit_bones[src.name]
-            s_bone = data.edit_bones.new(name='shadow')
-            s_bone.head = src_bone.head
-            s_bone.tail = src_bone.tail
-            s_bone.parent = src_bone.parent
-            #s_bone.use_connect = src_bone.use_connect
-            s_bone.layers = (False, False, False, False, False, False, False, False, True, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False)
-            s_bone.use_inherit_rotation = False
-            s_bone.use_local_location = True
-            s_bone.use_inherit_scale = False
-            bone_name = s_bone.name
-
-            dest_bone = data.edit_bones[dest.name]
-            dest_bone.use_inherit_rotation = not rotation
-            dest_bone.use_local_location = not location
-
-        p_bone = obj.pose.bones[bone_name]
-        p_bone.is_mmd_shadow_bone = True
-        p_bone.mmd_shadow_bone_type = 'ADDITIONAL_TRANSFORM'
-
-        if rotation:
-            c = p_bone.constraints.new('COPY_ROTATION')
-            c.target = obj
-            c.subtarget = src.name
-            c.target_space = 'LOCAL'
-            c.owner_space = 'LOCAL'
-
-            if influence > 0:
-                c.influence = influence
-            else:
-                c.influence = -influence
-                c.invert_x = True
-                c.invert_y = True
-                c.invert_z = True
-
-        if location:
-            c = p_bone.constraints.new('COPY_LOCATION')
-            c.target = obj
-            c.subtarget = src.name
-            c.target_space = 'LOCAL'
-            c.owner_space = 'LOCAL'
-
-            if influence > 0:
-                c.influence = influence
-            else:
-                c.influence = -influence
-                c.invert_x = True
-                c.invert_y = True
-                c.invert_z = True
-
-        c = dest.constraints.new('CHILD_OF')
-
-        c.target = obj
-        c.subtarget = p_bone.name
-        c.use_location_x = location
-        c.use_location_y = location
-        c.use_location_z = location
-        c.use_rotation_x = rotation
-        c.use_rotation_y = rotation
-        c.use_rotation_z = rotation
-        c.use_scale_x = False
-        c.use_scale_y = False
-        c.use_scale_z = False
-        c.inverse_matrix = mathutils.Matrix(src.matrix).inverted()
-
-        if dest.parent is not None:
-            parent = dest.parent
-            c = dest.constraints.new('CHILD_OF')
-            c.target = obj
-            c.subtarget = parent.name
-            c.use_location_x = False
-            c.use_location_y = False
-            c.use_location_z = False
-            c.use_scale_x = False
-            c.use_scale_y = False
-            c.use_scale_z = False
-            c.inverse_matrix = mathutils.Matrix(parent.matrix).inverted()
 
     def __importBones(self):
         pmxModel = self.__model
@@ -378,15 +275,11 @@ class PMXImporter:
             if p_bone.hasAdditionalRotate or p_bone.hasAdditionalLocation:
                 bone_index, influ = p_bone.additionalTransform
                 src_bone = pmxModel.bones[bone_index]
-                self.__applyAdditionalTransform(
-                    self.__armObj,
-                    pose_bones[bone_index],
-                    b_bone,
-                    influ,
-                    self.__armObj.pose.bones,
-                    p_bone.hasAdditionalRotate,
-                    p_bone.hasAdditionalLocation
-                    )
+                mmd_bone = b_bone.mmd_bone
+                mmd_bone.has_additional_rotation = p_bone.hasAdditionalRotate
+                mmd_bone.has_additional_location = p_bone.hasAdditionalLocation
+                mmd_bone.additional_transform_influence = influ
+                mmd_bone.additional_transform_bone =  pose_bones[bone_index].name
 
             if p_bone.localCoordinate is not None:
                 b_bone.mmd_bone.enabled_local_axes = True
@@ -649,6 +542,7 @@ class PMXImporter:
 
         bpy.context.scene.gravity[2] = -9.81 * 10 * self.__scale
         self.__rig.rootObject().mmd_root.show_meshes = True
+        self.__rig.applyAdditionalTransformConstraints()
 
         logging.info(' Finished importing the model in %f seconds.', time.time() - start_time)
         logging.info('----------------------------------------')

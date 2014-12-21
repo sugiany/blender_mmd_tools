@@ -303,6 +303,10 @@ class MMDCamera(PropertyGroup):
         default=True,
         )
 
+
+def _updateMMDBoneAdditionalTransform(prop, context):
+    prop.is_additional_transform_dirty = True
+
 class MMDBone(PropertyGroup):
     name_j = StringProperty(
         name='Name',
@@ -315,7 +319,6 @@ class MMDBone(PropertyGroup):
         description='English Name',
         default='',
         )
-
 
     transform_order = IntProperty(
         name='Transform Order',
@@ -332,7 +335,6 @@ class MMDBone(PropertyGroup):
         name='Controllable',
         default=True,
         )
-
 
     transform_after_dynamics = BoolProperty(
         name='After Dynamics',
@@ -360,6 +362,36 @@ class MMDBone(PropertyGroup):
         name='Tip Bone',
         default=False,
         )
+
+    has_additional_rotation = BoolProperty(
+        name='Additional Rotation',
+        default=False,
+        update=_updateMMDBoneAdditionalTransform,
+        )
+
+    has_additional_location = BoolProperty(
+        name='Additional Location',
+        default=False,
+        update=_updateMMDBoneAdditionalTransform,
+        )
+
+    additional_transform_bone = StringProperty(
+        name='Additional Transform Bone',
+        default='',
+        update=_updateMMDBoneAdditionalTransform,
+        )
+
+    additional_transform_influence = FloatProperty(
+        name='Additional Transform Influence',
+        default=1,
+        update=_updateMMDBoneAdditionalTransform,
+        )
+
+    is_additional_transform_dirty = BoolProperty(
+        name='',
+        default=True
+        )
+
 
 class MMDRigid(PropertyGroup):
     name_j = StringProperty(
@@ -437,4 +469,3 @@ class MMDJoint(PropertyGroup):
         min=0,
         step=0.1,
         )
-
