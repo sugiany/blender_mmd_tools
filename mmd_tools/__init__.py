@@ -47,8 +47,6 @@ def menu_func_armature(self, context):
 
 _custom_props = {
     bpy.types.Object: [
-        ('mmd_root', bpy.props.PointerProperty(type=properties.MMDRoot)),
-        ('mmd_camera', bpy.props.PointerProperty(type=properties.MMDCamera)),
         ('mmd_type', bpy.props.EnumProperty(
                 name='Type',
                 default='NONE',
@@ -72,19 +70,13 @@ _custom_props = {
                 )
          ),
         ('is_mmd_lamp', bpy.props.BoolProperty(name='is_mmd_lamp', default=False)),
-        ('mmd_rigid', bpy.props.PointerProperty(type=properties.MMDRigid)),
-        ('mmd_joint', bpy.props.PointerProperty(type=properties.MMDJoint)),
         ('is_mmd_rigid_track_target', bpy.props.BoolProperty(name='is_mmd_rigid_track_target', default=False)),
         ('is_mmd_glsl_light', bpy.props.BoolProperty(name='is_mmd_glsl_light', default=False)),
         ('pmx_import_scale', bpy.props.FloatProperty(name='pmx_import_scale')),
         ],
     bpy.types.PoseBone: [
-        ('mmd_bone', bpy.props.PointerProperty(type=properties.MMDBone)),
         ('is_mmd_shadow_bone', bpy.props.BoolProperty(name='is_mmd_shadow_bone', default=False)),
         ('mmd_shadow_bone_type', bpy.props.StringProperty(name='mmd_shadow_bone_type')),
-    ],
-    bpy.types.Material: [
-        ('mmd_material', bpy.props.PointerProperty(type=properties.MMDMaterial)),
     ],
 }
 
@@ -94,6 +86,8 @@ def register():
     bpy.types.INFO_MT_file_export.append(menu_func_export)
     bpy.types.INFO_MT_armature_add.append(menu_func_armature)
 
+    properties.register()
+
     for typ, props in _custom_props.items():
         for attr, prop in props:
             setattr(typ, attr, prop)
@@ -101,6 +95,8 @@ def register():
 def unregister():
     bpy.types.INFO_MT_file_import.remove(menu_func_import)
     bpy.types.INFO_MT_file_export.remove(menu_func_export)
+
+    properties.unregister()
 
     for t in _custom_props:
         for (n, v) in _custom_props[t]:
