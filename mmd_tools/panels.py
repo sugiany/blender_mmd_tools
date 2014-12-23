@@ -83,8 +83,9 @@ class MMDDisplayItemsPanel(Panel):
 
     def draw(self, context):
         active_obj = context.active_object
-
-        root = rigging.Rig.findRoot(active_obj)
+        root = None
+        if active_obj:
+            root = rigging.Rig.findRoot(active_obj)
         if root is None:
             c = self.layout.column()
             c.label('Select a MMD Model')
