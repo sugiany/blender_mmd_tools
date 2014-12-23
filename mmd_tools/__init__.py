@@ -36,14 +36,14 @@ bl_info= {
 #         imp.reload(auto_scene_setup)
 
 def menu_func_import(self, context):
-    self.layout.operator(operators.ImportPmx.bl_idname, text="MikuMikuDance Model (.pmd, .pmx)")
-    self.layout.operator(operators.ImportVmd.bl_idname, text="MikuMikuDance Motion (.vmd)")
+    self.layout.operator(operators.fileio.ImportPmx.bl_idname, text="MikuMikuDance Model (.pmd, .pmx)")
+    self.layout.operator(operators.fileio.ImportVmd.bl_idname, text="MikuMikuDance Motion (.vmd)")
 
 def menu_func_export(self, context):
-    self.layout.operator(operators.ExportPmx.bl_idname, text="MikuMikuDance model (.pmx)")
+    self.layout.operator(operators.fileio.ExportPmx.bl_idname, text="MikuMikuDance model (.pmx)")
 
 def menu_func_armature(self, context):
-    self.layout.operator(operators.CreateMMDModelRoot.bl_idname, text='Create MMD Model')
+    self.layout.operator(operators.model.CreateMMDModelRoot.bl_idname, text='Create MMD Model')
 
 _custom_props = {
     bpy.types.Object: [

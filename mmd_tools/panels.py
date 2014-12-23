@@ -23,8 +23,8 @@ class MMDToolsObjectPanel(Panel):
         col = layout.column()
         col.label('Model:')
         c = col.column(align=True)
-        c.operator(operators.CreateMMDModelRoot.bl_idname, text='Create')
-        c.operator(operators.ImportPmx.bl_idname, text='Import')
+        c.operator(operators.model.CreateMMDModelRoot.bl_idname, text='Create')
+        c.operator(operators.fileio.ImportPmx.bl_idname, text='Import')
 
         col.label('Motion(vmd):')
         c = col.column()
@@ -107,12 +107,12 @@ class MMDDisplayItemsPanel(Panel):
             )
         tb = row.column()
         tb1 = tb.column(align=True)
-        tb1.operator(operators.AddDisplayItemFrame.bl_idname, text='', icon='ZOOMIN')
-        tb1.operator(operators.RemoveDisplayItemFrame.bl_idname, text='', icon='ZOOMOUT')
+        tb1.operator(operators.display_item.AddDisplayItemFrame.bl_idname, text='', icon='ZOOMIN')
+        tb1.operator(operators.display_item.RemoveDisplayItemFrame.bl_idname, text='', icon='ZOOMOUT')
         tb.separator()
         tb1 = tb.column(align=True)
-        tb1.operator(operators.MoveUpDisplayItemFrame.bl_idname, text='', icon='TRIA_UP')
-        tb1.operator(operators.MoveDownDisplayItemFrame.bl_idname, text='', icon='TRIA_DOWN')
+        tb1.operator(operators.display_item.MoveUpDisplayItemFrame.bl_idname, text='', icon='TRIA_UP')
+        tb1.operator(operators.display_item.MoveDownDisplayItemFrame.bl_idname, text='', icon='TRIA_DOWN')
         frame = mmd_root.display_item_frames[mmd_root.active_display_item_frame]
         c.prop(frame, 'name')
 
@@ -126,12 +126,12 @@ class MMDDisplayItemsPanel(Panel):
             )
         tb = row.column()
         tb1 = tb.column(align=True)
-        tb1.operator(operators.AddDisplayItem.bl_idname, text='', icon='ZOOMIN')
-        tb1.operator(operators.RemoveDisplayItem.bl_idname, text='', icon='ZOOMOUT')
+        tb1.operator(operators.display_item.AddDisplayItem.bl_idname, text='', icon='ZOOMIN')
+        tb1.operator(operators.display_item.RemoveDisplayItem.bl_idname, text='', icon='ZOOMOUT')
         tb.separator()
         tb1 = tb.column(align=True)
-        tb1.operator(operators.MoveUpDisplayItem.bl_idname, text='', icon='TRIA_UP')
-        tb1.operator(operators.MoveDownDisplayItem.bl_idname, text='', icon='TRIA_DOWN')
+        tb1.operator(operators.display_item.MoveUpDisplayItem.bl_idname, text='', icon='TRIA_UP')
+        tb1.operator(operators.display_item.MoveDownDisplayItem.bl_idname, text='', icon='TRIA_DOWN')
         item = frame.items[frame.active_item]
         row = col.row(align=True)
         row.prop(item, 'type', text='')
@@ -139,7 +139,7 @@ class MMDDisplayItemsPanel(Panel):
             row.prop_search(item, 'name', rig.armature().pose, 'bones', icon='BONE_DATA', text='')
 
             row = col.row(align=True)
-            row.operator(operators.SelectCurrentDisplayItem.bl_idname, text='Select')
+            row.operator(operators.display_item.SelectCurrentDisplayItem.bl_idname, text='Select')
         elif item.type == 'MORPH':
             row.prop(item, 'name', text='')
 
@@ -206,8 +206,8 @@ class MMDRootPanel(Panel):
         col.operator('mmd_tools.apply_additioinal_transform')
 
         col = self.layout.column(align=True)
-        col.operator(operators.ImportVmdToMMDModel.bl_idname, text='Import Motion')
-        col.operator(operators.ExportPmx.bl_idname, text='Export Model')
+        col.operator(operators.fileio.ImportVmdToMMDModel.bl_idname, text='Import Motion')
+        col.operator(operators.fileio.ExportPmx.bl_idname, text='Export Model')
 
 
 class MMDViewPanel(Panel):
