@@ -1,16 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import math
-
 import bpy
 from bpy.types import PropertyGroup
 from bpy.props import StringProperty, IntProperty, BoolVectorProperty, EnumProperty, FloatVectorProperty
 
 from mmd_tools.pmx import Rigid
 
-from . import register_property
-
-@register_property(bpy.types.Object, 'mmd_rigid')
 class MMDRigidBody(PropertyGroup):
     name_j = StringProperty(
         name='Name',
@@ -61,7 +56,6 @@ class MMDRigidBody(PropertyGroup):
         default='',
         )
 
-@register_property(bpy.types.Object, 'mmd_joint')
 class MMDJoint(PropertyGroup):
     name_j = StringProperty(
         name='Name',

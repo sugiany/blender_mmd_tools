@@ -5,13 +5,11 @@ from bpy.types import PropertyGroup
 from bpy.props import BoolProperty, EnumProperty, FloatProperty, FloatVectorProperty, IntProperty, StringProperty
 
 from mmd_tools.pmx import Material
-from . import register_property
 
 
 #===========================================
 # Property classes
 #===========================================
-@register_property(bpy.types.Material, 'mmd_material')
 class MMDMaterial(PropertyGroup):
     """ マテリアル
     """

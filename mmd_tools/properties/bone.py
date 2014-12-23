@@ -4,13 +4,10 @@ import bpy
 from bpy.types import PropertyGroup
 from bpy.props import StringProperty, IntProperty, BoolProperty, FloatProperty, FloatVectorProperty
 
-from . import register_property
-
 
 def _updateMMDBoneAdditionalTransform(prop, context):
     prop.is_additional_transform_dirty = True
 
-@register_property(bpy.types.PoseBone, 'mmd_bone')
 class MMDBone(PropertyGroup):
     name_j = StringProperty(
         name='Name',

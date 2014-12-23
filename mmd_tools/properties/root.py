@@ -5,7 +5,6 @@ import bpy
 from bpy.types import PropertyGroup
 from bpy.props import BoolProperty, CollectionProperty, FloatProperty, IntProperty, StringProperty, EnumProperty
 from mmd_tools import rigging
-from . import register_property
 
 
 #===========================================
@@ -120,7 +119,6 @@ class MMDDisplayItemFrame(PropertyGroup):
         )
 
 
-@register_property(bpy.types.Object, 'mmd_root')
 class MMDRoot(PropertyGroup):
     """ MMDモデルデータ
 

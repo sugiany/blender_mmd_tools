@@ -2,12 +2,10 @@
 
 import math
 
-import bpy
 from bpy.types import PropertyGroup
 from bpy.props import FloatProperty, BoolProperty
 
 from mmd_tools import mmd_camera
-from . import register_property
 
 
 def _getMMDCameraAngle(prop):
@@ -21,7 +19,6 @@ def _setMMDCameraAngle(prop, value):
     cam.data.lens = cam.data.sensor_height/math.tan(value/2)/2
 
 
-@register_property(bpy.types.Object, 'mmd_camera')
 class MMDCamera(PropertyGroup):
     angle = FloatProperty(
         name='Angle',
