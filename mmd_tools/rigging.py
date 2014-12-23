@@ -704,10 +704,11 @@ class Rig:
         for joint in self.joints():
             self.updateJoint(joint)
 
-    def applyAdditionalTransformConstraints(self):
+    def applyAdditionalTransformConstraints(self, force=False):
         arm = self.armature()
-        for p_bone in arm.pose.bones:
-            if p_bone.mmd_bone.is_additional_transform_dirty:
+        for p_bone in arm.pose.bones[:]:
+            print(p_bone.name)
+            if force or p_bone.mmd_bone.is_additional_transform_dirty:
                 constraint = AdditionalConstraint(p_bone)
                 constraint.update()
 
