@@ -2,7 +2,7 @@
 
 from bpy.types import Panel
 
-from mmd_tools import rigging
+import mmd_tools.core.model as mmd_model
 
 class MMDRigidPanel(Panel):
     bl_idname = 'RIGID_PT_mmd_tools_bone'
@@ -27,8 +27,8 @@ class MMDRigidPanel(Panel):
         row = layout.row(align=True)
         row.prop(obj.mmd_rigid, 'type')
 
-        root = rigging.Rig.findRoot(obj)
-        rig = rigging.Rig(root)
+        root = mmd_model.Rig.findRoot(obj)
+        rig = mmd_model.Rig(root)
         armature = rig.armature()
         relation = obj.constraints.get('mmd_tools_rigid_parent')
         if relation is not None:

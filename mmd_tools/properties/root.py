@@ -4,7 +4,7 @@
 import bpy
 from bpy.types import PropertyGroup
 from bpy.props import BoolProperty, CollectionProperty, FloatProperty, IntProperty, StringProperty, EnumProperty
-from mmd_tools import rigging
+import mmd_tools.core.model as mmd_model
 
 
 #===========================================
@@ -12,7 +12,7 @@ from mmd_tools import rigging
 #===========================================
 def _toggleVisibilityOfMeshes(self, context):
     root = self.id_data
-    rig = rigging.Rig(root)
+    rig = mmd_model.Rig(root)
     objects = list(rig.meshes())
     hide = not self.show_meshes
     if hide and context.active_object in objects:
@@ -22,7 +22,7 @@ def _toggleVisibilityOfMeshes(self, context):
 
 def _toggleVisibilityOfRigidBodies(self, context):
     root = self.id_data
-    rig = rigging.Rig(root)
+    rig = mmd_model.Rig(root)
     objects = list(rig.rigidBodies())
     hide = not self.show_rigid_bodies
     if hide and context.active_object in objects:
@@ -32,7 +32,7 @@ def _toggleVisibilityOfRigidBodies(self, context):
 
 def _toggleVisibilityOfJoints(self, context):
     root = self.id_data
-    rig = rigging.Rig(root)
+    rig = mmd_model.Rig(root)
     objects = list(rig.joints())
     hide = not self.show_joints
     if hide and context.active_object in objects:
@@ -42,7 +42,7 @@ def _toggleVisibilityOfJoints(self, context):
 
 def _toggleVisibilityOfTemporaryObjects(self, context):
     root = self.id_data
-    rig = rigging.Rig(root)
+    rig = mmd_model.Rig(root)
     objects = list(rig.temporaryObjects())
     hide = not self.show_temporary_objects
     if hide and context.active_object in objects:
@@ -52,20 +52,20 @@ def _toggleVisibilityOfTemporaryObjects(self, context):
 
 def _toggleShowNamesOfRigidBodies(self, context):
     root = self.id_data
-    rig = rigging.Rig(root)
+    rig = mmd_model.Rig(root)
     objects = list(rig.rigidBodies())
     for i in objects:
         i.show_name = root.mmd_root.show_names_of_rigid_bodies
 
 def _toggleShowNamesOfJoints(self, context):
     root = self.id_data
-    rig = rigging.Rig(root)
+    rig = mmd_model.Rig(root)
     objects = list(rig.joints())
     for i in objects:
         i.show_name = root.mmd_root.show_names_of_joints
 
 def _setVisibilityOfMMDRigArmature(obj, v):
-    rig = rigging.Rig(obj)
+    rig = mmd_model.Rig(obj)
     arm = rig.armature()
     if bpy.context.active_object == arm:
         bpy.context.scene.objects.active = obj
@@ -156,7 +156,7 @@ class MMDRoot(PropertyGroup):
 
     show_armature = BoolProperty(
         name='Show Armature',
-        get=lambda x: not rigging.Rig(x.id_data).armature().hide,
+        get=lambda x: not mmd_model.Rig(x.id_data).armature().hide,
         set=lambda x, v: _setVisibilityOfMMDRigArmature(x.id_data, v),
         )
 

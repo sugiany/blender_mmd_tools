@@ -4,8 +4,8 @@ import bpy
 from bpy.types import Operator
 import mathutils
 
-from . import pmx
-from . import bpyutils
+from mmd_tools import pmx
+from mmd_tools import bpyutils
 
 import re
 import math

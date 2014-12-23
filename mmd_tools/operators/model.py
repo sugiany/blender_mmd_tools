@@ -3,7 +3,9 @@
 import bpy
 from bpy.types import Operator
 
-from mmd_tools import rigging, bpyutils
+from mmd_tools import bpyutils
+import mmd_tools.core.model as mmd_model
+
 
 class CreateMMDModelRoot(Operator):
     bl_idname = 'mmd_tools.create_mmd_model_root_object'
@@ -14,7 +16,7 @@ class CreateMMDModelRoot(Operator):
     scale = bpy.props.FloatProperty(name='Scale', default=0.2)
 
     def execute(self, context):
-        rig = rigging.Rig.create('New MMD Model', 'New MMD Model', self.scale)
+        rig = mmd_model.Rig.create('New MMD Model', 'New MMD Model', self.scale)
         arm = rig.armature()
         with bpyutils.edit_object(arm) as data:
             bone = data.edit_bones.new(name=u'全ての親')

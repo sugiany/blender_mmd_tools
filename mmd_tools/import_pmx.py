@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from . import pmx
 from . import utils
-from . import rigging
+import mmd_tools.core.model as mmd_model
 from . import bpyutils
 
 import math
@@ -68,7 +68,7 @@ class PMXImporter:
         """ Create main objects and link them to scene.
         """
         pmxModel = self.__model
-        self.__rig = rigging.Rig.create(pmxModel.name, pmxModel.name_e, self.__scale)
+        self.__rig = mmd_model.Rig.create(pmxModel.name, pmxModel.name_e, self.__scale)
 
         mesh = bpy.data.meshes.new(name=pmxModel.name)
         self.__meshObj = bpy.data.objects.new(name=pmxModel.name+'_mesh', object_data=mesh)

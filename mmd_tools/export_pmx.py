@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from . import pmx
-from . import rigging
+import mmd_tools.core.model as mmd_model
 from . import bpyutils
 
 import collections
@@ -414,7 +414,7 @@ class __PmxExporter:
             p_rigid.mode = int(obj.mmd_rigid.type)
 
             rigid_shape = obj.mmd_rigid.shape
-            shape_size = mathutils.Vector(rigging.getRigidBodySize(obj))
+            shape_size = mathutils.Vector(mmd_model.getRigidBodySize(obj))
             if rigid_shape == 'SPHERE':
                 p_rigid.type = 0
                 p_rigid.size = shape_size * self.__scale

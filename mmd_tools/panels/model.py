@@ -2,7 +2,9 @@
 
 from bpy.types import Panel, UIList
 
-from mmd_tools import rigging, operators
+from mmd_tools import operators
+import mmd_tools.core.model as mmd_model
+
 
 
 class MMD_ROOT_UL_display_item_frames(UIList):
@@ -48,13 +50,13 @@ class MMDDisplayItemsPanel(Panel):
         active_obj = context.active_object
         root = None
         if active_obj:
-            root = rigging.Rig.findRoot(active_obj)
+            root = mmd_model.Rig.findRoot(active_obj)
         if root is None:
             c = self.layout.column()
             c.label('Select a MMD Model')
             return
 
-        rig = rigging.Rig(root)
+        rig = mmd_model.Rig(root)
         arm = rig.armature()
         root = rig.rootObject()
         mmd_root = root.mmd_root
@@ -130,13 +132,13 @@ class MMDRootPanel(Panel):
             c.label('No object is selected.')
             return
 
-        root = rigging.Rig.findRoot(obj)
+        root = mmd_model.Rig.findRoot(obj)
         if root is None:
             c = layout.column()
             c.label('Create MMD Model')
             return
 
-        rig = rigging.Rig(root)
+        rig = mmd_model.Rig(root)
         arm = rig.armature()
 
         c = layout.column()

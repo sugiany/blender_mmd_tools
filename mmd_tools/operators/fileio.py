@@ -8,7 +8,9 @@ import bpy
 from bpy.types import Operator
 from bpy_extras.io_utils import ImportHelper
 
-from mmd_tools import import_pmd, import_pmx, export_pmx, import_vmd, auto_scene_setup, rigging
+from mmd_tools import import_pmd, import_pmx, export_pmx, import_vmd, auto_scene_setup
+import mmd_tools.core.model as mmd_model
+
 
 
 LOG_LEVEL_ITEMS = [
@@ -142,8 +144,8 @@ class ImportVmdToMMDModel(Operator, ImportHelper):
 
     def execute(self, context):
         obj = context.active_object
-        root = rigging.Rig.findRoot(obj)
-        rig = rigging.Rig(root)
+        root = mmd_model.Rig.findRoot(obj)
+        rig = mmd_model.Rig(root)
         importer = import_vmd.VMDImporter(filepath=self.filepath, scale=root.mmd_root.scale, frame_margin=self.margin)
         arm = rig.armature()
         t = arm.hide
@@ -191,8 +193,8 @@ class ExportPmx(Operator, ImportHelper):
             handler = log_handler(self.log_level)
         logger.addHandler(handler)
 
-        root = rigging.Rig.findRoot(context.active_object)
-        rig = rigging.Rig(root)
+        root = mmd_model.Rig.findRoot(context.active_object)
+        rig = mmd_model.Rig(root)
         rig.clean()
         try:
             export_pmx.export(
