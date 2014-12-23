@@ -66,23 +66,6 @@ def isJointObject(obj):
 def isTemporaryObject(obj):
     return obj.mmd_type in ['TRACK_TARGET', 'NON_COLLISION_CONSTRAINT', 'SPRING_CONSTRAINT', 'SPRING_GOAL']
 
-def findRelationalBone(rigid_body):
-    relation = rigid_body.constraints.get('mmd_tools_rigid_parent')
-    if relation is not None:
-        return (relation.target, relation.subtarget)
-    else:
-        arm = getArmatureObject(rigid_body)
-        track = None
-        for i in filter(lambda x: x.mmd_type == 'TRACK_TARGET', rigid_body.children):
-            track = i
-        if track is None:
-            return (arm, '')
-
-        for bone in arm.pose.bones:
-            c = bone.constraints.get('mmd_tools_rigid_track')
-            if c is not None and c.target == track:
-                return (arm, bone.name)
-        return (arm, '')
 
 def getRigidBodySize(obj):
     if not isRigidBodyObject(obj):
