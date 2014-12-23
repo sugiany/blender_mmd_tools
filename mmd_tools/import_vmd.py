@@ -8,8 +8,8 @@ import re
 import os
 
 from . import vmd
-from . import mmd_camera
-from . import mmd_lamp
+import mmd_tools.core.camera as mmd_camera
+import mmd_tools.core.lamp as mmd_lamp
 from . import utils
 
 class VMDImporter:

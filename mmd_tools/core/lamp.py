@@ -2,7 +2,7 @@ import bpy
 import mathutils
 import math
 
-from . import utils
+from mmd_tools import utils
 
 class MMDLamp:
     def __init__(self, obj):

@@ -5,7 +5,7 @@ import math
 from bpy.types import PropertyGroup
 from bpy.props import FloatProperty, BoolProperty
 
-from mmd_tools import mmd_camera
+import mmd_tools.core.camera as mmd_camera
 
 
 def _getMMDCameraAngle(prop):

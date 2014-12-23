@@ -2,7 +2,7 @@
 
 from bpy.types import Panel
 
-from mmd_tools import mmd_camera
+import mmd_tools.core.camera as mmd_camera
 
 class MMDCameraPanel(Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_camera'
