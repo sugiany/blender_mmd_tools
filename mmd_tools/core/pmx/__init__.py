@@ -231,7 +231,7 @@ class Header:
         self.additional_uvs = 0
 
         self.vertex_index_size = 1
-        self.vertex_index_size = 1
+        self.texture_index_size = 1
         self.material_index_size = 1
         self.bone_index_size = 1
         self.morph_index_size = 1
@@ -728,14 +728,14 @@ class BoneWeight:
         self.type = self.BDEF1
 
     def convertIdToName(self, type_id):
-        t = list(filter(lambda x: x[0]==type_id, TYPES))
+        t = list(filter(lambda x: x[0]==type_id, self.TYPES))
         if len(t) > 0:
             return t[0][1]
         else:
             return None
 
     def convertNameToId(self, type_name):
-        t = list(filter(lambda x: x[1]==type_name, TYPES))
+        t = list(filter(lambda x: x[1]==type_name, self.TYPES))
         if len(t) > 0:
             return t[0][0]
         else:
@@ -787,9 +787,9 @@ class BoneWeight:
             if not isinstance(self.weights, BoneWeightSDEF):
                 raise ValueError
             fs.writeFloat(self.weights.weight)
-            fs.writeVector(self.weight.c)
-            fs.writeVector(self.weight.r0)
-            fs.writeVector(self.weight.r1)
+            fs.writeVector(self.weights.c)
+            fs.writeVector(self.weights.r0)
+            fs.writeVector(self.weights.r1)
         else:
             raise ValueError('invalid weight type %s'%str(self.type))
 
@@ -1144,6 +1144,9 @@ class Morph:
 
     def __repr__(self):
         return '<Morph name %s, name_e %s>'%(self.name, self.name_e)
+
+    def type_index(self):
+        raise NotImplementedError
 
     @staticmethod
     def create(fs):

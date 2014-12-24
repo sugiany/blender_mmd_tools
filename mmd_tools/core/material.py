@@ -1,0 +1,6 @@
+# -*- coding: utf-8 -*-
+
+SPHERE_MODE_OFF    = 0
+SPHERE_MODE_MULT   = 1
+SPHERE_MODE_ADD    = 2
+SPHERE_MODE_SUBTEX = 3

@@ -4,11 +4,9 @@ import bpy
 from bpy.types import Operator
 import mathutils
 
-from mmd_tools import pmx
 from mmd_tools import bpyutils
+from mmd_tools.core import rigid_body
 
-import re
-import math
 import logging
 import time
 
@@ -173,7 +171,7 @@ class Rig:
         linear_damping = kwargs.get('linear_damping')
         bounce = kwargs.get('bounce')
 
-        if shape_type == pmx.Rigid.TYPE_SPHERE:
+        if shape_type == rigid_body.SHAPE_SPHERE:
             bpy.ops.mesh.primitive_uv_sphere_add(
                 segments=16,
                 ring_count=8,
@@ -184,14 +182,14 @@ class Rig:
             size = mathutils.Vector([1,1,1]) * size[0]
             rigid_type = 'SPHERE'
             bpy.ops.object.shade_smooth()
-        elif shape_type == pmx.Rigid.TYPE_BOX:
+        elif shape_type == rigid_body.SHAPE_BOX:
             bpy.ops.mesh.primitive_cube_add(
                 view_align=False,
                 enter_editmode=False
                 )
             size = mathutils.Vector(size)
             rigid_type = 'BOX'
-        elif shape_type == pmx.Rigid.TYPE_CAPSULE:
+        elif shape_type == rigid_body.SHAPE_CAPSULE:
             obj = bpyutils.makeCapsule(radius=size[0], height=size[1])
             size = mathutils.Vector([1,1,1])
             rigid_type = 'CAPSULE'
@@ -494,12 +492,12 @@ class Rig:
                 if i.name == 'mmd_tools_rigid_track':
                     target_bone.constraints.remove(i)
 
-        if int(rigid.type) == pmx.Rigid.MODE_STATIC:
+        if int(rigid.type) == rigid_body.MODE_STATIC:
             rigid_obj.rigid_body.kinematic = True
         else:
             rigid_obj.rigid_body.kinematic = False
 
-        if int(rigid.type) == pmx.Rigid.MODE_STATIC:
+        if int(rigid.type) == rigid_body.MODE_STATIC:
             if arm is not None and bone_name != '':
                 relation.mute = False
                 relation.inverse_matrix = mathutils.Matrix(target_bone.matrix).inverted()
@@ -508,7 +506,7 @@ class Rig:
         else:
             relation.mute = True
 
-        if int(rigid.type) in [pmx.Rigid.MODE_DYNAMIC, pmx.Rigid.MODE_DYNAMIC_BONE] and arm is not None and target_bone is not None:
+        if int(rigid.type) in [rigid_body.MODE_DYNAMIC, rigid_body.MODE_DYNAMIC_BONE] and arm is not None and target_bone is not None:
             empty = bpy.data.objects.new(
                 'mmd_bonetrack',
                 None)
@@ -885,7 +883,6 @@ class RigidBodyMaterial:
         ]
     @classmethod
     def getMaterial(cls, number):
-        import bpy
         number = int(number)
         material_name = 'mmd_tools_rigid_%d'%(number)
         if material_name not in bpy.data.materials:

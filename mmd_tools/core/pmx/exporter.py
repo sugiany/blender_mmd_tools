@@ -1,8 +1,4 @@
 # -*- coding: utf-8 -*-
-from . import pmx
-import mmd_tools.core.model as mmd_model
-from . import bpyutils
-
 import collections
 import os
 import copy
@@ -12,6 +8,11 @@ import shutil
 import mathutils
 import bpy
 import bmesh
+
+from mmd_tools.core import pmx
+from mmd_tools import bpyutils
+import mmd_tools.core.model as mmd_model
+
 
 class _Vertex:
     def __init__(self, co, groups, normal, offsets):

@@ -1,0 +1,9 @@
+# -*- coding: utf-8 -*-
+
+SHAPE_SPHERE  = 0
+SHAPE_BOX     = 1
+SHAPE_CAPSULE = 2
+
+MODE_STATIC       = 0
+MODE_DYNAMIC      = 1
+MODE_DYNAMIC_BONE = 2

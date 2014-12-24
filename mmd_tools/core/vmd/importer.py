@@ -1,16 +1,14 @@
 # -*- coding: utf-8 -*-
-import struct
-import collections
 import mathutils
 import bpy
 import math
 import re
 import os
 
-from . import vmd
 import mmd_tools.core.camera as mmd_camera
 import mmd_tools.core.lamp as mmd_lamp
-from . import utils
+import mmd_tools.core.vmd as vmd
+from mmd_tools import utils
 
 class VMDImporter:
     def __init__(self, filepath, scale=1.0, use_pmx_bonename=True, convert_mmd_camera=True, convert_mmd_lamp=True, frame_margin=5):
@@ -137,7 +135,7 @@ class VMDImporter:
                                      group=name,
                                      frame=frame+self.__frame_margin)
 
-        rePath = re.compile('^pose\.bones\["(.+)"\]\.([a-z_]+)$')
+        rePath = re.compile(r'^pose\.bones\["(.+)"\]\.([a-z_]+)$')
         for fcurve in act.fcurves:
             m = rePath.match(fcurve.data_path)
             if m and m.group(2) in ['location', 'rotation_quaternion']:

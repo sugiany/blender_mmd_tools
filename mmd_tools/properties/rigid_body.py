@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import bpy
 from bpy.types import PropertyGroup
 from bpy.props import StringProperty, IntProperty, BoolVectorProperty, EnumProperty, FloatVectorProperty
 
-from mmd_tools.pmx import Rigid
+from mmd_tools.core import rigid_body
 
 class MMDRigidBody(PropertyGroup):
     name_j = StringProperty(
@@ -35,9 +34,9 @@ class MMDRigidBody(PropertyGroup):
     type = EnumProperty(
         name='Rigid Type',
         items = [
-            (str(Rigid.MODE_STATIC), 'Static', '', 1),
-            (str(Rigid.MODE_DYNAMIC), 'Dynamic', '', 2),
-            (str(Rigid.MODE_DYNAMIC_BONE), 'Dynamic&BoneTrack', '', 3),
+            (str(rigid_body.MODE_STATIC), 'Static', '', 1),
+            (str(rigid_body.MODE_DYNAMIC), 'Dynamic', '', 2),
+            (str(rigid_body.MODE_DYNAMIC_BONE), 'Dynamic&BoneTrack', '', 3),
             ],
         )
 

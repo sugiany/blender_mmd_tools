@@ -4,8 +4,7 @@ import bpy
 from bpy.types import PropertyGroup
 from bpy.props import BoolProperty, EnumProperty, FloatProperty, FloatVectorProperty, IntProperty, StringProperty
 
-from mmd_tools.pmx import Material
-
+from mmd_tools.core import material
 
 #===========================================
 # Property classes
@@ -89,10 +88,10 @@ class MMDMaterial(PropertyGroup):
         name='Sphere Map Type',
         description='',
         items = [
-            (str(Material.SPHERE_MODE_OFF),    'Off',        '', 1),
-            (str(Material.SPHERE_MODE_MULT),   'Multiply',   '', 2),
-            (str(Material.SPHERE_MODE_ADD),    'Add',        '', 3),
-            (str(Material.SPHERE_MODE_SUBTEX), 'SubTexture', '', 4),
+            (str(material.SPHERE_MODE_OFF),    'Off',        '', 1),
+            (str(material.SPHERE_MODE_MULT),   'Multiply',   '', 2),
+            (str(material.SPHERE_MODE_ADD),    'Add',        '', 3),
+            (str(material.SPHERE_MODE_SUBTEX), 'SubTexture', '', 4),
             ],
         )
 

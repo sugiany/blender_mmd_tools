@@ -8,7 +8,12 @@ import bpy
 from bpy.types import Operator
 from bpy_extras.io_utils import ImportHelper
 
-from mmd_tools import import_pmd, import_pmx, export_pmx, import_vmd, auto_scene_setup
+from mmd_tools import auto_scene_setup
+
+import mmd_tools.core.pmd.importer as pmd_importer
+import mmd_tools.core.pmx.importer as pmx_importer
+import mmd_tools.core.pmx.exporter as pmx_exporter
+import mmd_tools.core.vmd.importer as vmd_importer
 import mmd_tools.core.model as mmd_model
 
 
@@ -61,7 +66,7 @@ class ImportPmx(Operator, ImportHelper):
         logger.addHandler(handler)
         try:
             if re.search('\.pmd', self.filepath, flags=re.I):
-                import_pmd.import_pmd(
+                pmd_importer.import_pmd(
                     filepath=self.filepath,
                     scale=self.scale,
                     rename_LR_bones=self.renameBones,
@@ -74,7 +79,7 @@ class ImportPmx(Operator, ImportHelper):
                     spa_blend_factor=self.spa_blend_factor
                     )
             else:
-                importer = import_pmx.PMXImporter()
+                importer = pmx_importer.PMXImporter()
                 importer.execute(
                     filepath=self.filepath,
                     scale=self.scale,
@@ -115,7 +120,7 @@ class ImportVmd(Operator, ImportHelper):
     update_scene_settings = bpy.props.BoolProperty(name='Update scene settings', default=True)
 
     def execute(self, context):
-        importer = import_vmd.VMDImporter(filepath=self.filepath, scale=self.scale, frame_margin=self.margin)
+        importer = vmd_importer.VMDImporter(filepath=self.filepath, scale=self.scale, frame_margin=self.margin)
         for i in context.selected_objects:
             importer.assign(i)
         if self.update_scene_settings:
@@ -146,7 +151,7 @@ class ImportVmdToMMDModel(Operator, ImportHelper):
         obj = context.active_object
         root = mmd_model.Rig.findRoot(obj)
         rig = mmd_model.Rig(root)
-        importer = import_vmd.VMDImporter(filepath=self.filepath, scale=root.mmd_root.scale, frame_margin=self.margin)
+        importer = vmd_importer.VMDImporter(filepath=self.filepath, scale=root.mmd_root.scale, frame_margin=self.margin)
         arm = rig.armature()
         t = arm.hide
         arm.hide = False
@@ -197,7 +202,7 @@ class ExportPmx(Operator, ImportHelper):
         rig = mmd_model.Rig(root)
         rig.clean()
         try:
-            export_pmx.export(
+            pmx_exporter.export(
                 filepath=self.filepath,
                 scale=root.mmd_root.scale,
                 root=rig.rootObject(),

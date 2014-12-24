@@ -117,6 +117,10 @@ class _AnimationBase(collections.defaultdict):
     def __init__(self):
         collections.defaultdict.__init__(self, list)
 
+    @staticmethod
+    def frameClass():
+        raise NotImplementedError
+
     def load(self, fin):
         count, = struct.unpack('<L', fin.read(4))
         for i in range(count):

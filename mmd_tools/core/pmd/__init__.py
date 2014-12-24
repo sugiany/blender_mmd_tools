@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import struct
-import os
 import re
 import logging
 import collections
@@ -14,6 +13,7 @@ class FileStream:
     def __init__(self, path, file_obj):
         self.__path = path
         self.__file_obj = file_obj
+        self.__header = None
 
     def __enter__(self):
         return self
@@ -161,7 +161,7 @@ class Material:
         self.vertex_count = fs.readUnsignedInt()
         tex_path = fs.readStr(20)
         t = tex_path.split('*')
-        if not re.search('\.sp([ha])$', t[0], flags=re.I):
+        if not re.search(r'\.sp([ha])$', t[0], flags=re.I):
             self.texture_path = t.pop(0)
         if len(t) > 0:
             self.sphere_path = t.pop(0)
@@ -490,7 +490,7 @@ class Model:
         # try to load extended data sections.
         try:
             eng_flag = fs.readByte()
-        except e:
+        except Exception:
             logging.info('found no extended data sections')
             logging.info('===============================')
             return
@@ -537,8 +537,6 @@ class Model:
         logging.info('------------------------------')
         rigid_count = fs.readUnsignedInt()
         self.rigid_bodies = []
-        rigid_types = {0: 'Sphere', 1: 'Box', 2: 'Capsule'}
-        rigid_modes = {0: 'Static', 1: 'Dynamic', 2: 'Dynamic(track to bone)'}
         for i in range(rigid_count):
             rigid = RigidBody()
             rigid.load(fs)
