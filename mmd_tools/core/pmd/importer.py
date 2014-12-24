@@ -31,9 +31,9 @@ def import_pmd(**kwargs):
     pmx_model = pmx.Model()
 
     pmx_model.name = pmd_model.name
-    pmd_model.name_e = pmd_model.name_e
+    pmx_model.name_e = pmd_model.name_e
     pmx_model.comment = pmd_model.comment
-    pmd_model.comment_e = pmd_model.comment_e
+    pmx_model.comment_e = pmd_model.comment_e
 
     pmx_model.vertices = []
 
