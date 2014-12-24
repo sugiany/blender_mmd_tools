@@ -7,6 +7,46 @@ from mmd_tools import bpyutils
 import mmd_tools.core.model as mmd_model
 
 
+class CleanRiggingObjects(Operator):
+    bl_idname = 'mmd_tools.clean_rig'
+    bl_label = 'Clean'
+    bl_description = 'Clean temporary objects of rigging'
+    bl_options = {'PRESET'}
+
+    def execute(self, context):
+        root = mmd_model.Rig.findRoot(context.active_object)
+        rig = mmd_model.Rig(root)
+        rig.clean()
+        return {'FINISHED'}
+
+class BuildRig(Operator):
+    bl_idname = 'mmd_tools.build_rig'
+    bl_label = 'Build'
+    bl_description = ''
+    bl_options = {'PRESET'}
+
+    def execute(self, context):
+        obj = context.active_object
+        root = mmd_model.Rig.findRoot(context.active_object)
+        rig = mmd_model.Rig(root)
+        rig.build()
+        context.scene.objects.active = obj
+        return {'FINISHED'}
+
+class ApplyAdditionalTransformConstraints(Operator):
+    bl_idname = 'mmd_tools.apply_additioinal_transform'
+    bl_label = 'Apply Additional Transform'
+    bl_description = ''
+    bl_options = {'PRESET'}
+
+    def execute(self, context):
+        obj = context.active_object
+        root = mmd_model.Rig.findRoot(context.active_object)
+        rig = mmd_model.Rig(root)
+        rig.applyAdditionalTransformConstraints()
+        context.scene.objects.active = obj
+        return {'FINISHED'}
+
 class CreateMMDModelRoot(Operator):
     bl_idname = 'mmd_tools.create_mmd_model_root_object'
     bl_label = 'Create a MMD Model Root Object'

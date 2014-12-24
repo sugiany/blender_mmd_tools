@@ -11,50 +11,6 @@ import logging
 import time
 
 
-#####################
-# Rigging Oparators #
-#####################
-class CleanRiggingObjects(Operator):
-    bl_idname = 'mmd_tools.clean_rig'
-    bl_label = 'Clean'
-    bl_description = 'Clean temporary objects of rigging'
-    bl_options = {'PRESET'}
-
-    def execute(self, context):
-        root = Rig.findRoot(context.active_object)
-        rig = Rig(root)
-        rig.clean()
-        return {'FINISHED'}
-
-class BuildRig(Operator):
-    bl_idname = 'mmd_tools.build_rig'
-    bl_label = 'Build'
-    bl_description = ''
-    bl_options = {'PRESET'}
-
-    def execute(self, context):
-        obj = context.active_object
-        root = Rig.findRoot(context.active_object)
-        rig = Rig(root)
-        rig.build()
-        context.scene.objects.active = obj
-        return {'FINISHED'}
-
-class ApplyAdditionalTransformConstraints(Operator):
-    bl_idname = 'mmd_tools.apply_additioinal_transform'
-    bl_label = 'Apply Additional Transform'
-    bl_description = ''
-    bl_options = {'PRESET'}
-
-    def execute(self, context):
-        obj = context.active_object
-        root = Rig.findRoot(context.active_object)
-        rig = Rig(root)
-        rig.applyAdditionalTransformConstraints()
-        context.scene.objects.active = obj
-        return {'FINISHED'}
-
-
 def isRigidBodyObject(obj):
     return obj.mmd_type == 'RIGID_BODY'
 
