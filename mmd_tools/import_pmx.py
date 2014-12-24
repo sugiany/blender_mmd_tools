@@ -396,7 +396,10 @@ class PMXImporter:
             mmd_material.enabled_self_shadow_map = i.enabled_self_shadow_map
             mmd_material.enabled_self_shadow = i.enabled_self_shadow
             mmd_material.enabled_toon_edge = i.enabled_toon_edge
-            mmd_material.edge_color = i.edge_color
+            if(len(i.edge_color)==4):# If it cames from PMD it will not 
+                # have edge color and assigning an empty array 
+                # will raise an error(ValueError)
+                mmd_material.edge_color = i.edge_color
             mmd_material.edge_weight = i.edge_size
             mmd_material.sphere_texture_type = str(i.sphere_texture_mode)
             mmd_material.is_shared_toon_texture = i.is_shared_toon_texture
