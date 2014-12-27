@@ -277,9 +277,6 @@ class PMXImporter:
         self.__rigidTable = []
         start_time = time.time()
         for rigid in self.__model.rigids:
-            if self.__onlyCollisions and rigid.mode != pmx.Rigid.MODE_STATIC:
-                continue
-
             loc = mathutils.Vector(rigid.location) * self.TO_BLE_MATRIX * self.__scale
             rot = mathutils.Vector(rigid.rotation) * self.TO_BLE_MATRIX * -1
             if rigid.type == pmx.Rigid.TYPE_BOX:
@@ -315,9 +312,6 @@ class PMXImporter:
 
 
     def __importJoints(self):
-        if self.__onlyCollisions:
-            self.__createNonCollisionConstraint()
-            return
         self.__jointTable = []
         for joint in self.__model.joints:
             loc = mathutils.Vector(joint.location) * self.TO_BLE_MATRIX * self.__scale
@@ -481,10 +475,7 @@ class PMXImporter:
             self.__model = pmx.load(args['filepath'])
 
         self.__scale = args.get('scale', 1.0)
-        self.__onlyCollisions = args.get('only_collisions', False)
         self.__ignoreNonCollisionGroups = args.get('ignore_non_collision_groups', True)
-        self.__distance_of_ignore_collisions = args.get('distance_of_ignore_collisions', 1) # 衝突を考慮しない距離（非衝突グループ設定を無視する距離）
-        self.__distance_of_ignore_collisions /= 2
         self.__use_mipmap = args.get('use_mipmap', True)
         self.__sph_blend_factor = args.get('sph_blend_factor', 1.0)
         self.__spa_blend_factor = args.get('spa_blend_factor', 1.0)

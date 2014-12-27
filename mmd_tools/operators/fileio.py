@@ -46,10 +46,7 @@ class ImportPmx(Operator, ImportHelper):
 
     scale = bpy.props.FloatProperty(name='Scale', default=0.2)
     renameBones = bpy.props.BoolProperty(name='Rename bones', default=True)
-    hide_rigids = bpy.props.BoolProperty(name='Hide rigid bodies and joints', default=True)
-    only_collisions = bpy.props.BoolProperty(name='Ignore rigid bodies', default=False)
     ignore_non_collision_groups = bpy.props.BoolProperty(name='Ignore  non collision groups', default=False)
-    distance_of_ignore_collisions = bpy.props.FloatProperty(name='Distance of ignore collisions', default=1.5)
     use_mipmap = bpy.props.BoolProperty(name='use MIP maps for UV textures', default=True)
     sph_blend_factor = bpy.props.FloatProperty(name='influence of .sph textures', default=1.0)
     spa_blend_factor = bpy.props.FloatProperty(name='influence of .spa textures', default=1.0)
@@ -70,10 +67,7 @@ class ImportPmx(Operator, ImportHelper):
                     filepath=self.filepath,
                     scale=self.scale,
                     rename_LR_bones=self.renameBones,
-                    hide_rigids=self.hide_rigids,
-                    only_collisions=self.only_collisions,
                     ignore_non_collision_groups=self.ignore_non_collision_groups,
-                    distance_of_ignore_collisions=self.distance_of_ignore_collisions,
                     use_mipmap=self.use_mipmap,
                     sph_blend_factor=self.sph_blend_factor,
                     spa_blend_factor=self.spa_blend_factor
@@ -84,10 +78,7 @@ class ImportPmx(Operator, ImportHelper):
                     filepath=self.filepath,
                     scale=self.scale,
                     rename_LR_bones=self.renameBones,
-                    hide_rigids=self.hide_rigids,
-                    only_collisions=self.only_collisions,
                     ignore_non_collision_groups=self.ignore_non_collision_groups,
-                    distance_of_ignore_collisions=self.distance_of_ignore_collisions,
                     use_mipmap=self.use_mipmap,
                     sph_blend_factor=self.sph_blend_factor,
                     spa_blend_factor=self.spa_blend_factor
