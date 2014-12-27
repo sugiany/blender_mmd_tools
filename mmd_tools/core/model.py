@@ -299,6 +299,46 @@ class Model:
         self.__root.mmd_root.is_built = False
         return obj
 
+    def create_ik_constraint(self, bone, ik_target, threshold=0.1):
+        """ create IK constraint
+
+        If the distance of the ik_target head and the bone tail is greater than threashold,
+        then a dummy ik target bone is created.
+
+         Args:
+             bone: A pose bone to add a IK constraint
+             id_target: A pose bone for IK target
+             threshold: Threshold of creating a dummy bone
+
+         Returns:
+             The bpy.types.KinematicConstraint object created. It is set target
+             and subtarget options.
+
+        """
+        ik_target_name = ik_target.name
+        print((ik_target.head - bone.tail).length)
+        if (ik_target.head - bone.tail).length > threshold:
+            with bpyutils.edit_object(self.__arm) as data:
+                dummy_target = data.edit_bones.new(name=ik_target.name + '.ik_target_dummy')
+                dummy_target.head = bone.tail
+                dummy_target.tail = dummy_target.head + mathutils.Vector([0, 0, 1])
+                dummy_target.layers = (
+                    False, False, False, False, False, False, False, False,
+                    True, False, False, False, False, False, False, False,
+                    False, False, False, False, False, False, False, False,
+                    False, False, False, False, False, False, False, False
+                    )
+                dummy_target.parent = data.edit_bones[ik_target.name]
+                ik_target_name = dummy_target.name
+            dummy_ik_target = self.__arm.pose.bones[ik_target_name]
+            dummy_ik_target.is_mmd_shadow_bone = True
+            dummy_ik_target.mmd_shadow_bone_type = 'IK_TARGET'
+
+        ik_const = bone.constraints.new('IK')
+        ik_const.target = self.__arm
+        ik_const.subtarget = ik_target_name
+        return ik_const
+
     def __allObjects(self, obj):
         r = []
         for i in obj.children:

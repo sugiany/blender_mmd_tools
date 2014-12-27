@@ -207,31 +207,11 @@ class PMXImporter:
         ik_bone = pose_bones[pmx_bone.target].parent
         target_bone = pose_bones[index]
 
-        if (mathutils.Vector(ik_bone.tail) - mathutils.Vector(target_bone.head)).length > 0.001:
-            logging.info('Found a seperated IK constraint: IK: %s, Target: %s', ik_bone.name, target_bone.name)
-            with bpyutils.edit_object(self.__armObj) as data:
-                s_bone = data.edit_bones.new(name='shadow')
-                logging.info('  Create a proxy bone: %s', s_bone.name)
-                s_bone.head = ik_bone.tail
-                s_bone.tail = s_bone.head + mathutils.Vector([0, 0, 1])
-                s_bone.layers = (False, False, False, False, False, False, False, False, True, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False)
-                s_bone.parent = data.edit_bones[target_bone.name]
-                logging.info('  Set parent: %s -> %s', target_bone.name, s_bone.name)
-                # Must not access to EditBones from outside of the 'with' section.
-                s_bone_name = s_bone.name
-
-            logging.info('  Use %s as IK target bone instead of %s', s_bone_name, target_bone.name)
-            target_bone = self.__armObj.pose.bones[s_bone_name]
-            target_bone.is_mmd_shadow_bone = True
-            target_bone.mmd_shadow_bone_type = 'IK_PROXY'
-
-        ikConst = ik_bone.constraints.new('IK')
+        ikConst = self.__rig.create_ik_constraint(ik_bone, target_bone)
         ikConst.mute = True
         self.__mutedIkConsts.append(ikConst)
         ikConst.iterations = pmx_bone.loopCount
         ikConst.chain_count = len(pmx_bone.ik_links)
-        ikConst.target = self.__armObj
-        ikConst.subtarget = target_bone.name
         if pmx_bone.isRotatable and not pmx_bone.isMovable :
             ikConst.use_location = pmx_bone.isMovable
             ikConst.use_rotation = pmx_bone.isRotatable
