@@ -27,8 +27,8 @@ class MMDRigidPanel(Panel):
         row = layout.row(align=True)
         row.prop(obj.mmd_rigid, 'type')
 
-        root = mmd_model.Rig.findRoot(obj)
-        rig = mmd_model.Rig(root)
+        root = mmd_model.Model.findRoot(obj)
+        rig = mmd_model.Model(root)
         armature = rig.armature()
         relation = obj.constraints.get('mmd_tools_rigid_parent')
         if relation is not None:

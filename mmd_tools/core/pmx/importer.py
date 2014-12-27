@@ -68,7 +68,7 @@ class PMXImporter:
         """ Create main objects and link them to scene.
         """
         pmxModel = self.__model
-        self.__rig = mmd_model.Rig.create(pmxModel.name, pmxModel.name_e, self.__scale)
+        self.__rig = mmd_model.Model.create(pmxModel.name, pmxModel.name_e, self.__scale)
 
         mesh = bpy.data.meshes.new(name=pmxModel.name)
         self.__meshObj = bpy.data.objects.new(name=pmxModel.name+'_mesh', object_data=mesh)

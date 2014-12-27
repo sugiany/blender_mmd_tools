@@ -50,13 +50,13 @@ class MMDDisplayItemsPanel(Panel):
         active_obj = context.active_object
         root = None
         if active_obj:
-            root = mmd_model.Rig.findRoot(active_obj)
+            root = mmd_model.Model.findRoot(active_obj)
         if root is None:
             c = self.layout.column()
             c.label('Select a MMD Model')
             return
 
-        rig = mmd_model.Rig(root)
+        rig = mmd_model.Model(root)
         arm = rig.armature()
         root = rig.rootObject()
         mmd_root = root.mmd_root
@@ -132,13 +132,13 @@ class MMDRootPanel(Panel):
             c.label('No object is selected.')
             return
 
-        root = mmd_model.Rig.findRoot(obj)
+        root = mmd_model.Model.findRoot(obj)
         if root is None:
             c = layout.column()
             c.label('Create MMD Model')
             return
 
-        rig = mmd_model.Rig(root)
+        rig = mmd_model.Model(root)
         arm = rig.armature()
 
         c = layout.column()

@@ -14,7 +14,7 @@ class AddDisplayItemFrame(Operator):
 
     def execute(self, context):
         obj = context.active_object
-        root = mmd_model.Rig.findRoot(obj)
+        root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
         item = mmd_root.display_item_frames.add()
         item.name = 'Display Frame'
@@ -28,7 +28,7 @@ class RemoveDisplayItemFrame(Operator):
 
     def execute(self, context):
         obj = context.active_object
-        root = mmd_model.Rig.findRoot(obj)
+        root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
         mmd_root.display_item_frames.remove(mmd_root.active_display_item_frame)
         return {'FINISHED'}
@@ -41,7 +41,7 @@ class MoveUpDisplayItemFrame(Operator):
 
     def execute(self, context):
         obj = context.active_object
-        root = mmd_model.Rig.findRoot(obj)
+        root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
         if mmd_root.active_display_item_frame <= 0:
             return {'FINISHED'}
@@ -58,7 +58,7 @@ class MoveDownDisplayItemFrame(Operator):
 
     def execute(self, context):
         obj = context.active_object
-        root = mmd_model.Rig.findRoot(obj)
+        root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
         if len( mmd_root.display_item_frames)-1 <= mmd_root.active_display_item_frame:
             return {'FINISHED'}
@@ -75,7 +75,7 @@ class AddDisplayItem(Operator):
 
     def execute(self, context):
         obj = context.active_object
-        root = mmd_model.Rig.findRoot(obj)
+        root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
         frame = mmd_root.display_item_frames[mmd_root.active_display_item_frame]
         item = frame.items.add()
@@ -90,7 +90,7 @@ class RemoveDisplayItem(Operator):
 
     def execute(self, context):
         obj = context.active_object
-        root = mmd_model.Rig.findRoot(obj)
+        root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
         frame = mmd_root.display_item_frames[mmd_root.active_display_item_frame]
         frame.items.remove(frame.active_item)
@@ -104,7 +104,7 @@ class MoveUpDisplayItem(Operator):
 
     def execute(self, context):
         obj = context.active_object
-        root = mmd_model.Rig.findRoot(obj)
+        root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
         frame = mmd_root.display_item_frames[mmd_root.active_display_item_frame]
         if frame.active_item <= 0:
@@ -122,7 +122,7 @@ class MoveDownDisplayItem(Operator):
 
     def execute(self, context):
         obj = context.active_object
-        root = mmd_model.Rig.findRoot(obj)
+        root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
         frame = mmd_root.display_item_frames[mmd_root.active_display_item_frame]
         if len(frame.items)-1 <= frame.active_item:
@@ -140,8 +140,8 @@ class SelectCurrentDisplayItem(Operator):
 
     def execute(self, context):
         obj = context.active_object
-        root = mmd_model.Rig.findRoot(obj)
-        rig = mmd_model.Rig(root)
+        root = mmd_model.Model.findRoot(obj)
+        rig = mmd_model.Model(root)
         mmd_root = root.mmd_root
 
         try:

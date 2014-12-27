@@ -149,8 +149,8 @@ class ImportVmdToMMDModel(Operator, ImportHelper):
 
     def execute(self, context):
         obj = context.active_object
-        root = mmd_model.Rig.findRoot(obj)
-        rig = mmd_model.Rig(root)
+        root = mmd_model.Model.findRoot(obj)
+        rig = mmd_model.Model(root)
         importer = vmd_importer.VMDImporter(filepath=self.filepath, scale=root.mmd_root.scale, frame_margin=self.margin)
         arm = rig.armature()
         t = arm.hide
@@ -198,8 +198,8 @@ class ExportPmx(Operator, ImportHelper):
             handler = log_handler(self.log_level)
         logger.addHandler(handler)
 
-        root = mmd_model.Rig.findRoot(context.active_object)
-        rig = mmd_model.Rig(root)
+        root = mmd_model.Model.findRoot(context.active_object)
+        rig = mmd_model.Model(root)
         rig.clean()
         try:
             pmx_exporter.export(

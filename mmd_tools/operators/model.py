@@ -14,8 +14,8 @@ class CleanRiggingObjects(Operator):
     bl_options = {'PRESET'}
 
     def execute(self, context):
-        root = mmd_model.Rig.findRoot(context.active_object)
-        rig = mmd_model.Rig(root)
+        root = mmd_model.Model.findRoot(context.active_object)
+        rig = mmd_model.Model(root)
         rig.clean()
         return {'FINISHED'}
 
@@ -27,8 +27,8 @@ class BuildRig(Operator):
 
     def execute(self, context):
         obj = context.active_object
-        root = mmd_model.Rig.findRoot(context.active_object)
-        rig = mmd_model.Rig(root)
+        root = mmd_model.Model.findRoot(context.active_object)
+        rig = mmd_model.Model(root)
         rig.build()
         context.scene.objects.active = obj
         return {'FINISHED'}
@@ -41,8 +41,8 @@ class ApplyAdditionalTransformConstraints(Operator):
 
     def execute(self, context):
         obj = context.active_object
-        root = mmd_model.Rig.findRoot(context.active_object)
-        rig = mmd_model.Rig(root)
+        root = mmd_model.Model.findRoot(context.active_object)
+        rig = mmd_model.Model(root)
         rig.applyAdditionalTransformConstraints()
         context.scene.objects.active = obj
         return {'FINISHED'}
@@ -56,7 +56,7 @@ class CreateMMDModelRoot(Operator):
     scale = bpy.props.FloatProperty(name='Scale', default=0.2)
 
     def execute(self, context):
-        rig = mmd_model.Rig.create('New MMD Model', 'New MMD Model', self.scale)
+        rig = mmd_model.Model.create('New MMD Model', 'New MMD Model', self.scale)
         arm = rig.armature()
         with bpyutils.edit_object(arm) as data:
             bone = data.edit_bones.new(name=u'全ての親')

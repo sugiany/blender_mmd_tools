@@ -54,7 +54,7 @@ def getRigidBodySize(obj):
 class InvalidRigidSettingException(ValueError):
     pass
 
-class Rig:
+class Model:
     def __init__(self, root_obj):
         if root_obj.mmd_type != 'ROOT':
             raise ValueError('must be MMD ROOT type object')
@@ -84,14 +84,14 @@ class Rig:
         scene.objects.link(root)
         scene.objects.link(armObj)
 
-        return Rig(root)
+        return Model(root)
 
-    @staticmethod
-    def findRoot(obj):
+    @classmethod
+    def findRoot(cls, obj):
         if obj.mmd_type == 'ROOT':
             return obj
         elif obj.parent is not None:
-            return Rig.findRoot(obj.parent)
+            return cls.findRoot(obj.parent)
         else:
             return None
 
