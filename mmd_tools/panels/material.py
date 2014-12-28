@@ -111,6 +111,9 @@ class MMDTexturePanel(Panel):
         c = col.column()
         r = c.row()
         r.prop(mmd_material, 'is_shared_toon_texture')
-        r.prop(mmd_material, 'shared_toon_texture')
+        if mmd_material.is_shared_toon_texture:
+            r.prop(mmd_material, 'shared_toon_texture')
+        r = c.row()
+        r.prop(mmd_material, 'toon_texture')
         r = c.row()
         r.prop(mmd_material, 'sphere_texture_type')

@@ -373,6 +373,10 @@ class PMXImporter:
             mmd_mat.edge_weight = i.edge_size
             mmd_mat.sphere_texture_type = str(i.sphere_texture_mode)
             mmd_mat.is_shared_toon_texture = i.is_shared_toon_texture
+            if i.is_shared_toon_texture:
+                mmd_mat.shared_toon_texture = i.toon_texture
+            else:
+                mmd_mat.toon_texture = self.__textureTable[i.toon_texture]
             mmd_mat.comment = i.comment
 
             self.__materialFaceCountTable.append(int(i.vertex_count/3))

@@ -68,7 +68,6 @@ class __PmxExporter:
                 mat_map[name].append((mat_faces, mesh.vertex_group_names))
 
         # export vertices
-        texture_list = []
         vert_count = 0
         for mat_name, mat_meshes in mat_map.items():
             face_count = 0
@@ -124,33 +123,33 @@ class __PmxExporter:
                 for face in mat_faces:
                     self.__model.faces.append([x.index for x in face.vertices])
                 face_count += len(mat_faces)
-            self.__exportMaterial(bpy.data.materials[mat_name], face_count, texture_list)
+            self.__exportMaterial(bpy.data.materials[mat_name], face_count)
 
-
-    def __exportTexture(self, texture):
-        if not isinstance(texture, bpy.types.ImageTexture):
-            return -1
-
-        path = texture.image.filepath
-        if self.__copyTextures:
-            tex_dir = os.path.join(os.path.dirname(self.__filepath), 'textures')
-            if not os.path.isdir(tex_dir):
-                os.mkdir(tex_dir)
-                logging.info('Create a texture directory: %s', tex_dir)
-
-            dest_path = os.path.join(tex_dir, os.path.basename(path))
-            shutil.copyfile(path, dest_path)
-            logging.info('Copy file %s --> %s', path, dest_path)
-            path = dest_path
-
+    def __exportTexture(self, filepath):
+        filepath = os.path.abspath(filepath)
+        for i, tex in enumerate(self.__model.textures):
+            if tex.path == filepath:
+                return i
         t = pmx.Texture()
-        t.path = path
+        t.path = filepath
         self.__model.textures.append(t)
         if not os.path.isfile(t.path):
             logging.warning('  The texture file does not exist: %s', t.path)
         return len(self.__model.textures) - 1
 
-    def __exportMaterial(self, material, num_faces, textureList):
+    def __copy_textures(self, tex_dir):
+        if not os.path.isdir(tex_dir):
+            os.mkdir(tex_dir)
+            logging.info('Create a texture directory: %s', tex_dir)
+
+        for texture in self.__model.textures:
+            path = texture.path
+            dest_path = os.path.join(tex_dir, os.path.basename(path))
+            shutil.copyfile(path, dest_path)
+            logging.info('Copy file %s --> %s', path, dest_path)
+            texture.path = dest_path
+
+    def __exportMaterial(self, material, num_faces):
         p_mat = pmx.Material()
         mmd_mat = material.mmd_material
 
@@ -175,34 +174,19 @@ class __PmxExporter:
 
         p_mat.vertex_count = num_faces * 3
         if len(material.texture_slots) > 0:
-            if material.texture_slots[0] is not None:
+            if material.texture_slots[0]:
                 tex = material.texture_slots[0].texture
-                index = -1
-                if tex not in textureList:
-                    index = self.__exportTexture(tex)
-                    textureList.append(tex)
-                else:
-                    index = textureList.index(tex)
+                index = self.__exportTexture(tex.image.filepath)
                 p_mat.texture = index
                 p_mat.diffuse[3] = 1.0 # Set the alpha value to 1.0 if the material has textures.
-            if not mmd_mat.is_shared_toon_texture and material.texture_slots[1] is not None:
+            if material.texture_slots[1]:
                 tex = material.texture_slots[1].texture
-                index = -1
-                if tex not in textureList:
-                    index = self.__exportTexture(tex)
-                    textureList.append(tex)
-                else:
-                    index = textureList.index(tex)
-                p_mat.toon_texture = index
-            if material.texture_slots[2] is not None:
-                tex = material.texture_slots[2].texture
-                index = -1
-                if tex not in textureList:
-                    index = self.__exportTexture(tex)
-                    textureList.append(tex)
-                else:
-                    index = textureList.index(tex)
+                index = self.__exportTexture(tex.image.filepath)
                 p_mat.sphere_texture = index
+
+            if not mmd_mat.is_shared_toon_texture and mmd_mat.toon_texture:
+                index = self.__exportTexture(mmd_mat.toon_texture)
+                p_mat.toon_texture = index
         self.__model.materials.append(p_mat)
 
     @classmethod
@@ -606,6 +590,10 @@ class __PmxExporter:
         self.__exportJoints(joints, rigid_map)
         if root is not None:
             self.__exportDisplayItems(root, nameMap)
+
+        if self.__copyTextures:
+            tex_dir = os.path.join(os.path.dirname(filepath), 'textures')
+            self.__copy_textures(tex_dir)
 
         pmx.save(filepath, self.__model)
 

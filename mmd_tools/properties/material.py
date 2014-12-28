@@ -101,6 +101,13 @@ class MMDMaterial(PropertyGroup):
         default=False,
         )
 
+    toon_texture = StringProperty(
+        name='Toon Texture',
+        subtype='FILE_PATH',
+        description='',
+        default='',
+        )
+
     shared_toon_texture = IntProperty(
         name='Shared Toon Texture',
         description='',
