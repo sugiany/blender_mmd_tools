@@ -9,6 +9,7 @@ import mathutils
 
 import mmd_tools.core.model as mmd_model
 import mmd_tools.core.pmx as pmx
+import mmd_tools.core.material as mmd_material
 from mmd_tools import utils
 from mmd_tools import bpyutils
 
@@ -131,12 +132,7 @@ class PMXImporter:
         self.__textureTable = []
         for i in pmxModel.textures:
             name = os.path.basename(i.path.replace('\\', os.path.sep)).split('.')[0]
-            tex = bpy.data.textures.new(name=name, type='IMAGE')
-            try:
-                tex.image = bpy.data.images.load(filepath=bpy.path.resolve_ncase(path=i.path))
-            except Exception:
-                logging.warning('failed to load %s', str(i.path))
-            self.__textureTable.append(tex)
+            self.__textureTable.append(bpy.path.resolve_ncase(path=i.path))
 
     def __createEditBones(self, obj, pmx_bones):
         """ create EditBones from pmx file data.
@@ -346,7 +342,7 @@ class PMXImporter:
         self.__materialFaceCountTable = []
         for i in pmxModel.materials:
             mat = bpy.data.materials.new(name=i.name)
-            mmd_material = mat.mmd_material
+            mmd_mat = mat.mmd_material
             mat.diffuse_color = i.diffuse[0:3]
             mat.alpha = i.diffuse[3]
             mat.specular_color = i.specular[0:3]
@@ -362,32 +358,28 @@ class PMXImporter:
                 mat.use_transparency = True
                 mat.transparency_method = 'Z_TRANSPARENCY'
 
-            mmd_material.name_j = i.name
-            mmd_material.name_e = i.name_e
-            mmd_material.ambient_color = i.ambient
-            mmd_material.is_double_sided = i.is_double_sided
-            mmd_material.enabled_drop_shadow = i.enabled_drop_shadow
-            mmd_material.enabled_self_shadow_map = i.enabled_self_shadow_map
-            mmd_material.enabled_self_shadow = i.enabled_self_shadow
-            mmd_material.enabled_toon_edge = i.enabled_toon_edge
+            mmd_mat.name_j = i.name
+            mmd_mat.name_e = i.name_e
+            mmd_mat.ambient_color = i.ambient
+            mmd_mat.is_double_sided = i.is_double_sided
+            mmd_mat.enabled_drop_shadow = i.enabled_drop_shadow
+            mmd_mat.enabled_self_shadow_map = i.enabled_self_shadow_map
+            mmd_mat.enabled_self_shadow = i.enabled_self_shadow
+            mmd_mat.enabled_toon_edge = i.enabled_toon_edge
             if(len(i.edge_color)==4):# If it cames from PMD it will not 
                 # have edge color and assigning an empty array 
                 # will raise an error(ValueError)
-                mmd_material.edge_color = i.edge_color
-            mmd_material.edge_weight = i.edge_size
-            mmd_material.sphere_texture_type = str(i.sphere_texture_mode)
-            mmd_material.is_shared_toon_texture = i.is_shared_toon_texture
-            mmd_material.comment = i.comment
+                mmd_mat.edge_color = i.edge_color
+            mmd_mat.edge_weight = i.edge_size
+            mmd_mat.sphere_texture_type = str(i.sphere_texture_mode)
+            mmd_mat.is_shared_toon_texture = i.is_shared_toon_texture
+            mmd_mat.comment = i.comment
 
             self.__materialFaceCountTable.append(int(i.vertex_count/3))
             self.__meshObj.data.materials.append(mat)
             if i.texture != -1:
-                texture_slot = mat.texture_slots.create(0)
-                texture_slot.use_map_alpha = True
-                texture_slot.texture = self.__textureTable[i.texture]
+                texture_slot = mmd_material.create_texture(mat, self.__textureTable[i.texture])
                 texture_slot.texture.use_mipmap = self.__use_mipmap
-                texture_slot.texture_coords = 'UV'
-                texture_slot.blend_type = 'MULTIPLY'
             if i.sphere_texture_mode == 2:
                 amount = self.__spa_blend_factor
                 blend = 'ADD'
@@ -395,11 +387,9 @@ class PMXImporter:
                 amount = self.__sph_blend_factor
                 blend = 'MULTIPLY'
             if i.sphere_texture != -1 and amount != 0.0:
-                texture_slot = mat.texture_slots.add()
-                texture_slot.texture = self.__textureTable[i.sphere_texture]
+                texture_slot = mmd_material.create_sphere_texture(mat, self.__textureTable[i.sphere_texture])
                 if isinstance(texture_slot.texture.image, bpy.types.Image):
                     texture_slot.texture.image.use_alpha = False
-                texture_slot.texture_coords = 'NORMAL'
                 texture_slot.diffuse_color_factor = amount
                 texture_slot.blend_type = blend
 
