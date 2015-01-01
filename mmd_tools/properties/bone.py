@@ -6,7 +6,7 @@ from bpy.props import StringProperty, IntProperty, BoolProperty, FloatProperty, 
 from mmd_tools.core.bone import FnBone
 
 def _updateMMDBoneAdditionalTransform(prop, context):
-    prop.is_additional_transform_dirty = True
+    prop['is_additional_transform_dirty'] = True
 
 def _getAdditionalTransformBone(prop):
     arm = prop.id_data
@@ -20,6 +20,7 @@ def _getAdditionalTransformBone(prop):
 
 def _setAdditionalTransformBone(prop, value):
     arm = prop.id_data
+    prop['is_additional_transform_dirty'] = True
     if value not in arm.pose.bones.keys():
         prop['additional_transform_bone_id'] = -1
         return
