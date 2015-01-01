@@ -1,12 +1,31 @@
 # -*- coding: utf-8 -*-
 
-import bpy
 from bpy.types import PropertyGroup
 from bpy.props import StringProperty, IntProperty, BoolProperty, FloatProperty, FloatVectorProperty
 
+from mmd_tools.core.bone import FnBone
 
 def _updateMMDBoneAdditionalTransform(prop, context):
     prop.is_additional_transform_dirty = True
+
+def _getAdditionalTransformBone(prop):
+    arm = prop.id_data
+    bone_id = prop.get('additional_transform_bone_id', -1)
+    if bone_id < 0:
+        return ''
+    fnBone = FnBone.from_bone_id(arm, bone_id)
+    if not fnBone:
+        return ''
+    return fnBone.pose_bone.name
+
+def _setAdditionalTransformBone(prop, value):
+    arm = prop.id_data
+    if value not in arm.pose.bones.keys():
+        prop['additional_transform_bone_id'] = -1
+        return
+    pose_bone = arm.pose.bones[value]
+    bone = FnBone(pose_bone)
+    prop['additional_transform_bone_id'] = bone.bone_id
 
 class MMDBone(PropertyGroup):
     name_j = StringProperty(
@@ -19,6 +38,11 @@ class MMDBone(PropertyGroup):
         name='Name(Eng)',
         description='English Name',
         default='',
+        )
+
+    bone_id = IntProperty(
+        name='Bone ID',
+        default=-1,
         )
 
     transform_order = IntProperty(
@@ -78,7 +102,12 @@ class MMDBone(PropertyGroup):
 
     additional_transform_bone = StringProperty(
         name='Additional Transform Bone',
-        default='',
+        set=_setAdditionalTransformBone,
+        get=_getAdditionalTransformBone
+        )
+
+    additional_transform_bone_id = IntProperty(
+        name='Additional Transform Bone ID',
         update=_updateMMDBoneAdditionalTransform,
         )
 

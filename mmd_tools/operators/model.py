@@ -39,12 +39,14 @@ class ApplyAdditionalTransformConstraints(Operator):
     bl_description = ''
     bl_options = {'PRESET'}
 
+    @classmethod
+    def poll(cls, context):
+        return mmd_model.Model.findRoot(context.active_object)
+
     def execute(self, context):
-        obj = context.active_object
         root = mmd_model.Model.findRoot(context.active_object)
-        rig = mmd_model.Model(root)
-        rig.applyAdditionalTransformConstraints()
-        context.scene.objects.active = obj
+        mmd_model.Model(root)
+        #context.scene.objects.active = obj
         return {'FINISHED'}
 
 class CreateMMDModelRoot(Operator):
