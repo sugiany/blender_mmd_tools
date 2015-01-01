@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import collections
 import os
 import copy
 import logging
@@ -10,6 +9,7 @@ import bpy
 import bmesh
 
 from mmd_tools.core import pmx
+from mmd_tools.core.bone import FnBone
 from mmd_tools import bpyutils
 import mmd_tools.core.model as mmd_model
 
@@ -212,7 +212,7 @@ class __PmxExporter:
         for i in pose_bones:
             t.append((i, self.__countBoneDepth(i)))
 
-        sorted_bones = [i[0] for i in sorted(t, key=lambda x: x[1])]
+        sorted_bones = sorted(pose_bones, key=self.__countBoneDepth)
 
         with bpyutils.edit_object(arm) as data:
             for p_bone in sorted_bones:
@@ -225,12 +225,12 @@ class __PmxExporter:
                 else:
                     pmx_bone.name = bone.name
 
-                for i in filter(lambda x: x.type == 'CHILD_OF', p_bone.constraints):
-                    if i.target == arm and i.subtarget in pose_bones:
-                        t = pose_bones[i.subtarget]
-                        if t.mmd_shadow_bone_type == 'ADDITIONAL_TRANSFORM':
-                            add_bone = pose_bones[t.constraints[0].subtarget]
-                            pmx_bone.additionalTransform = (add_bone, i.influence)
+                mmd_bone = p_bone.mmd_bone
+                if mmd_bone.additional_transform_bone_id != -1:
+                    fnBone = FnBone.from_bone_id(arm, mmd_bone.additional_transform_bone_id)
+                    pmx_bone.additionalTransform = (fnBone.pose_bone, mmd_bone.additional_transform_influence)
+                pmx_bone.hasAdditionalRotate = mmd_bone.has_additional_rotation
+                pmx_bone.hasAdditionalLocation = mmd_bone.has_additional_location
 
                 pmx_bone_e = p_bone.mmd_bone.name_e or ''
                 pmx_bone.location = world_mat * mathutils.Vector(bone.head) * self.__scale * self.TO_PMX_MATRIX
@@ -264,7 +264,6 @@ class __PmxExporter:
                 if i.additionalTransform is not None:
                     b, influ = i.additionalTransform
                     i.additionalTransform = (r[b.name], influ)
-                    i.hasAdditionalRotate = True
 
             self.__model.bones = pmx_bones
         return r
@@ -320,7 +319,7 @@ class __PmxExporter:
                 if c.type == 'IK':
                     logging.debug('  Found IK constraint.')
                     ik_pose_bone = pose_bones[c.subtarget]
-                    if ik_pose_bone.mmd_shadow_bone_type == 'IK_PROXY':
+                    if ik_pose_bone.mmd_shadow_bone_type == 'IK_TARGET':
                         ik_bone_index = bone_map[ik_pose_bone.parent.name]
                         logging.debug('  Found IK proxy bone: %s -> %s', ik_pose_bone.name, ik_pose_bone.parent.name)
                     else:
