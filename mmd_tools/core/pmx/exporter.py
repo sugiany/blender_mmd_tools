@@ -333,6 +333,7 @@ class __PmxExporter:
 
                     pmx_ik_bone = pmx_bones[ik_bone_index]
                     pmx_ik_bone.isIK = True
+                    pmx_ik_bone.loopCount = c.iterations
                     pmx_ik_bone.transform_order += 1
                     pmx_ik_bone.target = pmx_bones[bone_map[bone.name]].displayConnection
                     pmx_ik_bone.ik_links = self.__exportIKLinks(bone, pmx_bones, bone_map, [], c.chain_count)
