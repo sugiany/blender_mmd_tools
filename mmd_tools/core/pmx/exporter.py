@@ -198,7 +198,8 @@ class __PmxExporter:
 
     def __exportBones(self):
         """ Export bones.
-        @return the dictionary to map Blender bone names to bone indices of the pmx.model instance.
+        Returns:
+            A dictionary to map Blender bone names to bone indices of the pmx.model instance.
         """
         arm = self.__armature
         boneMap = {}
@@ -250,7 +251,12 @@ class __PmxExporter:
                     pmx_bones.append(pmx_tip_bone)
                     pmx_bone.displayConnection = pmx_tip_bone
                 elif len(bone.children) > 0:
-                    pmx_bone.displayConnection = list(filter(lambda x: not pose_bones[x.name].is_mmd_shadow_bone, sorted(bone.children, key=lambda x: 1 if pose_bones[x.name].mmd_bone.is_tip else 0)))[0]
+                    for child in bone.children:
+                        if child.use_connect:
+                            pmx_bone.displayConnection = child
+                    if not pmx_bone.displayConnection:
+                        pmx_bone.displayConnection = bone.tail - bone.head
+
 
             for i in pmx_bones:
                 if i.parent is not None:
