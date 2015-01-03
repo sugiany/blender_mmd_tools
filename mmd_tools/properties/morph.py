@@ -27,7 +27,7 @@ class _MorphBase(PropertyGroup):
 
 def _get_bone(prop):
     bone_id = prop.get('bone_id', -1)
-    if bone_id:
+    if bone_id < 0:
         return ''
     root = prop.id_data
     fnModel = FnModel(root)
@@ -94,7 +94,7 @@ def _set_material(prop, value):
     if value not in bpy.data.materials.keys():
         prop['material_id'] = -1
         return
-    mat = bpy.materials[value]
+    mat = bpy.data.materials[value]
     fnMat = FnMaterial(mat)
     prop['material_id'] = fnMat.material_id
 
