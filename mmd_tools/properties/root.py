@@ -4,8 +4,10 @@
 import bpy
 from bpy.types import PropertyGroup
 from bpy.props import BoolProperty, CollectionProperty, FloatProperty, IntProperty, StringProperty, EnumProperty
-import mmd_tools.core.model as mmd_model
 
+import mmd_tools.core.model as mmd_model
+from mmd_tools.properties.morph import BoneMorph
+from mmd_tools.properties.morph import MaterialMorph
 
 #===========================================
 # Callback functions
@@ -180,6 +182,9 @@ class MMDRoot(PropertyGroup):
         name='Is Built',
         )
 
+    #*************************
+    # Display Items
+    #*************************
     display_item_frames = CollectionProperty(
         name='Display Frames',
         type=MMDDisplayItemFrame,
@@ -188,4 +193,17 @@ class MMDRoot(PropertyGroup):
     active_display_item_frame = IntProperty(
         name='Active Display Item Frame',
         default=0,
+        )
+
+    #*************************
+    # Morph
+    #*************************
+    material_morphs = CollectionProperty(
+        name='Material Morphs',
+        type=MaterialMorph,
+        )
+
+    bone_morphs = CollectionProperty(
+        name='Bone Morphs',
+        type=BoneMorph,
         )

@@ -4,7 +4,7 @@ import bpy
 from bpy.types import Operator
 from bpy.props import StringProperty, BoolProperty
 
-from mmd_tools.core import material
+from mmd_tools.core.material import FnMaterial
 
 class _OpenTextureBase(object):
     """ Create a texture for mmd model material.
@@ -35,7 +35,8 @@ class OpenTexture(Operator, _OpenTextureBase):
     
     def execute(self, context):
         mat = context.active_object.active_material
-        material.create_texture(mat, self.filepath)
+        fnMat = FnMaterial(mat)
+        fnMat.create_texture(self.filepath)
         return {'FINISHED'}
 
 
@@ -49,7 +50,8 @@ class RemoveTexture(Operator):
 
     def execute(self, context):
         mat = context.active_object.active_material
-        material.remove_texture(mat)
+        fnMat = FnMaterial(mat)
+        fnMat.remove_texture()
         return {'FINISHED'}
 
 class OpenSphereTextureSlot(Operator, _OpenTextureBase):
@@ -61,7 +63,8 @@ class OpenSphereTextureSlot(Operator, _OpenTextureBase):
 
     def execute(self, context):
         mat = context.active_object.active_material
-        material.create_sphere_texture(mat, self.filepath)
+        fnMat = FnMaterial(mat)
+        fnMat.create_sphere_texture(self.filepath)
         return {'FINISHED'}
 
 
@@ -75,5 +78,6 @@ class RemoveSphereTexture(Operator):
 
     def execute(self, context):
         mat = context.active_object.active_material
-        material.remove_sphere_texture(mat)
+        fnMat = FnMaterial(mat)
+        fnMat.remove_sphere_texture()
         return {'FINISHED'}

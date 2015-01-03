@@ -9,7 +9,7 @@ import mathutils
 
 import mmd_tools.core.model as mmd_model
 import mmd_tools.core.pmx as pmx
-import mmd_tools.core.material as mmd_material
+from mmd_tools.core.material import FnMaterial
 from mmd_tools import utils
 from mmd_tools import bpyutils
 
@@ -42,6 +42,7 @@ class PMXImporter:
         self.__rigidTable = []
         self.__nonCollisionJointTable = None
         self.__jointTable = []
+        self.__materialTable = []
 
         self.__materialFaceCountTable = None
 
@@ -74,7 +75,7 @@ class PMXImporter:
         mesh = bpy.data.meshes.new(name=pmxModel.name)
         self.__meshObj = bpy.data.objects.new(name=pmxModel.name+'_mesh', object_data=mesh)
         self.__targetScene.objects.link(self.__meshObj)
-    
+
         self.__armObj = self.__rig.armature()
         self.__armObj.hide = True
         self.__meshObj.parent = self.__armObj
@@ -338,10 +339,10 @@ class PMXImporter:
 
         pmxModel = self.__model
 
-        self.__materialTable = []
         self.__materialFaceCountTable = []
         for i in pmxModel.materials:
             mat = bpy.data.materials.new(name=i.name)
+            self.__materialTable.append(mat)
             mmd_mat = mat.mmd_material
             mat.diffuse_color = i.diffuse[0:3]
             mat.alpha = i.diffuse[3]
@@ -366,8 +367,8 @@ class PMXImporter:
             mmd_mat.enabled_self_shadow_map = i.enabled_self_shadow_map
             mmd_mat.enabled_self_shadow = i.enabled_self_shadow
             mmd_mat.enabled_toon_edge = i.enabled_toon_edge
-            if(len(i.edge_color)==4):# If it cames from PMD it will not 
-                # have edge color and assigning an empty array 
+            if(len(i.edge_color)==4):# If it cames from PMD it will not
+                # have edge color and assigning an empty array
                 # will raise an error(ValueError)
                 mmd_mat.edge_color = i.edge_color
             mmd_mat.edge_weight = i.edge_size
@@ -381,8 +382,9 @@ class PMXImporter:
 
             self.__materialFaceCountTable.append(int(i.vertex_count/3))
             self.__meshObj.data.materials.append(mat)
+            fnMat = FnMaterial(mat)
             if i.texture != -1:
-                texture_slot = mmd_material.create_texture(mat, self.__textureTable[i.texture])
+                texture_slot = fnMat.create_texture(self.__textureTable[i.texture])
                 texture_slot.texture.use_mipmap = self.__use_mipmap
             if i.sphere_texture_mode == 2:
                 amount = self.__spa_blend_factor
@@ -391,7 +393,7 @@ class PMXImporter:
                 amount = self.__sph_blend_factor
                 blend = 'MULTIPLY'
             if i.sphere_texture != -1 and amount != 0.0:
-                texture_slot = mmd_material.create_sphere_texture(mat, self.__textureTable[i.sphere_texture])
+                texture_slot = fnMat.create_sphere_texture(self.__textureTable[i.sphere_texture])
                 if isinstance(texture_slot.texture.image, bpy.types.Image):
                     texture_slot.texture.image.use_alpha = False
                 texture_slot.diffuse_color_factor = amount
@@ -427,6 +429,38 @@ class PMXImporter:
                 shapeKeyPoint = shapeKey.data[md.index]
                 offset = mathutils.Vector(md.offset) * self.TO_BLE_MATRIX
                 shapeKeyPoint.co = shapeKeyPoint.co + offset * self.__scale
+
+    def __importMaterialMorphs(self):
+        mmd_root = self.__rig.rootObject().mmd_root
+        for morph in [x for x in self.__model.morphs if isinstance(x, pmx.MaterialMorph)]:
+            mat_morph = mmd_root.material_morphs.add()
+            mat_morph.name = morph.name
+            mat_morph.name_e = morph.name_e
+            mat_morph.category = morph.category
+            for morph_data in morph.offsets:
+                data = mat_morph.data.add()
+                data.material = self.__materialTable[morph_data.index].name
+                data.diffuse_color = morph_data.diffuse_offset
+                data.specular_color = morph_data.specular_offset
+                data.ambient_color = morph_data.ambient_offset
+                data.edge_color = morph_data.edge_color_offset
+                data.edge_size = morph_data.edge_size_offset
+                data.texture_factor = morph_data.texture_factor
+                data.sphere_texture_factor = morph_data.sphere_texture_factor
+                data.toon_texture_factor = morph_data.toon_texture_factor
+
+    def __importBoneMorphs(self):
+        mmd_root = self.__rig.rootObject().mmd_root
+        for morph in [x for x in self.__model.morphs if isinstance(x, pmx.BoneMorph)]:
+            bone_morph = mmd_root.bone_morphs.add()
+            bone_morph.name = morph.name
+            bone_morph.name_e = morph.name_e
+            bone_morph.category = morph.category
+            for morph_data in morph.offsets:
+                data = bone_morph.data.add()
+                data.bone = self.__boneTable[morph_data.index].name
+                data.location = morph_data.location_offset
+                data.rotation = morph_data.rotation_offset
 
     def __importDisplayFrames(self):
         pmxModel = self.__model
@@ -495,6 +529,8 @@ class PMXImporter:
         self.__importDisplayFrames()
 
         self.__importVertexMorphs()
+        self.__importBoneMorphs()
+        self.__importMaterialMorphs()
 
         if args.get('rename_LR_bones', False):
             self.__renameLRBones()

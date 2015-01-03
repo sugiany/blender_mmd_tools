@@ -24,6 +24,11 @@ class MMDMaterial(PropertyGroup):
         default='',
         )
 
+    material_id = IntProperty(
+        name='Material ID',
+        default=-1
+        )
+
     ambient_color = FloatVectorProperty(
         name='Ambient',
         subtype='COLOR',
@@ -117,3 +122,4 @@ class MMDMaterial(PropertyGroup):
     comment = StringProperty(
         name='Comment',
         )
+
