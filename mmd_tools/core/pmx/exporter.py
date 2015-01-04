@@ -52,6 +52,8 @@ class __PmxExporter:
 
     def __init__(self):
         self.__model = None
+        self.__bone_name_table = []
+        self.__material_name_table = []
 
     @staticmethod
     def flipUV_V(uv):
@@ -187,6 +189,7 @@ class __PmxExporter:
             if not mmd_mat.is_shared_toon_texture and mmd_mat.toon_texture:
                 index = self.__exportTexture(mmd_mat.toon_texture)
                 p_mat.toon_texture = index
+        self.__material_name_table.append(material.name)
         self.__model.materials.append(p_mat)
 
     @classmethod
@@ -240,6 +243,7 @@ class __PmxExporter:
                 pmx_bone.isMovable = not all(p_bone.lock_location)
                 pmx_bone.isRotatable = not all(p_bone.lock_rotation)
                 pmx_bones.append(pmx_bone)
+                self.__bone_name_table.append(p_bone.name)
                 boneMap[bone] = pmx_bone
                 r[bone.name] = len(pmx_bones) - 1
 
@@ -249,6 +253,7 @@ class __PmxExporter:
                     pmx_tip_bone.location =  world_mat * mathutils.Vector(bone.tail) * self.__scale * self.TO_PMX_MATRIX
                     pmx_tip_bone.parent = bone
                     pmx_bones.append(pmx_tip_bone)
+                    self.__bone_name_table.append('')
                     pmx_bone.displayConnection = pmx_tip_bone
                 elif len(bone.children) > 0:
                     for child in bone.children:
@@ -369,6 +374,50 @@ class __PmxExporter:
                         mo.offset = offset
                         morph.offsets.append(mo)
             self.__model.morphs.append(morph)
+
+    def __export_material_morphs(self, root):
+        mmd_root = root.mmd_root
+        for morph in mmd_root.material_morphs:
+            mat_morph = pmx.MaterialMorph(
+                name=morph.name,
+                name_e=morph.name_e,
+                category=morph.category
+            )
+            for data in morph.data:
+                morph_data = pmx.MaterialMorphOffset()
+                try:
+                    morph_data.index = self.__material_name_table.index(data.material)
+                except ValueError:
+                    morph_data.index = -1
+                morph_data.diffuse_offset = data.diffuse_color
+                morph_data.specular_offset = data.specular_color
+                morph_data.ambient_offset = data.ambient_color
+                morph_data.edge_color_offset = data.edge_color
+                morph_data.edge_size_offset = data.edge_weight
+                morph_data.texture_factor = data.texture_factor
+                morph_data.sphere_texture_factor = data.sphere_texture_factor
+                morph_data.toon_texture_factor = data.toon_texture_factor
+                mat_morph.offsets.append(morph_data)
+            self.__model.morphs.append(mat_morph)
+
+    def __export_bone_morphs(self, root):
+        mmd_root = root.mmd_root
+        for morph in mmd_root.bone_morphs:
+            bone_morph = pmx.BoneMorph(
+                name=morph.name,
+                name_e=morph.name_e,
+                category=morph.category
+            )
+            for data in morph.data:
+                morph_data = pmx.BoneMorphOffset()
+                try:
+                    morph_data.index = self.__bone_name_table.index(data.bone)
+                except ValueError:
+                    morph_data.index = -1
+                morph_data.location_offset = data.location
+                morph_data.rotation_offset = data.rotation
+                bone_morph.offsets.append(morph_data)
+            self.__model.morphs.append(bone_morph)
 
     def __exportDisplayItems(self, root, bone_map):
         res = []
@@ -596,6 +645,8 @@ class __PmxExporter:
         self.__exportJoints(joints, rigid_map)
         if root is not None:
             self.__exportDisplayItems(root, nameMap)
+            self.__export_bone_morphs(root)
+            self.__export_material_morphs(root)
 
         if self.__copyTextures:
             tex_dir = os.path.join(os.path.dirname(filepath), 'textures')

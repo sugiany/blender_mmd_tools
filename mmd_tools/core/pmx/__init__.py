@@ -1272,7 +1272,7 @@ class BoneMorphOffset:
         fs.writeVector(self.location_offset)
         fs.writeVector(self.rotation_offset)
 
-class MaterialMorph:
+class MaterialMorph(Morph):
     def __init__(self, *args, **kwargs):
         Morph.__init__(self, *args, **kwargs)
 

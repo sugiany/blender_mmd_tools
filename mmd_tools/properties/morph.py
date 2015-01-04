@@ -12,18 +12,6 @@ from mmd_tools.core.model import Model as FnModel
 from mmd_tools.core.bone import FnBone
 from mmd_tools.core.material import FnMaterial
 
-class _MorphBase(PropertyGroup):
-    """ Morph Data
-    """
-    name_e = StringProperty(
-        name='Name(Eng)',
-        description='English Name',
-        default='',
-        )
-
-    category = IntProperty(
-        name='Category',
-        )
 
 def _get_bone(prop):
     bone_id = prop.get('bone_id', -1)
@@ -73,9 +61,19 @@ class BoneMorphData(PropertyGroup):
         size=4,
         )
 
-class BoneMorph(_MorphBase):
+class BoneMorph(PropertyGroup):
     """
     """
+    name_e = StringProperty(
+        name='Name(Eng)',
+        description='English Name',
+        default='',
+        )
+
+    category = IntProperty(
+        name='Category',
+        )
+
     data = CollectionProperty(
         name='Morph Data',
         type=BoneMorphData,
@@ -197,10 +195,19 @@ class MaterialMorphData(PropertyGroup):
         default=[0, 0, 0, 1],
         )
 
-    
-class MaterialMorph(_MorphBase):
+class MaterialMorph(PropertyGroup):
     """ Material Morph
     """
+    name_e = StringProperty(
+        name='Name(Eng)',
+        description='English Name',
+        default='',
+        )
+
+    category = IntProperty(
+        name='Category',
+        )
+
     data = CollectionProperty(
         name='Morph Data',
         type=MaterialMorphData,
