@@ -128,6 +128,8 @@ class __PmxExporter:
             self.__exportMaterial(bpy.data.materials[mat_name], face_count)
 
     def __exportTexture(self, filepath):
+        if filepath.strip() == '':
+            return -1
         filepath = os.path.abspath(filepath)
         for i, tex in enumerate(self.__model.textures):
             if tex.path == filepath:
@@ -168,27 +170,26 @@ class __PmxExporter:
         p_mat.edge_color = mmd_mat.edge_color
         p_mat.edge_size = mmd_mat.edge_weight
         p_mat.sphere_texture_mode = int(mmd_mat.sphere_texture_type)
-        p_mat.is_shared_toon_texture = mmd_mat.is_shared_toon_texture
         p_mat.comment = mmd_mat.comment
+
+        p_mat.vertex_count = num_faces * 3
+        tex_slots = material.texture_slots.values()
+        if tex_slots[0]:
+            tex = tex_slots[0].texture
+            index = self.__exportTexture(tex.image.filepath)
+            p_mat.texture = index
+        if tex_slots[1]:
+            tex = tex_slots[1].texture
+            index = self.__exportTexture(tex.image.filepath)
+            p_mat.sphere_texture = index
 
         if mmd_mat.is_shared_toon_texture:
             p_mat.toon_texture = mmd_mat.shared_toon_texture
+            p_mat.is_shared_toon_texture = True
+        else:
+            p_mat.toon_texture =  self.__exportTexture(mmd_mat.toon_texture)
+            p_mat.is_shared_toon_texture = False
 
-        p_mat.vertex_count = num_faces * 3
-        if len(material.texture_slots) > 0:
-            if material.texture_slots[0]:
-                tex = material.texture_slots[0].texture
-                index = self.__exportTexture(tex.image.filepath)
-                p_mat.texture = index
-                p_mat.diffuse[3] = 1.0 # Set the alpha value to 1.0 if the material has textures.
-            if material.texture_slots[1]:
-                tex = material.texture_slots[1].texture
-                index = self.__exportTexture(tex.image.filepath)
-                p_mat.sphere_texture = index
-
-            if not mmd_mat.is_shared_toon_texture and mmd_mat.toon_texture:
-                index = self.__exportTexture(mmd_mat.toon_texture)
-                p_mat.toon_texture = index
         self.__material_name_table.append(material.name)
         self.__model.materials.append(p_mat)
 

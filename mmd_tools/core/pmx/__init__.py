@@ -920,10 +920,11 @@ class Material:
         fs.writeTextureIndex(self.sphere_texture)
         fs.writeSignedByte(self.sphere_texture_mode)
 
-        fs.writeSignedByte(int(self.is_shared_toon_texture))
         if self.is_shared_toon_texture:
+            fs.writeSignedByte(1)
             fs.writeSignedByte(self.toon_texture)
         else:
+            fs.writeSignedByte(0)
             fs.writeTextureIndex(self.toon_texture)
 
         fs.writeStr(self.comment)
