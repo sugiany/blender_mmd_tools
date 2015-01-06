@@ -70,7 +70,6 @@ class __PmxExporter:
                 mat_map[name].append((mat_faces, mesh.vertex_group_names))
 
         # export vertices
-        vert_count = 0
         for mat_name, mat_meshes in mat_map.items():
             face_count = 0
             for mat_faces, vertex_group_names in mat_meshes:
@@ -79,7 +78,6 @@ class __PmxExporter:
                     mesh_vertices.extend(face.vertices)
 
                 for v in mesh_vertices:
-                    vert_count += 1
                     if v.index is not None:
                         continue
 
@@ -401,6 +399,42 @@ class __PmxExporter:
                 mat_morph.offsets.append(morph_data)
             self.__model.morphs.append(mat_morph)
 
+    def __sortMaterials(self):
+        """ sort materials for alpha blending
+
+         モデル内全頂点の平均座標をモデルの中心と考えて、
+         モデル中心座標とマテリアルがアサインされている全ての面の構成頂点との平均距離を算出。
+         この値が小さい順にソートしてみる。
+         モデル中心座標から離れている位置で使用されているマテリアルほどリストの後ろ側にくるように。
+         かなりいいかげんな実装
+        """
+        center = mathutils.Vector([0, 0, 0])
+        vertices = self.__model.vertices
+        vert_num = len(vertices)
+        for v in self.__model.vertices:
+            center += mathutils.Vector(v.co) / vert_num
+
+        faces = self.__model.faces
+        offset = 0
+        distances = []
+        for mat in self.__model.materials:
+            d = 0
+            face_num = int(mat.vertex_count / 3)
+            for i in range(offset, offset + face_num):
+                face = faces[i]
+                d += (mathutils.Vector(vertices[face[0]].co) - center).length
+                d += (mathutils.Vector(vertices[face[1]].co) - center).length
+                d += (mathutils.Vector(vertices[face[2]].co) - center).length
+            distances.append((d/mat.vertex_count, mat, offset, face_num))
+            offset += face_num
+        sorted_faces = []
+        sorted_mat = []
+        for mat, offset, vert_count in [(x[1], x[2], x[3]) for x in sorted(distances, key=lambda x: x[0])]:
+            sorted_faces.extend(faces[offset:offset+vert_count])
+            sorted_mat.append(mat)
+        self.__model.materials = sorted_mat
+        self.__model.faces = sorted_faces
+
     def __export_bone_morphs(self, root):
         mmd_root = root.mmd_root
         for morph in mmd_root.bone_morphs:
@@ -642,6 +676,7 @@ class __PmxExporter:
 
         self.__exportMeshes(mesh_data, nameMap)
         self.__exportVertexMorphs(mesh_data)
+        self.__sortMaterials()
         rigid_map = self.__exportRigidBodies(rigid_bodeis, nameMap)
         self.__exportJoints(joints, rigid_map)
         if root is not None:

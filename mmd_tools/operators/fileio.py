@@ -174,8 +174,7 @@ class ExportPmx(Operator, ImportHelper):
     filename_ext = '.pmx'
     filter_glob = bpy.props.StringProperty(default='*.pmx', options={'HIDDEN'})
 
-    # scale = bpy.props.FloatProperty(name='Scale', default=0.2)
-    copy_textures = bpy.props.BoolProperty(name='Copy textures', default=False)
+    copy_textures = bpy.props.BoolProperty(name='Copy textures', default=True)
 
     log_level = bpy.props.EnumProperty(items=LOG_LEVEL_ITEMS, name='Log level', default='DEBUG')
     save_log = bpy.props.BoolProperty(name='Create a log file', default=False)
