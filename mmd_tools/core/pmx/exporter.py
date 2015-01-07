@@ -238,7 +238,7 @@ class __PmxExporter:
                 pmx_bone_e = p_bone.mmd_bone.name_e or ''
                 pmx_bone.location = world_mat * mathutils.Vector(bone.head) * self.__scale * self.TO_PMX_MATRIX
                 pmx_bone.parent = bone.parent
-                pmx_bone.visible = not p_bone.bone.hide
+                pmx_bone.visible = mmd_bone.is_visible
                 pmx_bone.isMovable = not all(p_bone.lock_location)
                 pmx_bone.isRotatable = not all(p_bone.lock_rotation)
                 pmx_bones.append(pmx_bone)
@@ -246,18 +246,13 @@ class __PmxExporter:
                 boneMap[bone] = pmx_bone
                 r[bone.name] = len(pmx_bones) - 1
 
-                if len(bone.children) == 0 and not p_bone.mmd_bone.is_tip:
-                    pmx_tip_bone = pmx.Bone()
-                    pmx_tip_bone.name = 'tip_' + bone.name
-                    pmx_tip_bone.location =  world_mat * mathutils.Vector(bone.tail) * self.__scale * self.TO_PMX_MATRIX
-                    pmx_tip_bone.parent = bone
-                    pmx_bones.append(pmx_tip_bone)
-                    self.__bone_name_table.append('')
-                    pmx_bone.displayConnection = pmx_tip_bone
-                elif len(bone.children) > 0:
+                if p_bone.mmd_bone.is_tip:
+                    pmx_bone.displayConnection = -1
+                else:
                     for child in bone.children:
                         if child.use_connect:
                             pmx_bone.displayConnection = child
+                            break
                     if not pmx_bone.displayConnection:
                         pmx_bone.displayConnection = bone.tail - bone.head
 

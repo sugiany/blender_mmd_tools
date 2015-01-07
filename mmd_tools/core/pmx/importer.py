@@ -181,9 +181,10 @@ class PMXImporter:
                     b_bone.tail = b_bone.head + loc
 
             for b_bone, m_bone in zip(editBoneTable, pmx_bones):
-                if b_bone.parent is not None and b_bone.parent.tail == b_bone.head:
-                    if not m_bone.isMovable:
-                        b_bone.use_connect = True
+                if isinstance(m_bone.displayConnection, int) and m_bone.displayConnection >= 0:
+                    t = editBoneTable[m_bone.displayConnection]
+                    if t.parent is not None and t.parent == b_bone:
+                        t.use_connect = True
 
         return nameTable
 
@@ -238,6 +239,8 @@ class PMXImporter:
             b_bone.mmd_bone.transform_order = p_bone.transform_order
             b_bone.mmd_bone.is_visible = p_bone.visible
             b_bone.mmd_bone.is_controllable = p_bone.isControllable
+            b_bone.mmd_bone.is_tip = (p_bone.displayConnection == -1)
+            b_bone.bone.hide = b_bone.mmd_bone.is_tip
 
             if not p_bone.isRotatable:
                 b_bone.lock_rotation = [True, True, True]
@@ -251,7 +254,6 @@ class PMXImporter:
 
             if p_bone.hasAdditionalRotate or p_bone.hasAdditionalLocation:
                 bone_index, influ = p_bone.additionalTransform
-                src_bone = pmxModel.bones[bone_index]
                 mmd_bone = b_bone.mmd_bone
                 mmd_bone.has_additional_rotation = p_bone.hasAdditionalRotate
                 mmd_bone.has_additional_location = p_bone.hasAdditionalLocation
@@ -264,11 +266,9 @@ class PMXImporter:
                 b_bone.mmd_bone.local_axis_z = p_bone.localCoordinate.z_axis
 
             if len(b_bone.children) == 0:
-                b_bone.mmd_bone.is_tip = True
                 b_bone.lock_rotation = [True, True, True]
                 b_bone.lock_location = [True, True, True]
                 b_bone.lock_scale = [True, True, True]
-                b_bone.bone.hide = True
 
     def __importRigids(self):
         self.__rigidTable = []
