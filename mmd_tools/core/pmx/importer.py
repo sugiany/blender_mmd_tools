@@ -240,7 +240,7 @@ class PMXImporter:
             b_bone.mmd_bone.is_visible = p_bone.visible
             b_bone.mmd_bone.is_controllable = p_bone.isControllable
             b_bone.mmd_bone.is_tip = (p_bone.displayConnection == -1)
-            b_bone.bone.hide = b_bone.mmd_bone.is_tip
+            b_bone.bone.hide = b_bone.mmd_bone.is_tip or not p_bone.visible
 
             if not p_bone.isRotatable:
                 b_bone.lock_rotation = [True, True, True]
@@ -265,7 +265,7 @@ class PMXImporter:
                 b_bone.mmd_bone.local_axis_x = p_bone.localCoordinate.x_axis
                 b_bone.mmd_bone.local_axis_z = p_bone.localCoordinate.z_axis
 
-            if len(b_bone.children) == 0:
+            if b_bone.mmd_bone.is_tip:
                 b_bone.lock_rotation = [True, True, True]
                 b_bone.lock_location = [True, True, True]
                 b_bone.lock_scale = [True, True, True]
