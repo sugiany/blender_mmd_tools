@@ -11,7 +11,8 @@ class MMDMaterialPanel(Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.active_object is not None
+        material = context.active_object.active_material
+        return material and material.mmd_material
 
     def draw(self, context):
         material = context.active_object.active_material
@@ -74,7 +75,8 @@ class MMDTexturePanel(Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.active_object is not None
+        material = context.active_object.active_material
+        return material and material.mmd_material
 
     def draw(self, context):
         material = context.active_object.active_material
@@ -90,9 +92,13 @@ class MMDTexturePanel(Panel):
         r = row.column(align=True)
         if tex_slots[0]:
             tex = tex_slots[0].texture
-            r2 = r.row(align=True)
-            r2.prop(tex.image, 'filepath', text='')
-            r2.operator('mmd_tools.material_remove_texture', text='', icon='PANEL_CLOSE')
+            if tex.type == 'IMAGE' and tex.image:
+                r2 = r.row(align=True)
+                r2.prop(tex.image, 'filepath', text='')
+                r2.operator('mmd_tools.material_remove_texture', text='', icon='PANEL_CLOSE')
+            else:
+                r.operator('mmd_tools.material_remove_texture', text='Remove', icon='PANEL_CLOSE')
+                col.label('Texture is invalid.', icon='ERROR')
         else:
             r.operator('mmd_tools.material_open_texture', text='Add', icon='FILESEL')
 
@@ -101,9 +107,12 @@ class MMDTexturePanel(Panel):
         r = row.column(align=True)
         if tex_slots[1]:
             tex = tex_slots[1].texture
-            r2 = r.row(align=True)
-            r2.prop(tex.image, 'filepath', text='')
-            r2.operator('mmd_tools.material_remove_sphere_texture', text='', icon='PANEL_CLOSE')
+            if tex.type == 'IMAGE' and tex.image:
+                r2 = r.row(align=True)
+                r2.prop(tex.image, 'filepath', text='')
+            else:
+                r.operator('mmd_tools.material_remove_sphere_texture', text='Remove', icon='PANEL_CLOSE')
+                col.label('Sphere Texture is invalid.', icon='ERROR')
         else:
             r.operator('mmd_tools.material_open_texture', text='Add', icon='FILESEL')
 
