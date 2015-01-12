@@ -12,6 +12,49 @@ class _PanelBase(object):
     bl_category = 'mmd_tools'
 
 
+class MMDToolsObjectPanel(_PanelBase, Panel):
+    bl_idname = 'OBJECT_PT_mmd_tools_object'
+    bl_label = 'Operator'
+    bl_context = ''
+
+    def draw(self, context):
+        active_obj = context.active_object
+
+        layout = self.layout
+
+        col = layout.column(align=True)
+        col.label('Edit:')
+        row = col.row(align=True)
+        row.operator(operators.model.CreateMMDModelRoot.bl_idname, text='Create Model')
+        row.operator(operators.fileio.ImportPmx.bl_idname, text='Import Model')
+        if active_obj is not None and active_obj.type == 'MESH':
+            col = layout.column(align=True)
+            col.operator('mmd_tools.separate_by_materials', text='Separate By Materials')
+
+        if active_obj is None:
+            return
+
+        root = mmd_model.Model.findRoot(active_obj)
+        if root is None:
+            return
+
+        col = self.layout.column(align=True)
+        col.label('Rigidbody:')
+        row = col.row(align=True)
+        row.operator('mmd_tools.build_rig')
+        row.operator('mmd_tools.clean_rig')
+        if not root.mmd_root.is_built:
+            col.label(text='Press the "Build" button before playing the physical animation.', icon='ERROR')
+
+        col.label('Bone Constraints:')
+        col.operator('mmd_tools.apply_additioinal_transform')
+
+        col = self.layout.column(align=True)
+        col.label('Import/Export:')
+        col.operator(operators.fileio.ImportVmdToMMDModel.bl_idname, text='Import Motion')
+        col.operator(operators.fileio.ExportPmx.bl_idname, text='Export Model')
+
+
 class MMD_ROOT_UL_display_item_frames(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         mmd_root = data
@@ -43,9 +86,11 @@ class MMD_ROOT_UL_display_items(UIList):
             layout.alignment = 'CENTER'
             layout.label(text="", icon_value=icon)
 
+
 class MMDDisplayItemsPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_display_items'
-    bl_label = 'MMD Display Items'
+    bl_label = 'Display Items'
+    bl_options = {'DEFAULT_CLOSED'}
 
     def draw(self, context):
         active_obj = context.active_object
@@ -113,100 +158,3 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
                     row = col.row(align=True)
                     row.label(i.name+':')
                     row.prop(i.data.shape_keys.key_blocks[item.name], 'value')
-
-
-class MMDRootView3DPanel(_PanelBase, Panel):
-    bl_idname = 'OBJECT_PT_mmd_tools_root'
-    bl_label = 'MMD Model Tools'
-    bl_context = ''
-
-    def draw(self, context):
-        layout = self.layout
-        obj = context.active_object
-
-        if obj is None:
-            c = layout.column()
-            c.label('No object is selected.')
-            return
-
-        root = mmd_model.Model.findRoot(obj)
-        if root is None:
-            c = layout.column()
-            c.label('Create MMD Model')
-            return
-
-        col = self.layout.column(align=True)
-
-        if not root.mmd_root.is_built:
-            col.label(text='Press the "Build" button before playing the physical animation.', icon='ERROR')
-        row = col.row(align=True)
-        row.operator('mmd_tools.build_rig')
-        row.operator('mmd_tools.clean_rig')
-        col.operator('mmd_tools.apply_additioinal_transform')
-
-        col = self.layout.column(align=True)
-        col.operator(operators.fileio.ImportVmdToMMDModel.bl_idname, text='Import Motion')
-        col.operator(operators.fileio.ExportPmx.bl_idname, text='Export Model')
-
-
-class MMDModelObjectPanel(_PanelBase, Panel):
-    bl_idname = 'OBJECT_PT_mmd_tools_root_object'
-    bl_label = 'MMD Model Information'
-    bl_space_type = 'PROPERTIES'
-    bl_region_type = 'WINDOW'
-    bl_context = 'object'
-
-    @classmethod
-    def poll(cls, context):
-        obj = context.active_object
-        if obj is None:
-            return False
-
-        root = mmd_model.Model.findRoot(obj)
-        if root is None:
-            return False
-
-        return True
-
-    def draw(self, context):
-        layout = self.layout
-        obj = context.active_object
-
-        root = mmd_model.Model.findRoot(obj)
-
-        c = layout.column()
-        c.prop(root.mmd_root, 'name')
-        c.prop(root.mmd_root, 'name_e')
-        c.prop(root.mmd_root, 'scale')
-
-class MMDToolsObjectPanel(_PanelBase, Panel):
-    bl_idname = 'OBJECT_PT_mmd_tools_object'
-    bl_label = 'Object'
-    bl_context = ''
-
-    def draw(self, context):
-        active_obj = context.active_object
-
-        layout = self.layout
-
-        col = layout.column()
-        col.label('Model:')
-        c = col.column(align=True)
-        c.operator(operators.model.CreateMMDModelRoot.bl_idname, text='Create')
-        c.operator(operators.fileio.ImportPmx.bl_idname, text='Import')
-
-        col.label('Motion(vmd):')
-        c = col.column()
-        c.operator('mmd_tools.import_vmd', text='Import')
-
-
-        if active_obj is not None and active_obj.type == 'MESH':
-            col = layout.column(align=True)
-            col.label('Mesh:')
-            c = col.column()
-            c.operator('mmd_tools.separate_by_materials', text='Separate by materials')
-
-        col = layout.column(align=True)
-        col.label('Scene:')
-        c = col.column(align=True)
-        c.operator('mmd_tools.set_frame_range', text='Set frame range')

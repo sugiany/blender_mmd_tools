@@ -10,26 +10,10 @@ class _PanelBase(object):
     bl_region_type = 'WINDOW'
     bl_context = 'object'
 
-class MMDModelObjectDisplayPanel(_PanelBase, Panel):
-    bl_idname = 'OBJECT_PT_mmd_tools_root_object_display'
-    bl_label = 'MMD Display'
 
-    def draw(self, context):
-        layout = self.layout
-        obj = context.active_object
-
-        root = mmd_model.Model.findRoot(obj)
-
-        row = layout.row(align=True)
-        c = row.column(align=True)
-        c.prop(root.mmd_root, 'show_meshes', text='Mesh')
-        c.prop(root.mmd_root, 'show_armature', text='Armature')
-        c.prop(root.mmd_root, 'show_rigid_bodies', text='Rigidbody')
-        c.prop(root.mmd_root, 'show_joints', text='Joint')
-        c = row.column(align=True)
-        c.prop(root.mmd_root, 'show_temporary_objects', text='Temporary Object')
-        c.prop(root.mmd_root, 'show_names_of_rigid_bodies', text='Rigidbody Name')
-        c.prop(root.mmd_root, 'show_names_of_joints', text='Joint Name')
+class MMDModelObjectPanel(_PanelBase, Panel):
+    bl_idname = 'OBJECT_PT_mmd_tools_root_object'
+    bl_label = 'MMD Model Information'
 
     @classmethod
     def poll(cls, context):
@@ -43,13 +27,21 @@ class MMDModelObjectDisplayPanel(_PanelBase, Panel):
 
         return True
 
+    def draw(self, context):
+        layout = self.layout
+        obj = context.active_object
+
+        root = mmd_model.Model.findRoot(obj)
+
+        c = layout.column()
+        c.prop(root.mmd_root, 'name')
+        c.prop(root.mmd_root, 'name_e')
+        c.prop(root.mmd_root, 'scale')
+
 
 class MMDRigidPanel(_PanelBase, Panel):
     bl_idname = 'RIGID_PT_mmd_tools_bone'
-    bl_label = 'MMD Rigid Tool'
-    bl_space_type = 'PROPERTIES'
-    bl_region_type = 'WINDOW'
-    bl_context = 'object'
+    bl_label = 'MMD Rigidbody'
 
     @classmethod
     def poll(cls, context):
