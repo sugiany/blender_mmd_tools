@@ -4,10 +4,9 @@ from bpy.types import Panel
 
 class MMDViewPanel(Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_view'
-    bl_label = 'MMD View Tools'
+    bl_label = 'MMD Shading'
     bl_space_type = 'VIEW_3D'
-    bl_region_type = 'TOOLS'
-    bl_category = 'MMD Tools'
+    bl_region_type = 'UI'
     bl_context = ''
 
     def draw(self, context):

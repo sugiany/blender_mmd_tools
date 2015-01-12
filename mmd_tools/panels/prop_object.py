@@ -4,7 +4,47 @@ from bpy.types import Panel
 
 import mmd_tools.core.model as mmd_model
 
-class MMDRigidPanel(Panel):
+
+class _PanelBase(object):
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'object'
+
+class MMDModelObjectDisplayPanel(_PanelBase, Panel):
+    bl_idname = 'OBJECT_PT_mmd_tools_root_object_display'
+    bl_label = 'MMD Display'
+
+    def draw(self, context):
+        layout = self.layout
+        obj = context.active_object
+
+        root = mmd_model.Model.findRoot(obj)
+
+        row = layout.row(align=True)
+        c = row.column(align=True)
+        c.prop(root.mmd_root, 'show_meshes', text='Mesh')
+        c.prop(root.mmd_root, 'show_armature', text='Armature')
+        c.prop(root.mmd_root, 'show_rigid_bodies', text='Rigidbody')
+        c.prop(root.mmd_root, 'show_joints', text='Joint')
+        c = row.column(align=True)
+        c.prop(root.mmd_root, 'show_temporary_objects', text='Temporary Object')
+        c.prop(root.mmd_root, 'show_names_of_rigid_bodies', text='Rigidbody Name')
+        c.prop(root.mmd_root, 'show_names_of_joints', text='Joint Name')
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        if obj is None:
+            return False
+
+        root = mmd_model.Model.findRoot(obj)
+        if root is None:
+            return False
+
+        return True
+
+
+class MMDRigidPanel(_PanelBase, Panel):
     bl_idname = 'RIGID_PT_mmd_tools_bone'
     bl_label = 'MMD Rigid Tool'
     bl_space_type = 'PROPERTIES'
@@ -54,7 +94,7 @@ class MMDRigidPanel(Panel):
         row.prop(obj.rigid_body, 'angular_damping')
 
 
-class MMDJointPanel(Panel):
+class MMDJointPanel(_PanelBase, Panel):
     bl_idname = 'JOINT_PT_mmd_tools_bone'
     bl_label = 'MMD Joint Tools'
     bl_space_type = 'PROPERTIES'

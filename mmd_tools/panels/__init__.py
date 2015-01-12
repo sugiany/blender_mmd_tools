@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 
-from . import bone, camera, material, misc, model, rigid_body, view
+from . import prop_bone, prop_camera, prop_material, prop_object, tool, view_prop

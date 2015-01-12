@@ -6,6 +6,11 @@ from mmd_tools import operators
 import mmd_tools.core.model as mmd_model
 
 
+class _PanelBase(object):
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'TOOLS'
+    bl_category = 'mmd_tools'
+
 
 class MMD_ROOT_UL_display_item_frames(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
@@ -38,13 +43,9 @@ class MMD_ROOT_UL_display_items(UIList):
             layout.alignment = 'CENTER'
             layout.label(text="", icon_value=icon)
 
-class MMDDisplayItemsPanel(Panel):
+class MMDDisplayItemsPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_display_items'
     bl_label = 'MMD Display Items'
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'TOOLS'
-    bl_category = 'MMD Tools'
-
 
     def draw(self, context):
         active_obj = context.active_object
@@ -57,7 +58,6 @@ class MMDDisplayItemsPanel(Panel):
             return
 
         rig = mmd_model.Model(root)
-        arm = rig.armature()
         root = rig.rootObject()
         mmd_root = root.mmd_root
         col = self.layout.column()
@@ -115,12 +115,9 @@ class MMDDisplayItemsPanel(Panel):
                     row.prop(i.data.shape_keys.key_blocks[item.name], 'value')
 
 
-class MMDRootPanel(Panel):
+class MMDRootView3DPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_root'
     bl_label = 'MMD Model Tools'
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'TOOLS'
-    bl_category = 'MMD Tools'
     bl_context = ''
 
     def draw(self, context):
@@ -138,27 +135,6 @@ class MMDRootPanel(Panel):
             c.label('Create MMD Model')
             return
 
-        rig = mmd_model.Model(root)
-        arm = rig.armature()
-
-        c = layout.column()
-        c.prop(root.mmd_root, 'name')
-        c.prop(root.mmd_root, 'name_e')
-        c.prop(root.mmd_root, 'scale')
-
-        c = layout.column(align=True)
-        c.prop(root.mmd_root, 'show_meshes')
-        c.prop(root.mmd_root, 'show_armature')
-        c.prop(root.mmd_root, 'show_rigid_bodies')
-        c.prop(root.mmd_root, 'show_joints')
-        c.prop(root.mmd_root, 'show_temporary_objects')
-
-        c = layout.column(align=True)
-        c.prop(root.mmd_root, 'show_names_of_rigid_bodies')
-        c.prop(root.mmd_root, 'show_names_of_joints')
-
-
-
         col = self.layout.column(align=True)
 
         if not root.mmd_root.is_built:
@@ -171,3 +147,66 @@ class MMDRootPanel(Panel):
         col = self.layout.column(align=True)
         col.operator(operators.fileio.ImportVmdToMMDModel.bl_idname, text='Import Motion')
         col.operator(operators.fileio.ExportPmx.bl_idname, text='Export Model')
+
+
+class MMDModelObjectPanel(_PanelBase, Panel):
+    bl_idname = 'OBJECT_PT_mmd_tools_root_object'
+    bl_label = 'MMD Model Information'
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'object'
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        if obj is None:
+            return False
+
+        root = mmd_model.Model.findRoot(obj)
+        if root is None:
+            return False
+
+        return True
+
+    def draw(self, context):
+        layout = self.layout
+        obj = context.active_object
+
+        root = mmd_model.Model.findRoot(obj)
+
+        c = layout.column()
+        c.prop(root.mmd_root, 'name')
+        c.prop(root.mmd_root, 'name_e')
+        c.prop(root.mmd_root, 'scale')
+
+class MMDToolsObjectPanel(_PanelBase, Panel):
+    bl_idname = 'OBJECT_PT_mmd_tools_object'
+    bl_label = 'Object'
+    bl_context = ''
+
+    def draw(self, context):
+        active_obj = context.active_object
+
+        layout = self.layout
+
+        col = layout.column()
+        col.label('Model:')
+        c = col.column(align=True)
+        c.operator(operators.model.CreateMMDModelRoot.bl_idname, text='Create')
+        c.operator(operators.fileio.ImportPmx.bl_idname, text='Import')
+
+        col.label('Motion(vmd):')
+        c = col.column()
+        c.operator('mmd_tools.import_vmd', text='Import')
+
+
+        if active_obj is not None and active_obj.type == 'MESH':
+            col = layout.column(align=True)
+            col.label('Mesh:')
+            c = col.column()
+            c.operator('mmd_tools.separate_by_materials', text='Separate by materials')
+
+        col = layout.column(align=True)
+        col.label('Scene:')
+        c = col.column(align=True)
+        c.operator('mmd_tools.set_frame_range', text='Set frame range')
