@@ -158,3 +158,87 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
                     row = col.row(align=True)
                     row.label(i.name+':')
                     row.prop(i.data.shape_keys.key_blocks[item.name], 'value')
+
+
+class UL_ObjectsMixIn(object):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
+        if self.layout_type in {'DEFAULT', 'COMPACT'}:
+            layout.prop(item, 'name', text='', emboss=False, icon=self.icon)
+        elif self.layout_type in {'GRID'}:
+            layout.alignment = 'CENTER'
+            layout.label(text='', icon=self.icon)
+
+    def draw_filter(self, context, layout):
+        pass
+
+    def filter_items(self, context, data, propname):
+        objects = getattr(data, propname)
+        flt_flags = [~self.bitflag_filter_item] * len(objects)
+        flt_neworder = []
+
+        for i, obj in enumerate(objects):
+            if obj.mmd_type == self.mmd_type:
+                flt_flags[i] = self.bitflag_filter_item
+
+        return flt_flags, flt_neworder
+
+class UL_rigidbodies(UL_ObjectsMixIn, UIList):
+    mmd_type = 'RIGID_BODY'
+    icon = 'MESH_ICOSPHERE'
+
+
+class MMDRigidbodySelectorPanel(_PanelBase, Panel):
+    bl_idname = 'OBJECT_PT_mmd_tools_rigidbody_list'
+    bl_label = 'Rigidbodies'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw(self, context):
+        active_obj = context.active_object
+        root = None
+        if active_obj:
+            root = mmd_model.Model.findRoot(active_obj)
+        if root is None:
+            c = self.layout.column()
+            c.label('Select a MMD Model')
+            return
+
+        rig = mmd_model.Model(root)
+        root = rig.rootObject()
+        mmd_root = root.mmd_root
+        self.layout.template_list(
+            "UL_rigidbodies",
+            "",
+            context.scene, "objects",
+            mmd_root, 'active_rigidbody_index',
+            )
+
+
+class UL_joints(UL_ObjectsMixIn, UIList):
+    mmd_type = 'JOINT'
+    icon = 'CONSTRAINT'
+
+class MMDJointSelectorPanel(_PanelBase, Panel):
+    bl_idname = 'OBJECT_PT_mmd_tools_joint_list'
+    bl_label = 'Joints'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw(self, context):
+        active_obj = context.active_object
+        root = None
+        if active_obj:
+            root = mmd_model.Model.findRoot(active_obj)
+        if root is None:
+            c = self.layout.column()
+            c.label('Select a MMD Model')
+            return
+
+        rig = mmd_model.Model(root)
+        root = rig.rootObject()
+        mmd_root = root.mmd_root
+
+        self.layout.template_list(
+            "UL_joints",
+            "",
+            context.scene, "objects",
+            mmd_root, 'active_joint_index',
+            )

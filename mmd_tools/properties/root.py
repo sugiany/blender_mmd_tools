@@ -8,6 +8,7 @@ from bpy.props import BoolProperty, CollectionProperty, FloatProperty, IntProper
 import mmd_tools.core.model as mmd_model
 from mmd_tools.properties.morph import BoneMorph
 from mmd_tools.properties.morph import MaterialMorph
+from mmd_tools import utils
 
 #===========================================
 # Callback functions
@@ -73,6 +74,23 @@ def _setVisibilityOfMMDRigArmature(obj, v):
         bpy.context.scene.objects.active = obj
     arm.hide = not v
 
+def _setActiveRigidbodyObject(prop, v):
+    obj = bpy.context.scene.objects[v]
+    if not obj.hide:
+        utils.selectAObject(obj)
+    prop['active_rigidbody_object_index'] = v
+
+def _getActiveRigidbodyObject(prop):
+    return prop.get('active_rigidbody_object_index', 0)
+
+def _setActiveJointObject(prop, v):
+    obj = bpy.context.scene.objects[v]
+    if not obj.hide:
+        utils.selectAObject(obj)
+    prop['active_joint_object_index'] = v
+
+def _getActiveJointObject(prop):
+    return prop.get('active_joint_object_index', 0)
 
 
 #===========================================
@@ -180,6 +198,18 @@ class MMDRoot(PropertyGroup):
 
     is_built = BoolProperty(
         name='Is Built',
+        )
+
+    active_rigidbody_index = IntProperty(
+        name='Active Rigidbody Index',
+        get=_getActiveRigidbodyObject,
+        set=_setActiveRigidbodyObject,
+        )
+
+    active_joint_index = IntProperty(
+        name='Active Joint Index',
+        get=_getActiveJointObject,
+        set=_setActiveJointObject,
         )
 
     #*************************
