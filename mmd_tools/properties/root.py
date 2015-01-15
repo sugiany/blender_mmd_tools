@@ -76,6 +76,10 @@ def _setVisibilityOfMMDRigArmature(obj, v):
 
 def _setActiveRigidbodyObject(prop, v):
     obj = bpy.context.scene.objects[v]
+    root = prop.id_data
+    rig = mmd_model.Model(root)
+    for i in rig.rigidBodies():
+        i.hide = False
     if not obj.hide:
         utils.selectAObject(obj)
     prop['active_rigidbody_object_index'] = v
@@ -85,6 +89,10 @@ def _getActiveRigidbodyObject(prop):
 
 def _setActiveJointObject(prop, v):
     obj = bpy.context.scene.objects[v]
+    root = prop.id_data
+    rig = mmd_model.Model(root)
+    for i in rig.joints():
+        i.hide = False
     if not obj.hide:
         utils.selectAObject(obj)
     prop['active_joint_object_index'] = v
