@@ -3,7 +3,6 @@
 import bpy
 from bpy.types import Operator
 
-from mmd_tools import cycles_converter
 
 class SetGLSLShading(Operator):
     bl_idname = 'mmd_tools.set_glsl_shading'
@@ -49,20 +48,6 @@ class SetShadelessGLSLShading(Operator):
 
         context.area.spaces[0].viewport_shade='TEXTURED'
         bpy.context.scene.game_settings.material_mode = 'GLSL'
-        return {'FINISHED'}
-
-class SetCyclesRendering(Operator):
-    bl_idname = 'mmd_tools.set_cycles_rendering'
-    bl_label = 'Cycles'
-    bl_description = 'Convert blender render shader to Cycles shader'
-    bl_options = {'PRESET'}
-
-    def execute(self, context):
-        bpy.ops.mmd_tools.reset_shading()
-        bpy.context.scene.render.engine = 'CYCLES'
-        for i in filter(lambda x: x.type == 'MESH', context.scene.objects):
-            cycles_converter.convertToCyclesShader(i)
-        context.area.spaces[0].viewport_shade='MATERIAL'
         return {'FINISHED'}
 
 class ResetShading(Operator):

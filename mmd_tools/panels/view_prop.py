@@ -55,5 +55,4 @@ class MMDViewPanel(_PanelBase, Panel):
         r.operator('mmd_tools.set_glsl_shading', text='GLSL')
         r.operator('mmd_tools.set_shadeless_glsl_shading', text='Shadeless')
         r = c.row(align=True)
-        r.operator('mmd_tools.set_cycles_rendering', text='Cycles')
         r.operator('mmd_tools.reset_shading', text='Reset')

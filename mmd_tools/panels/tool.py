@@ -27,8 +27,9 @@ class MMDToolsObjectPanel(_PanelBase, Panel):
         row = col.row(align=True)
         row.operator(operators.model.CreateMMDModelRoot.bl_idname, text='Create Model')
         row.operator(operators.fileio.ImportPmx.bl_idname, text='Import Model')
+        col = layout.column(align=True)
+        col.operator(operators.material.ConvertMaterialsForCycles.bl_idname, text='Convert Materials For Cycles')
         if active_obj is not None and active_obj.type == 'MESH':
-            col = layout.column(align=True)
             col.operator('mmd_tools.separate_by_materials', text='Separate By Materials')
 
         if active_obj is None:
