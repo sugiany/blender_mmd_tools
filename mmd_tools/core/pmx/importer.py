@@ -469,6 +469,12 @@ class PMXImporter:
     def __importDisplayFrames(self):
         pmxModel = self.__model
         root = self.__rig.rootObject()
+        categories = {
+            0: 'SYSTEM',
+            1: 'EYEBROW',
+            2: 'EYE',
+            3: 'MOUTH',
+            }
 
         for i in pmxModel.display:
             frame = root.mmd_root.display_item_frames.add()
@@ -481,7 +487,9 @@ class PMXImporter:
                     item.name = self.__boneTable[index].name
                 elif disp_type == 1:
                     item.type = 'MORPH'
-                    item.name = pmxModel.morphs[index].name
+                    morph = pmxModel.morphs[index]
+                    item.name = morph.name
+                    item.morph_category = categories.get(morph.category, 'OTHER')
                 else:
                     raise Exception('Unknown display item type.')
         root.mmd_root.display_item_frames

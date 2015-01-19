@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import bpy
 from bpy.types import Panel, UIList
 
 from mmd_tools import operators
@@ -72,6 +73,19 @@ class MMD_ROOT_UL_display_item_frames(UIList):
             layout.label(text="", icon_value=icon)
 
 class MMD_ROOT_UL_display_items(UIList):
+    morph_filter = bpy.props.EnumProperty(
+        name="Morph Filter",
+        items = [
+            ('OTHER', 'Other', '', 4),
+            ('MOUTH', 'Mouth', '', 3),
+            ('EYE', 'Eye', '', 2),
+            ('EYEBROW', 'Eye Brow', '', 1),
+            ('SYSTEM', 'System', '', 0),
+            ('NONE', 'All', '', 10),
+            ],
+        default='NONE',
+        )
+
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         mmd_root = data
 
@@ -86,6 +100,26 @@ class MMD_ROOT_UL_display_items(UIList):
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'
             layout.label(text="", icon_value=icon)
+
+
+    def filter_items(self, context, data, propname):
+        if self.morph_filter == 'NONE' or data.name != u'表情':
+            return [], []
+
+        objects = getattr(data, propname)
+        flt_flags = [~self.bitflag_filter_item] * len(objects)
+        flt_neworder = []
+
+        for i, item in enumerate(objects):
+            if item.morph_category == self.morph_filter:
+                flt_flags[i] = self.bitflag_filter_item
+
+        return flt_flags, flt_neworder
+
+
+    def draw_filter(self, context, layout):
+        row = layout.row()
+        row.prop(self, 'morph_filter')
 
 
 class MMDDisplayItemsPanel(_PanelBase, Panel):
@@ -152,6 +186,7 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
             row = col.row(align=True)
             row.operator(operators.display_item.SelectCurrentDisplayItem.bl_idname, text='Select')
         elif item.type == 'MORPH':
+            row.prop(item, 'morph_category', text='')
             row.prop(item, 'name', text='')
 
             for i in rig.meshes():

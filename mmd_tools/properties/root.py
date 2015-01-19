@@ -116,6 +116,18 @@ class MMDDisplayItem(PropertyGroup):
             ],
         )
 
+    morph_category = EnumProperty(
+        name='Category',
+        items = [
+            ('SYSTEM', 'System', '', 0),
+            ('EYEBROW', 'Eye Brow', '', 1),
+            ('EYE', 'Eye', '', 2),
+            ('MOUTH', 'Mouth', '', 3),
+            ('OTHER', 'Other', '', 4),
+            ],
+        default='OTHER',
+        )
+
 class MMDDisplayItemFrame(PropertyGroup):
     """ PMX 表示枠
 

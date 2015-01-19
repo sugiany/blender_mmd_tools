@@ -337,16 +337,28 @@ class __PmxExporter:
                     pmx_ik_bone.target = pmx_bones[bone_map[bone.name]].displayConnection
                     pmx_ik_bone.ik_links = self.__exportIKLinks(bone, pmx_bones, bone_map, [], c.chain_count)
 
-    def __exportVertexMorphs(self, meshes):
+    def __exportVertexMorphs(self, meshes, root):
         shape_key_names = []
         for mesh in meshes:
             for i in mesh.shape_key_names:
                 if i not in shape_key_names:
                     shape_key_names.append(i)
 
+        morph_categories = {}
+        if root:
+            categories = {
+                'SYSTEM': pmx.Morph.CATEGORY_SYSTEM,
+                'EYEBROW': pmx.Morph.CATEGORY_EYEBROW,
+                'EYE': pmx.Morph.CATEGORY_EYE,
+                'MOUTH': pmx.Morph.CATEGORY_MOUTH,
+                }
+            for item in root.mmd_root.display_item_frames[u'表情'].items:
+                morph_categories[item.name] = categories.get(item.morph_category, pmx.Morph.CATEGORY_OHTER)
+
         for i in shape_key_names:
             exported_vert = set()
             morph = pmx.VertexMorph(i, '', 4)
+            morph.category = morph_categories.get(i, pmx.Morph.CATEGORY_OHTER)
             for mesh in meshes:
                 vertices = []
                 for mf in mesh.material_faces.values():
@@ -670,7 +682,7 @@ class __PmxExporter:
             mesh_data.append(self.__loadMeshData(i))
 
         self.__exportMeshes(mesh_data, nameMap)
-        self.__exportVertexMorphs(mesh_data)
+        self.__exportVertexMorphs(mesh_data, root)
         self.__sortMaterials()
         rigid_map = self.__exportRigidBodies(rigid_bodeis, nameMap)
         self.__exportJoints(joints, rigid_map)
