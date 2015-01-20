@@ -780,7 +780,8 @@ class BoneWeight:
         elif self.type == self.BDEF4:
             for i in range(4):
                 fs.writeBoneIndex(self.bones[i])
-            fs.writeFloat(self.weights[0])
+            for i in range(4):
+                fs.writeFloat(self.weights[i])
         elif self.type == self.SDEF:
             for i in range(2):
                 fs.writeBoneIndex(self.bones[i])

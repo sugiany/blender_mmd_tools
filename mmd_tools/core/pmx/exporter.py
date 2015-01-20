@@ -609,7 +609,7 @@ class __PmxExporter:
         for v in base_mesh.vertices:
             base_vertices[v.index] = [_Vertex(
                 v.co,
-                list(map(lambda x: (x.group, x.weight), v.groups)),
+                list([(x.group, x.weight) for x in v.groups if x.weight > 0]),
                 v.normal,
                 [])]
 
