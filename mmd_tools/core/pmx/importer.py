@@ -120,10 +120,9 @@ class PMXImporter:
                 self.__vertexGroupTable[pv.weight.bones[0]].add(index=[i], weight=pv.weight.weights[0], type='REPLACE')
                 self.__vertexGroupTable[pv.weight.bones[1]].add(index=[i], weight=1.0-pv.weight.weights[0], type='REPLACE')
             elif len(pv.weight.bones) == 4:
-                self.__vertexGroupTable[pv.weight.bones[0]].add(index=[i], weight=pv.weight.weights[0], type='REPLACE')
-                self.__vertexGroupTable[pv.weight.bones[1]].add(index=[i], weight=pv.weight.weights[1], type='REPLACE')
-                self.__vertexGroupTable[pv.weight.bones[2]].add(index=[i], weight=pv.weight.weights[2], type='REPLACE')
-                self.__vertexGroupTable[pv.weight.bones[3]].add(index=[i], weight=pv.weight.weights[3], type='REPLACE')
+                # If two or more weights for the same bone is present, the second and subsequent will be ignored.
+                for bone, weight in reversed([x for x in zip(pv.weight.bones, pv.weight.weights) if x[0] >= 0]):
+                    self.__vertexGroupTable[bone].add(index=[i], weight=weight, type='REPLACE')
             else:
                 raise Exception('unkown bone weight type.')
 
