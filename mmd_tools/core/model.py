@@ -669,6 +669,7 @@ class Model:
         rbc.spring_stiffness_z = spring_stiffness[2]
 
     def updateJoint(self, joint_obj):
+        # TODO: This process seems to be an incorrect method for creating spring constraints. Fix or delete this.
         rbc = joint_obj.rigid_body_constraint
         if rbc.object1.rigid_body.kinematic:
             self.__makeSpring(rbc.object2, rbc.object1, joint_obj.mmd_joint.spring_angular)
@@ -676,8 +677,7 @@ class Model:
             self.__makeSpring(rbc.object1, rbc.object2, joint_obj.mmd_joint.spring_angular)
 
     def buildJoints(self):
-        for joint in self.joints():
-            self.updateJoint(joint)
+        pass
 
     def applyAdditionalTransformConstraints(self, force=False):
         arm = self.armature()
