@@ -180,7 +180,9 @@ class PMXImporter:
                     b_bone.tail = b_bone.head + loc
 
             for b_bone, m_bone in zip(editBoneTable, pmx_bones):
-                if isinstance(m_bone.displayConnection, int) and m_bone.displayConnection >= 0:
+                if isinstance(m_bone.displayConnection, int)\
+                        and m_bone.displayConnection >= 0\
+                        and not m_bone.isMovable:
                     t = editBoneTable[m_bone.displayConnection]
                     if t.parent is not None and t.parent == b_bone:
                         t.use_connect = True
