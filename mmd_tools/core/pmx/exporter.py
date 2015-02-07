@@ -657,17 +657,20 @@ class __PmxExporter:
 
 
     def execute(self, filepath, **args):
+        root = args.get('root', None)
         self.__model = pmx.Model()
         self.__model.name = 'test'
         self.__model.name_e = 'test eng'
+        if root is not None:
+            self.__model.name = root.mmd_root.name
+            self.__model.name_e = root.mmd_root.name_e
 
         self.__model.comment = 'exported by mmd_tools'
 
         meshes = args.get('meshes', [])
         self.__armature = args.get('armature', None)
         rigid_bodeis = args.get('rigid_bodies', [])
-        joints = args.get('joints', [])
-        root = args.get('root', None)
+        joints = args.get('joints', [])        
         self.__copyTextures = args.get('copy_textures', False)
         self.__filepath = filepath
 
