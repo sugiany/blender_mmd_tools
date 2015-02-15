@@ -330,12 +330,32 @@ class __PmxExporter:
                     else:
                         ik_bone_index = bone_map[c.subtarget]
 
+                    ik_target_bone = self.__get_connected_child_bone(bone)
                     pmx_ik_bone = pmx_bones[ik_bone_index]
                     pmx_ik_bone.isIK = True
                     pmx_ik_bone.loopCount = c.iterations
                     pmx_ik_bone.transform_order += 1
-                    pmx_ik_bone.target = pmx_bones[bone_map[bone.name]].displayConnection
+                    pmx_ik_bone.target = bone_map[ik_target_bone.name]
                     pmx_ik_bone.ik_links = self.__exportIKLinks(bone, pmx_bones, bone_map, [], c.chain_count)
+
+    def __get_connected_child_bone(self, target_bone):
+        """ Get a connected child bone.
+
+         Args:
+             target_bone: A blender PoseBone
+
+         Returns:
+             A bpy.types.PoseBone object which is the closest bone from the tail position of target_bone.
+             Return None if target_bone has no child bones.
+        """
+        r = None
+        min_length = None
+        for c in target_bone.children:
+            length = (c.head - target_bone.tail).length
+            if not min_length or length < min_length:
+                min_length = length
+                r = c
+        return r
 
     def __exportVertexMorphs(self, meshes, root):
         shape_key_names = []
