@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import logging
+import os
+
 import bpy
 
 SPHERE_MODE_OFF    = 0
@@ -47,7 +50,10 @@ class FnMaterial(object):
         texture_slot.texture_coords = 'UV'
         texture_slot.blend_type = 'MULTIPLY'
         texture_slot.texture = bpy.data.textures.new(name=self.__material.name, type='IMAGE')
-        texture_slot.texture.image = bpy.data.images.load(filepath)
+        if os.path.isfile(filepath):
+            texture_slot.texture.image = bpy.data.images.load(filepath)
+        else:
+            logging.warning('Cannot create a texture for %s. No such file.', filepath)
         return texture_slot
 
 
@@ -68,7 +74,10 @@ class FnMaterial(object):
         texture_slot = self.__material.texture_slots.create(1)
         texture_slot.texture_coords = 'NORMAL'
         texture_slot.texture = bpy.data.textures.new(name=self.__material.name + '_sph', type='IMAGE')
-        texture_slot.texture.image = bpy.data.images.load(filepath)
+        if os.path.isfile(filepath):
+            texture_slot.texture.image = bpy.data.images.load(filepath)
+        else:
+            logging.warning('Cannot create a texture for %s. No such file.', filepath)
         return texture_slot
 
 
