@@ -67,6 +67,11 @@ class MMDBone(PropertyGroup):
         default=False,
         )
 
+    use_tail_location = BoolProperty(
+        name='Use Tail Location',
+        default=False,
+        )
+
     enabled_local_axes = BoolProperty(
         name='Use Local Axes',
         default=False,

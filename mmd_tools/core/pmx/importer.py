@@ -240,7 +240,12 @@ class PMXImporter:
             b_bone.mmd_bone.transform_order = p_bone.transform_order
             b_bone.mmd_bone.is_visible = p_bone.visible
             b_bone.mmd_bone.is_controllable = p_bone.isControllable
-            b_bone.mmd_bone.is_tip = (p_bone.displayConnection == -1)
+
+            if isinstance(p_bone.displayConnection, int):
+                b_bone.mmd_bone.is_tip = (p_bone.displayConnection == -1)
+            else:
+                b_bone.mmd_bone.use_tail_location = True
+
             b_bone.bone.hide = b_bone.mmd_bone.is_tip or not p_bone.visible
 
             if not p_bone.isRotatable:

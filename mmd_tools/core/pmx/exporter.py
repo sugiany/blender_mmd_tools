@@ -248,19 +248,22 @@ class __PmxExporter:
 
                 if p_bone.mmd_bone.is_tip:
                     pmx_bone.displayConnection = -1
+                elif p_bone.mmd_bone.use_tail_location:
+                    tail_loc = world_mat * mathutils.Vector(bone.tail) * self.__scale * self.TO_PMX_MATRIX
+                    pmx_bone.displayConnection = tail_loc - pmx_bone.location
                 else:
                     for child in bone.children:
                         if child.use_connect:
                             pmx_bone.displayConnection = child
                             break
-                    if not pmx_bone.displayConnection:
-                        pmx_bone.displayConnection = bone.tail - bone.head
+                    #if not pmx_bone.displayConnection: #I think this wasn't working properly
+                        #pmx_bone.displayConnection = bone.tail - bone.head
 
 
-            for i in pmx_bones:
+            for idx, i in enumerate(pmx_bones):
                 if i.parent is not None:
                     i.parent = pmx_bones.index(boneMap[i.parent])
-                    logging.debug('the parent of %s: %s', i.name, i.parent)
+                    logging.debug('the parent of %s:%s: %s', idx, i.name, i.parent)
                 if isinstance(i.displayConnection, pmx.Bone):
                     i.displayConnection = pmx_bones.index(i.displayConnection)
                 elif isinstance(i.displayConnection, bpy.types.EditBone):
