@@ -72,6 +72,17 @@ class MMDBone(PropertyGroup):
         default=False,
         )
 
+    enabled_fixed_axis = BoolProperty(
+        name='Use Fixed Axis',
+        default=False,
+        )
+
+    fixed_axis = FloatVectorProperty(
+        name='Fixed Axis',
+        size=3,
+        default=[0, 0, 0],
+        )
+
     enabled_local_axes = BoolProperty(
         name='Use Local Axes',
         default=False,

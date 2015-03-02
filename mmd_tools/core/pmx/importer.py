@@ -271,6 +271,10 @@ class PMXImporter:
                 b_bone.mmd_bone.local_axis_x = p_bone.localCoordinate.x_axis
                 b_bone.mmd_bone.local_axis_z = p_bone.localCoordinate.z_axis
 
+            if p_bone.axis is not None:
+                b_bone.mmd_bone.enabled_fixed_axis = True
+                b_bone.mmd_bone.fixed_axis=p_bone.axis
+
             if b_bone.mmd_bone.is_tip:
                 b_bone.lock_rotation = [True, True, True]
                 b_bone.lock_location = [True, True, True]

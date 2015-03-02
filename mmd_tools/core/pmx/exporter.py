@@ -259,6 +259,13 @@ class __PmxExporter:
                     #if not pmx_bone.displayConnection: #I think this wasn't working properly
                         #pmx_bone.displayConnection = bone.tail - bone.head
 
+                #add fixed and local axes
+                if mmd_bone.enabled_fixed_axis:
+                    pmx_bone.axis = mmd_bone.fixed_axis
+
+                if mmd_bone.enabled_local_axes:
+                    pmx_bone.localCoordinate = pmx.Coordinate(
+                        mmd_bone.local_axis_x, mmd_bone.local_axis_z)
 
             for idx, i in enumerate(pmx_bones):
                 if i.parent is not None:
