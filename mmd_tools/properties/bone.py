@@ -125,6 +125,7 @@ class MMDBone(PropertyGroup):
 
     additional_transform_bone_id = IntProperty(
         name='Additional Transform Bone ID',
+        default=-1,
         update=_updateMMDBoneAdditionalTransform,
         )
 
