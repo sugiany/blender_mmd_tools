@@ -155,8 +155,8 @@ class __PmxExporter:
         p_mat = pmx.Material()
         mmd_mat = material.mmd_material
 
-        p_mat.name = mmd_mat.name_j
-        p_mat.name_e = mmd_mat.name_e
+        p_mat.name = mmd_mat.name_j or material.name
+        p_mat.name_e = mmd_mat.name_e or material.name
         p_mat.diffuse = list(material.diffuse_color) + [material.alpha]
         p_mat.ambient = mmd_mat.ambient_color
         p_mat.specular = list(material.specular_color) + [material.specular_alpha]
