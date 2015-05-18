@@ -35,6 +35,23 @@ class FnMaterial(object):
     def material(self):
         return self.__material
 
+
+    def __load_image(self, filepath):
+        for i in bpy.data.images:
+            if i.filepath == filepath:
+                return i
+
+        if os.path.isfile(filepath):
+            return bpy.data.images.load(filepath)
+
+        logging.warning('Cannot create a texture for %s. No such file.', filepath)
+        #return None
+        img = bpy.data.images.new(os.path.basename(filepath), 1, 1)
+        img.source = 'FILE'
+        img.filepath = filepath
+        return img
+
+
     def create_texture(self, filepath):
         """ create a texture slot for textures of MMD models.
 
@@ -50,10 +67,7 @@ class FnMaterial(object):
         texture_slot.texture_coords = 'UV'
         texture_slot.blend_type = 'MULTIPLY'
         texture_slot.texture = bpy.data.textures.new(name=self.__material.name, type='IMAGE')
-        if os.path.isfile(filepath):
-            texture_slot.texture.image = bpy.data.images.load(filepath)
-        else:
-            logging.warning('Cannot create a texture for %s. No such file.', filepath)
+        texture_slot.texture.image = self.__load_image(filepath)
         return texture_slot
 
 
@@ -74,10 +88,7 @@ class FnMaterial(object):
         texture_slot = self.__material.texture_slots.create(1)
         texture_slot.texture_coords = 'NORMAL'
         texture_slot.texture = bpy.data.textures.new(name=self.__material.name + '_sph', type='IMAGE')
-        if os.path.isfile(filepath):
-            texture_slot.texture.image = bpy.data.images.load(filepath)
-        else:
-            logging.warning('Cannot create a texture for %s. No such file.', filepath)
+        texture_slot.texture.image = self.__load_image(filepath)
         return texture_slot
 
 
