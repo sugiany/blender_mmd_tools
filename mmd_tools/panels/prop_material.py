@@ -102,6 +102,7 @@ class MMDTexturePanel(Panel):
         else:
             r.operator('mmd_tools.material_open_texture', text='Add', icon='FILESEL')
 
+        col = layout.column(align=True)
         row = col.row(align=True)
         row.label('Sphere Texture:')
         r = row.column(align=True)
@@ -110,11 +111,14 @@ class MMDTexturePanel(Panel):
             if tex.type == 'IMAGE' and tex.image:
                 r2 = r.row(align=True)
                 r2.prop(tex.image, 'filepath', text='')
+                r2.operator('mmd_tools.material_remove_sphere_texture', text='', icon='PANEL_CLOSE')
             else:
                 r.operator('mmd_tools.material_remove_sphere_texture', text='Remove', icon='PANEL_CLOSE')
                 col.label('Sphere Texture is invalid.', icon='ERROR')
         else:
-            r.operator('mmd_tools.material_open_texture', text='Add', icon='FILESEL')
+            r.operator('mmd_tools.material_open_sphere_texture', text='Add', icon='FILESEL')
+        r = col.row(align=True)
+        r.prop(mmd_material, 'sphere_texture_type')
 
         col = layout.column(align=True)
         c = col.column()
@@ -124,5 +128,4 @@ class MMDTexturePanel(Panel):
             r.prop(mmd_material, 'shared_toon_texture')
         r = c.row()
         r.prop(mmd_material, 'toon_texture')
-        r = c.row()
-        r.prop(mmd_material, 'sphere_texture_type')
+

@@ -84,7 +84,7 @@ class RemoveSphereTexture(Operator):
     """ Create a texture for mmd model material.
     """
     bl_idname = 'mmd_tools.material_remove_sphere_texture'
-    bl_label = 'Remove texture'
+    bl_label = 'Remove Sphere Texture'
     bl_description = ''
     bl_options = {'PRESET'}
 
