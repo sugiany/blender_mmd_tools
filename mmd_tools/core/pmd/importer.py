@@ -188,6 +188,22 @@ def import_pmd(**kwargs):
                 texture_map[tex_path] = len(pmx_model.textures) - 1
             pmx_mat.sphere_texture = texture_map[tex_path]
             pmx_mat.sphere_texture_mode = mat.sphere_mode
+        pmx_mat.is_shared_toon_texture = False
+        pmx_mat.toon_texture = -1
+        if mat.toon_index in range(len(pmd_model.toon_textures)):
+            tex_path = pmd_model.toon_textures[mat.toon_index]
+            if tex_path not in texture_map:
+                logging.info('  Create pmx.Texture %s', tex_path)
+                tex = pmx.Texture()
+                tex.path = os.path.normpath(os.path.join(os.path.dirname(target_path), tex_path))
+                if not os.path.exists(tex.path) and re.search(r'toon(0[1-9]|10)\.bmp$', tex_path, flags=re.I):
+                    # If the texture does not exist and the file name is one of {toon01.bmp ~ toon10.bmp},
+                    # then it should be a shared toon texture.
+                    texture_map[tex_path] = (True, int(tex_path[-6:-4])-1)
+                else:
+                    pmx_model.textures.append(tex)
+                    texture_map[tex_path] = (False, len(pmx_model.textures)-1)
+            pmx_mat.is_shared_toon_texture, pmx_mat.toon_texture = texture_map[tex_path]
         pmx_model.materials.append(pmx_mat)
     logging.info('----- Converted %d materials', len(pmx_model.materials))
 
