@@ -18,6 +18,7 @@ class AddDisplayItemFrame(Operator):
         mmd_root = root.mmd_root
         item = mmd_root.display_item_frames.add()
         item.name = 'Display Frame'
+        mmd_root.active_display_item_frame = len(mmd_root.display_item_frames)-1
         return {'FINISHED'}
 
 class RemoveDisplayItemFrame(Operator):
@@ -31,6 +32,7 @@ class RemoveDisplayItemFrame(Operator):
         root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
         mmd_root.display_item_frames.remove(mmd_root.active_display_item_frame)
+        mmd_root.active_display_item_frame = min(len(mmd_root.display_item_frames)-1, max(0, mmd_root.active_display_item_frame-1))
         return {'FINISHED'}
 
 class MoveUpDisplayItemFrame(Operator):
@@ -80,6 +82,7 @@ class AddDisplayItem(Operator):
         frame = mmd_root.display_item_frames[mmd_root.active_display_item_frame]
         item = frame.items.add()
         item.name = 'Display Item'
+        frame.active_item = len(frame.items)-1
         return {'FINISHED'}
 
 class RemoveDisplayItem(Operator):
@@ -94,6 +97,7 @@ class RemoveDisplayItem(Operator):
         mmd_root = root.mmd_root
         frame = mmd_root.display_item_frames[mmd_root.active_display_item_frame]
         frame.items.remove(frame.active_item)
+        frame.active_item = min(len(frame.items)-1, max(0, frame.active_item-1))
         return {'FINISHED'}
 
 class MoveUpDisplayItem(Operator):

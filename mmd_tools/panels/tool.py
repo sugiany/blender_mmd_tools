@@ -158,6 +158,8 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
         tb1 = tb.column(align=True)
         tb1.operator(operators.display_item.MoveUpDisplayItemFrame.bl_idname, text='', icon='TRIA_UP')
         tb1.operator(operators.display_item.MoveDownDisplayItemFrame.bl_idname, text='', icon='TRIA_DOWN')
+        if mmd_root.active_display_item_frame not in range(len(mmd_root.display_item_frames)):
+            return
         frame = mmd_root.display_item_frames[mmd_root.active_display_item_frame]
         c.prop(frame, 'name')
 
@@ -177,6 +179,8 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
         tb1 = tb.column(align=True)
         tb1.operator(operators.display_item.MoveUpDisplayItem.bl_idname, text='', icon='TRIA_UP')
         tb1.operator(operators.display_item.MoveDownDisplayItem.bl_idname, text='', icon='TRIA_DOWN')
+        if frame.active_item not in range(len(frame.items)):
+            return
         item = frame.items[frame.active_item]
         row = col.row(align=True)
         row.prop(item, 'type', text='')
