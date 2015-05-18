@@ -94,3 +94,28 @@ class FnMaterial(object):
 
     def remove_sphere_texture(self):
         self.__material.texture_slots.clear(1)
+
+
+    def create_toon_texture(self, filepath):
+        """ create a texture slot for toon textures of MMD models.
+
+        Args:
+            material: the material object to add a texture_slot
+            filepath: the file path to toon texture.
+
+        Returns:
+            bpy.types.MaterialTextureSlot object
+        """
+        texture_slot = self.__material.texture_slots.create(2)
+        texture_slot.texture_coords = 'NORMAL'
+        texture_slot.blend_type = 'MULTIPLY'
+        texture_slot.texture = bpy.data.textures.new(name=self.__material.name + '_toon', type='IMAGE')
+        texture_slot.texture.image = self.__load_image(filepath)
+        texture_slot.texture.image.use_alpha = False
+        texture_slot.texture.extension = 'EXTEND'
+        return texture_slot
+
+
+    def remove_toon_texture(self):
+        self.__material.texture_slots.clear(2)
+

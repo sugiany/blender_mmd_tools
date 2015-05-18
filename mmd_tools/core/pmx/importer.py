@@ -412,6 +412,11 @@ class PMXImporter:
                     texture_slot.texture.image.use_alpha = False
                 texture_slot.diffuse_color_factor = amount
                 texture_slot.blend_type = blend
+            if i.toon_texture != -1:
+                if not i.is_shared_toon_texture:
+                    texture_slot = fnMat.create_toon_texture(self.__textureTable[i.toon_texture])
+                else:
+                    texture_slot = fnMat.create_toon_texture('toon%02d.bmp'%(i.toon_texture+1))
 
     def __importFaces(self):
         pmxModel = self.__model
