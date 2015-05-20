@@ -831,11 +831,11 @@ class Material:
         self.shininess = 0
         self.ambient = []
 
-        self.is_double_sided = False
-        self.enabled_drop_shadow = False
-        self.enabled_self_shadow_map = False
-        self.enabled_self_shadow = False
-        self.enabled_toon_edge = False
+        self.is_double_sided = True
+        self.enabled_drop_shadow = True
+        self.enabled_self_shadow_map = True
+        self.enabled_self_shadow = True
+        self.enabled_toon_edge = True
 
         self.edge_color = []
         self.edge_size = 1
