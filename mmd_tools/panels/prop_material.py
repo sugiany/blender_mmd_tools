@@ -43,8 +43,8 @@ class MMDMaterialPanel(Panel):
         r = c.row()
         r.prop(material, 'specular_color')
         r = c.row()
-        r.label('Specular Alpha:')
-        r.prop(material, 'specular_alpha')
+        r.label('Shininess:')
+        r.prop(mmd_material, 'shininess')
 
         col = layout.column(align=True)
         col.label('Shadow:')

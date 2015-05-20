@@ -141,7 +141,7 @@ class Vertex:
 class Material:
     def __init__(self):
         self.diffuse = []
-        self.specular_intensity = 0.5
+        self.shininess = 0
         self.specular = []
         self.ambient = []
         self.toon_index = 0
@@ -153,7 +153,7 @@ class Material:
 
     def load(self, fs):
         self.diffuse = fs.readVector(4)
-        self.specular_intensity = fs.readFloat()
+        self.shininess = fs.readFloat()
         self.specular = fs.readVector(3)
         self.ambient = fs.readVector(3)
         self.toon_index = fs.readByte()
@@ -385,7 +385,7 @@ class Model:
             logging.debug('  Vertex Count: %d', mat.vertex_count)
             logging.debug('  Diffuse: (%.2f, %.2f, %.2f, %.2f)', *mat.diffuse)
             logging.debug('  Specular: (%.2f, %.2f, %.2f)', *mat.specular)
-            logging.debug('  Specular Intensity: %f', mat.specular_intensity)
+            logging.debug('  Shininess: %f', mat.shininess)
             logging.debug('  Ambient: (%.2f, %.2f, %.2f)', *mat.ambient)
             logging.debug('  Toon Index: %d', mat.toon_index)
             logging.debug('  Edge Type: %d', mat.edge_flag)

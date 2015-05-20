@@ -163,7 +163,8 @@ def import_pmd(**kwargs):
         pmx_mat = pmx.Material()
         pmx_mat.name = 'Material%d'%i
         pmx_mat.diffuse = mat.diffuse
-        pmx_mat.specular = mat.specular + [mat.specular_intensity]
+        pmx_mat.specular = mat.specular
+        pmx_mat.shininess = mat.shininess
         pmx_mat.ambient = mat.ambient
         pmx_mat.enabled_self_shadow = True # pmd doesn't support this
         pmx_mat.enabled_self_shadow_map = abs(mat.diffuse[3] - 0.98) > 1e-7 # consider precision error

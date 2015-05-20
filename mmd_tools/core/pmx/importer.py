@@ -356,8 +356,8 @@ class PMXImporter:
             mmd_mat = mat.mmd_material
             mat.diffuse_color = i.diffuse[0:3]
             mat.alpha = i.diffuse[3]
-            mat.specular_color = i.specular[0:3]
-            mat.specular_alpha = i.specular[3]
+            mat.specular_color = i.specular
+            mat.specular_hardness = i.shininess
             mat.use_shadows = i.enabled_self_shadow
             mat.use_transparent_shadows = i.enabled_self_shadow
             mat.use_cast_buffer_shadows = i.enabled_self_shadow_map # only buffer shadows
@@ -372,6 +372,7 @@ class PMXImporter:
             mmd_mat.name_j = i.name
             mmd_mat.name_e = i.name_e
             mmd_mat.ambient_color = i.ambient
+            mmd_mat.shininess = i.shininess
             mmd_mat.is_double_sided = i.is_double_sided
             mmd_mat.enabled_drop_shadow = i.enabled_drop_shadow
             mmd_mat.enabled_self_shadow_map = i.enabled_self_shadow_map

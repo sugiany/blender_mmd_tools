@@ -420,7 +420,8 @@ class Model:
             logging.debug('  Comment: %s', m.comment)
             logging.debug('  Vertex Count: %d', m.vertex_count)
             logging.debug('  Diffuse: (%.2f, %.2f, %.2f, %.2f)', *m.diffuse)
-            logging.debug('  Specular: (%.2f, %.2f, %.2f, %.2f)', *m.specular)
+            logging.debug('  Specular: (%.2f, %.2f, %.2f)', *m.specular)
+            logging.debug('  Shininess: %f', m.shininess)
             logging.debug('  Ambient: (%.2f, %.2f, %.2f)', *m.ambient)
             logging.debug('  Double Sided: %s', str(m.is_double_sided))
             logging.debug('  Drop Shadow: %s', str(m.enabled_drop_shadow))
@@ -827,6 +828,7 @@ class Material:
 
         self.diffuse = []
         self.specular = []
+        self.shininess = 0
         self.ambient = []
 
         self.is_double_sided = False
@@ -848,11 +850,12 @@ class Material:
         self.vertex_count = 0
 
     def __repr__(self):
-        return '<Material name %s, name_e %s, diffuse %s, specular %s, ambient %s, double_side %s, drop_shadow %s, self_shadow_map %s, self_shadow %s, toon_edge %s, edge_color %s, edge_size %s, toon_texture %s, comment %s>'%(
+        return '<Material name %s, name_e %s, diffuse %s, specular %s, shininess %s, ambient %s, double_side %s, drop_shadow %s, self_shadow_map %s, self_shadow %s, toon_edge %s, edge_color %s, edge_size %s, toon_texture %s, comment %s>'%(
             self.name,
             self.name_e,
             str(self.diffuse),
             str(self.specular),
+            str(self.shininess),
             str(self.ambient),
             str(self.is_double_sided),
             str(self.enabled_drop_shadow),
@@ -871,7 +874,8 @@ class Material:
         self.name_e = fs.readStr()
 
         self.diffuse = fs.readVector(4)
-        self.specular = fs.readVector(4)
+        self.specular = fs.readVector(3)
+        self.shininess = fs.readFloat()
         self.ambient = fs.readVector(3)
 
         flags = fs.readByte()
@@ -904,6 +908,7 @@ class Material:
 
         fs.writeVector(self.diffuse)
         fs.writeVector(self.specular)
+        fs.writeFloat(self.shininess)
         fs.writeVector(self.ambient)
 
         flags = 0

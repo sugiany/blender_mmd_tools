@@ -40,6 +40,14 @@ class MMDMaterial(PropertyGroup):
         default=[0, 0, 0],
         )
 
+    shininess = FloatProperty(
+        name='Shininess',
+        min=0,
+        max=500,
+        step=100.0,
+        default=0.0,
+        )
+
     is_double_sided = BoolProperty(
         name='Double Sided',
         description='',
@@ -85,7 +93,7 @@ class MMDMaterial(PropertyGroup):
         name='Edge Weight',
         min=0,
         max=100,
-        step=0.1,
+        step=1.0,
         default=0.5,
         )
 

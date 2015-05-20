@@ -159,7 +159,8 @@ class __PmxExporter:
         p_mat.name_e = mmd_mat.name_e or material.name
         p_mat.diffuse = list(material.diffuse_color) + [material.alpha]
         p_mat.ambient = mmd_mat.ambient_color
-        p_mat.specular = list(material.specular_color) + [material.specular_alpha]
+        p_mat.specular = material.specular_color
+        p_mat.shininess = mmd_mat.shininess
         p_mat.is_double_sided = mmd_mat.is_double_sided
         p_mat.enabled_drop_shadow = mmd_mat.enabled_drop_shadow
         p_mat.enabled_self_shadow_map = mmd_mat.enabled_self_shadow_map
