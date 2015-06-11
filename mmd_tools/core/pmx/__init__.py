@@ -904,7 +904,7 @@ class Material:
 
     def save(self, fs):
         fs.writeStr(self.name)
-        fs.writeStr(self.name)
+        fs.writeStr(self.name_e)
 
         fs.writeVector(self.diffuse)
         fs.writeVector(self.specular)
