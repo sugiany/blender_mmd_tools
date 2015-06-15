@@ -235,7 +235,7 @@ class __PmxExporter:
                 pmx_bone.hasAdditionalRotate = mmd_bone.has_additional_rotation
                 pmx_bone.hasAdditionalLocation = mmd_bone.has_additional_location
 
-                pmx_bone_e = p_bone.mmd_bone.name_e or ''
+                pmx_bone.name_e = p_bone.mmd_bone.name_e or ''
                 pmx_bone.location = world_mat * mathutils.Vector(bone.head) * self.__scale * self.TO_PMX_MATRIX
                 pmx_bone.parent = bone.parent
                 pmx_bone.visible = mmd_bone.is_visible

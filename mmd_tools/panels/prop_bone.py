@@ -37,6 +37,9 @@ class MMDBonePanel(Panel):
         row.prop(pose_bone.mmd_bone, 'is_controllable')
         row.prop(pose_bone.mmd_bone, 'is_tip')
         row.prop(pose_bone.mmd_bone, 'enabled_local_axes')
+        row = c.row()
+        row.prop(pose_bone.mmd_bone, 'enabled_fixed_axis')
+        row.prop(pose_bone.mmd_bone, 'use_tail_location')
 
         row = layout.row(align=True)
         c = row.column()
@@ -45,6 +48,10 @@ class MMDBonePanel(Panel):
         c.prop(pose_bone.mmd_bone, 'local_axis_z')
 
         c = layout.column()
+        
+        row = layout.row(align=True)
+        c = row.column()
+        c.prop(pose_bone.mmd_bone, 'fixed_axis')
 
 
 class MMDBoneATPanel(Panel):

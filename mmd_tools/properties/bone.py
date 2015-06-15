@@ -68,12 +68,12 @@ class MMDBone(PropertyGroup):
         )
 
     use_tail_location = BoolProperty(
-        name='Use Tail Location',
+        name='Use Tail',
         default=False,
         )
 
     enabled_fixed_axis = BoolProperty(
-        name='Use Fixed Axis',
+        name='Fixed Axis',
         default=False,
         )
 
@@ -84,7 +84,7 @@ class MMDBone(PropertyGroup):
         )
 
     enabled_local_axes = BoolProperty(
-        name='Use Local Axes',
+        name='Local Axes',
         default=False,
         )
 
