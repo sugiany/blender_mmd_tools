@@ -174,12 +174,6 @@ class PMXImporter:
                     loc = mathutils.Vector(m_bone.displayConnection) * self.TO_BLE_MATRIX * self.__scale
                     b_bone.tail = b_bone.head + loc
 
-            for b_bone in editBoneTable:
-                # Set the length of too short bones to 1 because Blender delete them.
-                if b_bone.length  < 0.001:
-                    loc = mathutils.Vector([0, 0, 1]) * self.__scale
-                    b_bone.tail = b_bone.head + loc
-
             for b_bone, m_bone in zip(editBoneTable, pmx_bones):
                 if isinstance(m_bone.displayConnection, int)\
                         and m_bone.displayConnection >= 0\
@@ -187,6 +181,12 @@ class PMXImporter:
                     t = editBoneTable[m_bone.displayConnection]
                     if t.parent is not None and t.parent == b_bone:
                         t.use_connect = True
+
+            for b_bone in editBoneTable:
+                # Set the length of too short bones to 1 because Blender delete them.
+                if b_bone.length  < 0.001:
+                    loc = mathutils.Vector([0, 0, 1]) * self.__scale
+                    b_bone.tail = b_bone.head + loc
 
         return nameTable
 
