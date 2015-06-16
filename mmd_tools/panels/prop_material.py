@@ -2,6 +2,8 @@
 
 from bpy.types import Panel
 
+from mmd_tools.core.material import FnMaterial
+
 class MMDMaterialPanel(Panel):
     bl_idname = 'MATERIAL_PT_mmd_tools_material'
     bl_label = 'MMD Material'
@@ -90,8 +92,8 @@ class MMDTexturePanel(Panel):
         row = col.row(align=True)
         row.label('Texture:')
         r = row.column(align=True)
-        if tex_slots[0]:
-            tex = tex_slots[0].texture
+        if tex_slots[FnMaterial.BASE_TEX_SLOT]:
+            tex = tex_slots[FnMaterial.BASE_TEX_SLOT].texture
             if tex.type == 'IMAGE' and tex.image:
                 r2 = r.row(align=True)
                 r2.prop(tex.image, 'filepath', text='')
@@ -106,8 +108,8 @@ class MMDTexturePanel(Panel):
         row = col.row(align=True)
         row.label('Sphere Texture:')
         r = row.column(align=True)
-        if tex_slots[1]:
-            tex = tex_slots[1].texture
+        if tex_slots[FnMaterial.SPHERE_TEX_SLOT]:
+            tex = tex_slots[FnMaterial.SPHERE_TEX_SLOT].texture
             if tex.type == 'IMAGE' and tex.image:
                 r2 = r.row(align=True)
                 r2.prop(tex.image, 'filepath', text='')
@@ -126,6 +128,7 @@ class MMDTexturePanel(Panel):
         r.prop(mmd_material, 'is_shared_toon_texture')
         if mmd_material.is_shared_toon_texture:
             r.prop(mmd_material, 'shared_toon_texture')
-        r = c.row()
-        r.prop(mmd_material, 'toon_texture')
+        else:
+            r = c.row()
+            r.prop(mmd_material, 'toon_texture')
 

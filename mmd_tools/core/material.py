@@ -11,6 +11,10 @@ SPHERE_MODE_ADD    = 2
 SPHERE_MODE_SUBTEX = 3
 
 class FnMaterial(object):
+    BASE_TEX_SLOT = 0
+    TOON_TEX_SLOT = 1
+    SPHERE_TEX_SLOT = 2
+
     def __init__(self, material=None):
         self.__material = material
 
@@ -41,11 +45,11 @@ class FnMaterial(object):
             if i.filepath == filepath:
                 return i
 
-        if os.path.isfile(filepath):
+        try:
             return bpy.data.images.load(filepath)
+        except:
+            logging.warning('Cannot create a texture for %s. No such file.', filepath)
 
-        logging.warning('Cannot create a texture for %s. No such file.', filepath)
-        #return None
         img = bpy.data.images.new(os.path.basename(filepath), 1, 1)
         img.source = 'FILE'
         img.filepath = filepath
@@ -62,7 +66,7 @@ class FnMaterial(object):
         Returns:
             bpy.types.MaterialTextureSlot object
         """
-        texture_slot = self.__material.texture_slots.create(0)
+        texture_slot = self.__material.texture_slots.create(self.BASE_TEX_SLOT)
         texture_slot.use_map_alpha = True
         texture_slot.texture_coords = 'UV'
         texture_slot.blend_type = 'MULTIPLY'
@@ -71,8 +75,13 @@ class FnMaterial(object):
         return texture_slot
 
 
-    def remove_texture(self):
-        self.__material.texture_slots.clear(0)
+    def remove_texture(self, index=BASE_TEX_SLOT):
+        texture_slot = self.__material.texture_slots[index]
+        if texture_slot:
+            self.__material.texture_slots.clear(index)
+            if texture_slot.texture and texture_slot.texture.users < 1:
+                texture_slot.texture.image = None
+                bpy.data.textures.remove(texture_slot.texture)
 
 
     def create_sphere_texture(self, filepath):
@@ -85,15 +94,26 @@ class FnMaterial(object):
         Returns:
             bpy.types.MaterialTextureSlot object
         """
-        texture_slot = self.__material.texture_slots.create(1)
+        texture_slot = self.__material.texture_slots.create(self.SPHERE_TEX_SLOT)
         texture_slot.texture_coords = 'NORMAL'
         texture_slot.texture = bpy.data.textures.new(name=self.__material.name + '_sph', type='IMAGE')
         texture_slot.texture.image = self.__load_image(filepath)
+        self.update_sphere_texture_type()
         return texture_slot
 
+    def update_sphere_texture_type(self):
+        texture_slot = self.__material.texture_slots[self.SPHERE_TEX_SLOT]
+        if not texture_slot:
+            return
+        sphere_texture_type = int(self.__material.mmd_material.sphere_texture_type)
+        if sphere_texture_type not in (1, 2, 3):
+            texture_slot.use = False
+        else:
+            texture_slot.use = True
+            texture_slot.blend_type = ('MULTIPLY', 'ADD', 'SUBTRACT')[sphere_texture_type-1]
 
     def remove_sphere_texture(self):
-        self.__material.texture_slots.clear(1)
+        self.remove_texture(self.SPHERE_TEX_SLOT)
 
 
     def create_toon_texture(self, filepath):
@@ -106,7 +126,16 @@ class FnMaterial(object):
         Returns:
             bpy.types.MaterialTextureSlot object
         """
-        texture_slot = self.__material.texture_slots.create(2)
+        try:
+            texture_slot = self.__material.texture_slots[self.TOON_TEX_SLOT]
+            if texture_slot.texture.image.filepath != filepath:
+                texture_slot.texture.image = self.__load_image(filepath)
+                texture_slot.texture.image.use_alpha = False
+            return texture_slot
+        except:
+            pass
+
+        texture_slot = self.__material.texture_slots.create(self.TOON_TEX_SLOT)
         texture_slot.texture_coords = 'NORMAL'
         texture_slot.blend_type = 'MULTIPLY'
         texture_slot.texture = bpy.data.textures.new(name=self.__material.name + '_toon', type='IMAGE')
@@ -115,7 +144,6 @@ class FnMaterial(object):
         texture_slot.texture.extension = 'EXTEND'
         return texture_slot
 
-
     def remove_toon_texture(self):
-        self.__material.texture_slots.clear(2)
+        self.remove_texture(self.TOON_TEX_SLOT)
 

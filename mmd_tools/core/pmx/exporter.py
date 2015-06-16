@@ -10,6 +10,7 @@ import bmesh
 
 from mmd_tools.core import pmx
 from mmd_tools.core.bone import FnBone
+from mmd_tools.core.material import FnMaterial
 from mmd_tools import bpyutils
 import mmd_tools.core.model as mmd_model
 
@@ -173,12 +174,12 @@ class __PmxExporter:
 
         p_mat.vertex_count = num_faces * 3
         tex_slots = material.texture_slots.values()
-        if tex_slots[0]:
-            tex = tex_slots[0].texture
+        if tex_slots[FnMaterial.BASE_TEX_SLOT]:
+            tex = tex_slots[FnMaterial.BASE_TEX_SLOT].texture
             index = self.__exportTexture(tex.image.filepath)
             p_mat.texture = index
-        if tex_slots[1]:
-            tex = tex_slots[1].texture
+        if tex_slots[FnMaterial.SPHERE_TEX_SLOT]:
+            tex = tex_slots[FnMaterial.SPHERE_TEX_SLOT].texture
             index = self.__exportTexture(tex.image.filepath)
             p_mat.sphere_texture = index
 

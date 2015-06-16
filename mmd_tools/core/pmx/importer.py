@@ -422,21 +422,13 @@ class PMXImporter:
                 texture_slot.texture.use_mipmap = self.__use_mipmap
             if i.sphere_texture_mode == 2:
                 amount = self.__spa_blend_factor
-                blend = 'ADD'
             else:
                 amount = self.__sph_blend_factor
-                blend = 'MULTIPLY'
             if i.sphere_texture != -1 and amount != 0.0:
                 texture_slot = fnMat.create_sphere_texture(self.__textureTable[i.sphere_texture])
                 if isinstance(texture_slot.texture.image, bpy.types.Image):
                     texture_slot.texture.image.use_alpha = False
                 texture_slot.diffuse_color_factor = amount
-                texture_slot.blend_type = blend
-            if i.toon_texture != -1:
-                if not i.is_shared_toon_texture:
-                    texture_slot = fnMat.create_toon_texture(self.__textureTable[i.toon_texture])
-                else:
-                    texture_slot = fnMat.create_toon_texture('toon%02d.bmp'%(i.toon_texture+1))
 
     def __importFaces(self):
         pmxModel = self.__model

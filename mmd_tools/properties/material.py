@@ -1,10 +1,31 @@
 # -*- coding: utf-8 -*-
 
+import os
+
 import bpy
 from bpy.types import PropertyGroup
 from bpy.props import BoolProperty, EnumProperty, FloatProperty, FloatVectorProperty, IntProperty, StringProperty
 
 from mmd_tools.core import material
+from mmd_tools.core.material import FnMaterial
+
+
+def _updateSphereMapType(prop, context):
+    FnMaterial(prop.id_data).update_sphere_texture_type()
+
+def _updateToonTexture(prop, context):
+    mat = FnMaterial(prop.id_data)
+    mmd_mat = prop.id_data.mmd_material
+    if mmd_mat.is_shared_toon_texture:
+        user_preferences = context.user_preferences
+        addon_prefs = user_preferences.addons['mmd_tools'].preferences
+        toon_path = os.path.join(addon_prefs.shared_toon_folder, 'toon%02d.bmp'%(mmd_mat.shared_toon_texture+1))
+        mat.create_toon_texture(bpy.path.resolve_ncase(path=toon_path))
+    elif mmd_mat.toon_texture != '':
+        mat.create_toon_texture(mmd_mat.toon_texture)
+    else:
+        mat.remove_toon_texture()
+
 
 #===========================================
 # Property classes
@@ -106,12 +127,14 @@ class MMDMaterial(PropertyGroup):
             (str(material.SPHERE_MODE_ADD),    'Add',        '', 3),
             (str(material.SPHERE_MODE_SUBTEX), 'SubTexture', '', 4),
             ],
+        update=_updateSphereMapType,
         )
 
     is_shared_toon_texture = BoolProperty(
         name='Use Shared Toon Texture',
         description='',
         default=False,
+        update=_updateToonTexture,
         )
 
     toon_texture = StringProperty(
@@ -119,12 +142,16 @@ class MMDMaterial(PropertyGroup):
         subtype='FILE_PATH',
         description='',
         default='',
+        update=_updateToonTexture,
         )
 
     shared_toon_texture = IntProperty(
         name='Shared Toon Texture',
         description='',
         default=0,
+        min=0,
+        max=9,
+        update=_updateToonTexture,
         )
 
     comment = StringProperty(
