@@ -82,9 +82,10 @@ def import_pmd(**kwargs):
     for i, bone in enumerate(pmd_model.bones):
         pmx_bone = pmx.Bone()
         pmx_bone.name = bone.name
+        pmx_bone.name_e = bone.name_e
         pmx_bone.location = bone.position
         pmx_bone.parent = bone.parent
-        if bone.type != 9:
+        if bone.type != 9 and bone.type != 8:
             pmx_bone.displayConnection = bone.tail_bone
         else:
             pmx_bone.displayConnection = -1
@@ -104,7 +105,15 @@ def import_pmd(**kwargs):
             pmx_bone.additionalTransform = (bone.ik_bone, 1.0)
         elif bone.type == 7:
             pmx_bone.visible = False
+        elif bone.type == 8:
+            pmx_bone.isMovable = False
+            tail_loc=mathutils.Vector(pmd_model.bones[bone.tail_bone].position)
+            loc = mathutils.Vector(bone.position)
+            vec = tail_loc - loc
+            vec.normalize()
+            pmx_bone.axis=list(vec)
         elif bone.type == 9:
+            pmx_bone.visible = False
             pmx_bone.hasAdditionalRotate = True
             pmx_bone.additionalTransform = (bone.tail_bone, float(bone.ik_bone)/100.0)
 
@@ -227,7 +236,7 @@ def import_pmd(**kwargs):
             logging.debug('Vertex Morph: %s', morph.name)
             if morph.type == 0:
                 continue
-            pmx_morph = pmx.VertexMorph(morph.name, '', morph.type)
+            pmx_morph = pmx.VertexMorph(morph.name, morph.name_e, morph.type)
             for i in morph.data:
                 mo = pmx.VertexMorphOffset()
                 mo.index = vertex_map[i.index]

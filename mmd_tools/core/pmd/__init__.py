@@ -230,6 +230,7 @@ class MorphData:
 class VertexMorph:
     def __init__(self):
         self.name = ''
+        self.name_e = ''
         self.type = 0
         self.data = []
 
