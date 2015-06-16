@@ -6,7 +6,7 @@ import traceback
 
 import bpy
 from bpy.types import Operator
-from bpy_extras.io_utils import ImportHelper
+from bpy_extras.io_utils import ImportHelper, ExportHelper
 
 from mmd_tools import auto_scene_setup
 
@@ -165,7 +165,7 @@ class ImportVmdToMMDModel(Operator, ImportHelper):
         return {'RUNNING_MODAL'}
 
 
-class ExportPmx(Operator, ImportHelper):
+class ExportPmx(Operator, ExportHelper):
     bl_idname = 'mmd_tools.export_pmx'
     bl_label = 'Export PMX file (.pmx)'
     bl_description = 'Export a PMX file (.pmx)'
