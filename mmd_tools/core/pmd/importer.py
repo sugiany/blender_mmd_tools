@@ -221,6 +221,7 @@ def import_pmd(**kwargs):
     logging.info('------------------------------')
     logging.info(' Convert Morphs')
     logging.info('------------------------------')
+    morph_index_map = []
     t = list(filter(lambda x: x.type == 0, pmd_model.morphs))
     if len(t) == 0:
         logging.error('Not found the base morph')
@@ -235,6 +236,7 @@ def import_pmd(**kwargs):
         for morph in pmd_model.morphs:
             logging.debug('Vertex Morph: %s', morph.name)
             if morph.type == 0:
+                morph_index_map.append(-1)
                 continue
             pmx_morph = pmx.VertexMorph(morph.name, morph.name_e, morph.type)
             for i in morph.data:
@@ -242,8 +244,33 @@ def import_pmd(**kwargs):
                 mo.index = vertex_map[i.index]
                 mo.offset = i.offset
                 pmx_morph.offsets.append(mo)
+            morph_index_map.append(len(pmx_model.morphs))
             pmx_model.morphs.append(pmx_morph)
     logging.info('----- Converted %d morphs', len(pmx_model.morphs))
+
+    logging.info('')
+    logging.info('------------------------------')
+    logging.info(' Convert Display Items')
+    logging.info('------------------------------')
+    if len(pmd_model.bones) > 0:
+        pmx_model.display[0].data.append((0, 0))
+    if len(morph_index_map) > 0:
+        dsp_face = pmx_model.display[1]
+        for i, morph_index in enumerate(pmd_model.facial_disp_morphs):
+            morph_index = morph_index_map[morph_index]
+            if morph_index >= 0:
+                dsp_face.data.append((1, morph_index))
+    eng_flag = pmd_model.bone_disp_names[1]
+    for i, bone_disp_name in enumerate(pmd_model.bone_disp_names[0]):
+        bone_disp_list = pmd_model.bone_disp_lists[bone_disp_name]
+        d = pmx.Display()
+        d.name = bone_disp_name
+        if eng_flag:
+            d.name_e = pmd_model.bone_disp_names[1][i]
+        for bone_index in bone_disp_list:
+            d.data.append((0, bone_index))
+        pmx_model.display.append(d)
+    logging.info('----- Converted %d display items', len(pmx_model.display))
 
     logging.info('')
     logging.info('------------------------------')

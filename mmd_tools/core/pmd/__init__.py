@@ -67,12 +67,12 @@ class  FileReadStream(FileStream):
         try:
             index = buf.index(b'\x00')
             t = buf[:index]
-            return t.decode('shift-jis')
+            return t.decode('shift-jis').strip()
         except ValueError:
             if buf[0] == b'\xfd':
                 return ''
             try:
-                return buf.decode('shift-jis')
+                return buf.decode('shift-jis').strip()
             except UnicodeDecodeError:
                 logging.warning('found a invalid shift-jis string.')
                 return ''
@@ -449,7 +449,7 @@ class Model:
             morph.load(fs)
             self.morphs.append(morph)
             logging.info('Vertex Morph %d: %s', i, morph.name)
-        logging.info('----- Loaded %d materials', len(self.morphs))
+        logging.info('----- Loaded %d morphs', len(self.morphs))
 
         logging.info('')
         logging.info('------------------------------')
@@ -469,6 +469,7 @@ class Model:
             name = fs.readStr(50)
             self.bone_disp_lists[name] = []
             bone_disps.append(name)
+        self.bone_disp_names = [bone_disps, None]
 
         t = fs.readUnsignedInt()
         for i in range(t):
@@ -519,6 +520,7 @@ class Model:
                 t = fs.readStr(50)
                 bone_disps_e.append(t)
                 logging.info(' Bone name(english) %d: %s', i, t)
+            self.bone_disp_names[1] = bone_disps_e
         logging.info('----- Loaded english data.')
 
         logging.info('')

@@ -162,6 +162,7 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
             return
         frame = mmd_root.display_item_frames[mmd_root.active_display_item_frame]
         c.prop(frame, 'name')
+        c.prop(frame, 'name_e')
 
         c = col.column(align=True)
         row = c.row()
