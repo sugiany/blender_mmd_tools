@@ -67,12 +67,12 @@ class  FileReadStream(FileStream):
         try:
             index = buf.index(b'\x00')
             t = buf[:index]
-            return t.decode('shift-jis').strip()
+            return t.decode('shift-jis')
         except ValueError:
             if buf[0] == b'\xfd':
                 return ''
             try:
-                return buf.decode('shift-jis').strip()
+                return buf.decode('shift-jis')
             except UnicodeDecodeError:
                 logging.warning('found a invalid shift-jis string.')
                 return ''

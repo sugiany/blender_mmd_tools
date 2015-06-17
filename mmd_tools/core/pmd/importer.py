@@ -264,9 +264,9 @@ def import_pmd(**kwargs):
     for i, bone_disp_name in enumerate(pmd_model.bone_disp_names[0]):
         bone_disp_list = pmd_model.bone_disp_lists[bone_disp_name]
         d = pmx.Display()
-        d.name = bone_disp_name
+        d.name = bone_disp_name.strip()
         if eng_flag:
-            d.name_e = pmd_model.bone_disp_names[1][i]
+            d.name_e = pmd_model.bone_disp_names[1][i].strip()
         for bone_index in bone_disp_list:
             d.data.append((0, bone_index))
         pmx_model.display.append(d)
