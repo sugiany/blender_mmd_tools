@@ -507,6 +507,7 @@ class PMXImporter:
             frame = root.mmd_root.display_item_frames.add()
             frame.name = i.name
             frame.name_e = i.name_e
+            frame.is_special = i.isSpecial
             for disp_type, index in i.data:
                 item = frame.items.add()
                 if disp_type == 0:

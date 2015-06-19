@@ -63,9 +63,16 @@ class MMD_ROOT_UL_display_item_frames(UIList):
         frame = item
 
         if self.layout_type in {'DEFAULT'}:
-            layout.label(text=frame.name, translate=False, icon_value=icon)
+            split = layout.split(0.4, False)
             if frame.is_special:
-                layout.label(text='', icon='LOCKED')
+                split.label(text=frame.name, translate=False, icon_value=icon)
+                row = split.row(align=True)
+                row.label(text=frame.name_e, translate=False, icon_value=icon)
+                row.label(text='', icon='LOCKED')
+            else:
+                split.prop(frame, 'name', text='', emboss=False, icon_value=icon)
+                row = split.row(align=True)
+                row.prop(frame, 'name_e', text='', emboss=True, icon_value=icon)
         elif self.layout_type in {'COMPACT'}:
             pass
         elif self.layout_type in {'GRID'}:
@@ -161,8 +168,6 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
         if mmd_root.active_display_item_frame not in range(len(mmd_root.display_item_frames)):
             return
         frame = mmd_root.display_item_frames[mmd_root.active_display_item_frame]
-        c.prop(frame, 'name')
-        c.prop(frame, 'name_e')
 
         c = col.column(align=True)
         row = c.row()

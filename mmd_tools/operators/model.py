@@ -67,9 +67,14 @@ class CreateMMDModelRoot(Operator):
         mmd_root = rig.rootObject().mmd_root
         frame_root = mmd_root.display_item_frames.add()
         frame_root.name = 'Root'
+        frame_root.name_e = 'Root'
         frame_root.is_special = True
+        item = frame_root.items.add()
+        item.type = 'BONE'
+        item.name = arm.data.bones[0].name
         frame_facial = mmd_root.display_item_frames.add()
         frame_facial.name = u'表情'
+        frame_facial.name_e = 'Exp'
         frame_facial.is_special = True
 
         return {'FINISHED'}
