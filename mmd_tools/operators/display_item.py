@@ -30,7 +30,9 @@ class RemoveDisplayItemFrame(Operator):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
-        mmd_root.display_item_frames.remove(mmd_root.active_display_item_frame)
+        # Let's prevent the accidental deletion of the special frames
+        if not mmd_root.display_item_frames[mmd_root.active_display_item_frame].is_special:
+            mmd_root.display_item_frames.remove(mmd_root.active_display_item_frame)
         return {'FINISHED'}
 
 class MoveUpDisplayItemFrame(Operator):

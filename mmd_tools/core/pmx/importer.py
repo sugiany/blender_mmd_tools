@@ -452,12 +452,16 @@ class PMXImporter:
 
     def __importVertexMorphs(self):
         pmxModel = self.__model
-
+        mmd_root = self.__rig.rootObject().mmd_root
         utils.selectAObject(self.__meshObj)
         bpy.ops.object.shape_key_add()
 
         for morph in filter(lambda x: isinstance(x, pmx.VertexMorph), pmxModel.morphs):
             shapeKey = self.__meshObj.shape_key_add(morph.name)
+            vtx_morph = mmd_root.vertex_morphs.add()
+            vtx_morph.name = morph.name
+            vtx_morph.name_e = morph.name_e
+            vtx_morph.category = morph.category
             for md in morph.offsets:
                 shapeKeyPoint = shapeKey.data[md.index]
                 offset = mathutils.Vector(md.offset) * self.TO_BLE_MATRIX

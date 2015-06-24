@@ -196,6 +196,76 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
                     row.prop(i.data.shape_keys.key_blocks[item.name], 'value')
 
 
+
+class UL_Morphs(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        if self.layout_type in {'DEFAULT'}:            
+            layout.label(text=item.name, translate=False, icon='SHAPEKEY_DATA')
+        elif self.layout_type in {'COMPACT'}:
+            pass
+        elif self.layout_type in {'GRID'}:
+            layout.alignment = 'CENTER'
+            layout.label(text="", icon_value=icon)
+
+class MMDMorphToolsPanel(_PanelBase, Panel):
+    bl_idname = 'OBJECT_PT_mmd_tools_morph_tools'
+    bl_label = 'Morph Tools'
+    bl_options = {'DEFAULT_CLOSED'}            
+    
+    def draw(self, context):
+        active_obj = context.active_object
+        root = None
+        if active_obj:
+            root = mmd_model.Model.findRoot(active_obj)
+        if root is None:
+            c = self.layout.column()
+            c.label('Select a MMD Model')
+            return
+        elif active_obj.type != 'MESH' or active_obj.mmd_type != 'NONE':
+            c = self.layout.column()
+            c.label('Select the Model Mesh')
+            return
+        rig = mmd_model.Model(root)
+        root = rig.rootObject()
+        mmd_root = root.mmd_root        
+        items_map = {"MATMORPH":"material_morphs", 
+                 "BONEMORPH":"bone_morphs", 
+                 "VTXMORPH":"vertex_morphs"}      
+        col = self.layout.column()
+        c = col.column(align=True)
+        c.label('Morphs')
+        row = c.row()
+        row.template_list(
+            "UL_Morphs", "",
+            mmd_root, items_map[mmd_root.active_morph_type],
+            mmd_root, "active_morph"
+            )
+        tb = row.column()
+        tb1 = tb.column(align=True)
+        if mmd_root.active_morph_type == "VTXMORPH":
+            tb1.operator(operators.morph.AddVertexMorph.bl_idname, text='', icon='ZOOMIN')   
+        elif mmd_root.active_morph_type == "MATMORPH":
+            tb1.operator(operators.morph.AddMaterialMorph.bl_idname, text='', icon='ZOOMIN')
+        elif mmd_root.active_morph_type == "BONEMORPH":
+            tb1.operator(operators.morph.AddBoneMorph.bl_idname, text='', icon='ZOOMIN')
+        tb1.operator(operators.morph.RemoveMorph.bl_idname, text='', icon='ZOOMOUT')
+        tb.separator()
+        tb1 = tb.column(align=True)
+        tb1.operator(operators.morph.MoveUpMorph.bl_idname, text='', icon='TRIA_UP')
+        tb1.operator(operators.morph.MoveDownMorph.bl_idname, text='', icon='TRIA_DOWN')
+        c.prop(mmd_root, 'active_morph_type', text='Active')  
+        
+        items = getattr(mmd_root, items_map[mmd_root.active_morph_type])      
+        if mmd_root.active_morph < len(items):
+            morph = items[mmd_root.active_morph]
+            c = col.column(align=True)
+            row = c.row()
+            row.prop(morph, 'name')
+            row = c.row()
+            row.prop(morph, 'name_e')
+            row = c.row()
+            row.prop(morph, 'category')              
+
 class UL_ObjectsMixIn(object):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
         if self.layout_type in {'DEFAULT', 'COMPACT'}:

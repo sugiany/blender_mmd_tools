@@ -62,7 +62,7 @@ class BoneMorphData(PropertyGroup):
         )
 
 class BoneMorph(PropertyGroup):
-    """
+    """Bone Morph
     """
     name_e = StringProperty(
         name='Name(Eng)',
@@ -211,4 +211,15 @@ class MaterialMorph(PropertyGroup):
     data = CollectionProperty(
         name='Morph Data',
         type=MaterialMorphData,
+        )
+class VertexMorph(PropertyGroup):
+    """Vertex Morph
+    """
+    name_e = StringProperty(
+        name='Name(Eng)',
+        description='English Name',
+        default=''        
+        )
+    category = IntProperty(
+        name='Category',
         )
