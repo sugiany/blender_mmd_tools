@@ -188,7 +188,7 @@ class __PmxExporter:
             p_mat.toon_texture =  self.__exportTexture(mmd_mat.toon_texture)
             p_mat.is_shared_toon_texture = False
 
-        self.__material_name_table.append(material.name)
+        # self.__material_name_table.append(material.name) # We should create the material name table AFTER sorting the materials
         self.__model.materials.append(p_mat)
 
     @classmethod
@@ -429,6 +429,7 @@ class __PmxExporter:
                     morph_data.index = self.__material_name_table.index(data.material)
                 except ValueError:
                     morph_data.index = -1
+                morph_data.offset_type = ['MULT', 'ADD'].index(data.offset_type)
                 morph_data.diffuse_offset = data.diffuse_color
                 morph_data.specular_offset = data.specular_color
                 morph_data.ambient_offset = data.ambient_color
@@ -473,6 +474,7 @@ class __PmxExporter:
         for mat, offset, vert_count in [(x[1], x[2], x[3]) for x in sorted(distances, key=lambda x: x[0])]:
             sorted_faces.extend(faces[offset:offset+vert_count])
             sorted_mat.append(mat)
+            self.__material_name_table.append(mat.name)
         self.__model.materials = sorted_mat
         self.__model.faces = sorted_faces
 

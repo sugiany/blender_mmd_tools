@@ -7,6 +7,7 @@ from bpy.props import IntProperty
 from bpy.props import FloatVectorProperty
 from bpy.props import FloatProperty
 from bpy.props import CollectionProperty
+from bpy.props import EnumProperty
 
 from mmd_tools.core.model import Model as FnModel
 from mmd_tools.core.bone import FnBone
@@ -100,6 +101,14 @@ def _set_material(prop, value):
 class MaterialMorphData(PropertyGroup):
     """
     """
+    offset_type = EnumProperty(
+        name='Offset Type',
+        items=[
+            ('MULT', 'Multiply', '', 0),
+            ('ADD', 'Add', '', 1)
+            ],
+        default='ADD'
+        )
     material = StringProperty(
         name='Material',
         get=_get_material,
@@ -159,7 +168,7 @@ class MaterialMorphData(PropertyGroup):
         min=0,
         max=100,
         step=0.1,
-        default=0.5,
+        default=0,
         )
 
     texture_factor = FloatVectorProperty(
@@ -211,6 +220,10 @@ class MaterialMorph(PropertyGroup):
     data = CollectionProperty(
         name='Morph Data',
         type=MaterialMorphData,
+        )
+    active_material_data = IntProperty(
+        name='Active Material Data',
+        default=0,
         )
 class VertexMorph(PropertyGroup):
     """Vertex Morph

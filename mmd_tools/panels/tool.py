@@ -177,6 +177,8 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
         tb1 = tb.column(align=True)
         tb1.operator(operators.display_item.MoveUpDisplayItem.bl_idname, text='', icon='TRIA_UP')
         tb1.operator(operators.display_item.MoveDownDisplayItem.bl_idname, text='', icon='TRIA_DOWN')
+        if len(frame.items) == 0:
+            return # If the list is empty we should stop drawing the panel here
         item = frame.items[frame.active_item]
         row = col.row(align=True)
         row.prop(item, 'type', text='')
@@ -190,7 +192,7 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
             row.prop(item, 'name', text='')
 
             for i in rig.meshes():
-                if item.name in i.data.shape_keys.key_blocks:
+                if i.data.shape_keys is not None and item.name in i.data.shape_keys.key_blocks:
                     row = col.row(align=True)
                     row.label(i.name+':')
                     row.prop(i.data.shape_keys.key_blocks[item.name], 'value')
@@ -206,6 +208,16 @@ class UL_Morphs(UIList):
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'
             layout.label(text="", icon_value=icon)
+            
+class UL_MaterialMorphOffsets(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        if self.layout_type in {'DEFAULT'}:            
+            layout.label(text=item.material, translate=False, icon='MATERIAL')
+        elif self.layout_type in {'COMPACT'}:
+            pass
+        elif self.layout_type in {'GRID'}:
+            layout.alignment = 'CENTER'
+            layout.label(text="", icon_value=icon)    
 
 class MMDMorphToolsPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_morph_tools'
@@ -264,7 +276,80 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             row = c.row()
             row.prop(morph, 'name_e')
             row = c.row()
-            row.prop(morph, 'category')              
+            row.prop(morph, 'category') 
+            
+            if mmd_root.active_morph_type == "MATMORPH":
+                self.__draw_material_data(context, col, morph)
+                
+                
+    def __draw_material_data(self, context, col, morph):
+        active_obj = context.active_object
+        c = col.column(align=True)
+        c.label('Material Offsets')
+        row = c.row()
+        row.template_list(
+            "UL_MaterialMorphOffsets", "",
+            morph, "data",
+            morph, "active_material_data"
+            )   
+        tb = row.column()
+        tb1 = tb.column(align=True)  
+        tb1.operator(operators.morph.AddMaterialOffset.bl_idname, text='', icon='ZOOMIN')
+        tb1.operator(operators.morph.RemoveMaterialOffset.bl_idname, text='', icon='ZOOMOUT')
+        # tb.separator()
+        # tb1 = tb.column(align=True)
+        # tb1.operator(operators.morph.MoveUpMorph.bl_idname, text='', icon='TRIA_UP')
+        # tb1.operator(operators.morph.MoveDownMorph.bl_idname, text='', icon='TRIA_DOWN')  
+        if len(morph.data) == 0:
+            return # If the list is empty we should stop drawing the panel here
+        data = morph.data[morph.active_material_data]
+        c.prop_search(data, 'material', active_obj.data, 'materials')
+         
+        base_mat = active_obj.data.materials[data.material] # Base Material of this Offset
+        if "_temp" in base_mat.name:
+            c = col.column(align=True)
+            c.label('This is not a valid base material', icon='ERROR')
+            return
+         
+        work_mat = None # Temporary material to edit this offset (and see a live preview)
+        work_mat_name = base_mat.name + "_temp"
+        if work_mat_name in active_obj.data.materials.keys():
+            work_mat = active_obj.data.materials[work_mat_name] 
+        else:
+            c = col.column(align=True)
+            row = c.row()
+            row.operator(operators.morph.CreateWorkMaterial.bl_idname) 
+            row.operator(operators.morph.ClearTempMaterials.bl_idname, text='Clear')
+        if work_mat is not None:            
+            c = col.column(align=True)
+            row = c.row()
+            row.prop(data, 'offset_type')
+            row = c.row()
+            row.prop(work_mat, 'diffuse_color')
+            row = c.row()
+            row.label('Diffuse Alpha:')
+            row.prop(work_mat, 'alpha')
+            row = c.row()
+            row.prop(work_mat, 'specular_color') 
+            row = c.row()
+            row.label('Specular Alpha:')
+            row.prop(work_mat, 'specular_alpha')            
+            row = c.row()
+            row.prop(work_mat.mmd_material, 'ambient_color')
+            row = c.row()
+            row.prop(work_mat.mmd_material, 'edge_color')
+            row = c.row()
+            row.prop(work_mat.mmd_material, 'edge_weight')
+            row = c.row()
+            row.prop(data, 'texture_factor')
+            row = c.row()
+            row.prop(data, 'sphere_texture_factor')
+            row = c.row()
+            row.prop(data, 'toon_texture_factor')
+            row = c.row()
+            row.operator(operators.morph.ApplyMaterialOffset.bl_idname, text='Apply')
+            row.operator(operators.morph.ClearTempMaterials.bl_idname, text='Clear')
+            
 
 class UL_ObjectsMixIn(object):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):

@@ -477,11 +477,12 @@ class PMXImporter:
             for morph_data in morph.offsets:
                 data = mat_morph.data.add()
                 data.material = self.__materialTable[morph_data.index].name
+                data.offset_type = ['MULT', 'ADD'][morph_data.offset_type]
                 data.diffuse_color = morph_data.diffuse_offset
                 data.specular_color = morph_data.specular_offset
                 data.ambient_color = morph_data.ambient_offset
                 data.edge_color = morph_data.edge_color_offset
-                data.edge_size = morph_data.edge_size_offset
+                data.edge_weight = morph_data.edge_size_offset
                 data.texture_factor = morph_data.texture_factor
                 data.sphere_texture_factor = morph_data.sphere_texture_factor
                 data.toon_texture_factor = morph_data.toon_texture_factor
