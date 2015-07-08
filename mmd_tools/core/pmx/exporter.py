@@ -417,11 +417,17 @@ class __PmxExporter:
 
     def __export_material_morphs(self, root):
         mmd_root = root.mmd_root
+        categories = {
+                'SYSTEM': pmx.Morph.CATEGORY_SYSTEM,
+                'EYEBROW': pmx.Morph.CATEGORY_EYEBROW,
+                'EYE': pmx.Morph.CATEGORY_EYE,
+                'MOUTH': pmx.Morph.CATEGORY_MOUTH,
+                }
         for morph in mmd_root.material_morphs:
             mat_morph = pmx.MaterialMorph(
                 name=morph.name,
                 name_e=morph.name_e,
-                category=morph.category
+                category=categories.get(morph.category, pmx.Morph.CATEGORY_OHTER)
             )
             for data in morph.data:
                 morph_data = pmx.MaterialMorphOffset()
@@ -480,11 +486,17 @@ class __PmxExporter:
 
     def __export_bone_morphs(self, root):
         mmd_root = root.mmd_root
+        categories = {
+                'SYSTEM': pmx.Morph.CATEGORY_SYSTEM,
+                'EYEBROW': pmx.Morph.CATEGORY_EYEBROW,
+                'EYE': pmx.Morph.CATEGORY_EYE,
+                'MOUTH': pmx.Morph.CATEGORY_MOUTH,
+                }
         for morph in mmd_root.bone_morphs:
             bone_morph = pmx.BoneMorph(
                 name=morph.name,
                 name_e=morph.name_e,
-                category=morph.category
+                category=categories.get(morph.category, pmx.Morph.CATEGORY_OHTER)
             )
             for data in morph.data:
                 morph_data = pmx.BoneMorphOffset()
@@ -492,6 +504,7 @@ class __PmxExporter:
                     morph_data.index = self.__bone_name_table.index(data.bone)
                 except ValueError:
                     morph_data.index = -1
+                #TODO: convert location and rotation to MMD Coordinate System
                 morph_data.location_offset = data.location
                 morph_data.rotation_offset = data.rotation
                 bone_morph.offsets.append(morph_data)

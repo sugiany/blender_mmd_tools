@@ -71,13 +71,25 @@ class BoneMorph(PropertyGroup):
         default='',
         )
 
-    category = IntProperty(
+    category = EnumProperty(
         name='Category',
+        items = [
+            ('SYSTEM', 'System', '', 0),
+            ('EYEBROW', 'Eye Brow', '', 1),
+            ('EYE', 'Eye', '', 2),
+            ('MOUTH', 'Mouth', '', 3),
+            ('OTHER', 'Other', '', 4),
+            ],
+        default='OTHER',
         )
 
     data = CollectionProperty(
         name='Morph Data',
         type=BoneMorphData,
+        )
+    active_bone_data = IntProperty(
+        name='Active Bone Data',
+        default=0,
         )
 
 def _get_material(prop):
@@ -213,8 +225,16 @@ class MaterialMorph(PropertyGroup):
         default='',
         )
 
-    category = IntProperty(
+    category = EnumProperty(
         name='Category',
+        items = [
+            ('SYSTEM', 'System', '', 0),
+            ('EYEBROW', 'Eye Brow', '', 1),
+            ('EYE', 'Eye', '', 2),
+            ('MOUTH', 'Mouth', '', 3),
+            ('OTHER', 'Other', '', 4),
+            ],
+        default='OTHER',
         )
 
     data = CollectionProperty(
@@ -233,6 +253,14 @@ class VertexMorph(PropertyGroup):
         description='English Name',
         default=''        
         )
-    category = IntProperty(
+    category = EnumProperty(
         name='Category',
+        items = [
+            ('SYSTEM', 'System', '', 0),
+            ('EYEBROW', 'Eye Brow', '', 1),
+            ('EYE', 'Eye', '', 2),
+            ('MOUTH', 'Mouth', '', 3),
+            ('OTHER', 'Other', '', 4),
+            ],
+        default='OTHER',
         )
