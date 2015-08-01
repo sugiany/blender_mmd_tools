@@ -188,7 +188,7 @@ class __PmxExporter:
             p_mat.toon_texture =  self.__exportTexture(mmd_mat.toon_texture)
             p_mat.is_shared_toon_texture = False
 
-        self.__material_name_table.append(material.name)
+        # self.__material_name_table.append(material.name) # We should create the material name table AFTER sorting the materials
         self.__model.materials.append(p_mat)
 
     @classmethod
@@ -375,6 +375,7 @@ class __PmxExporter:
                     shape_key_names.append(i)
 
         morph_categories = {}
+        morph_english_names = {}
         if root:
             categories = {
                 'SYSTEM': pmx.Morph.CATEGORY_SYSTEM,
@@ -384,10 +385,13 @@ class __PmxExporter:
                 }
             for item in root.mmd_root.display_item_frames[u'表情'].items:
                 morph_categories[item.name] = categories.get(item.morph_category, pmx.Morph.CATEGORY_OHTER)
+            for vtx_morph in root.mmd_root.vertex_morphs:
+                morph_english_names[vtx_morph.name] = vtx_morph.name_e
 
         for i in shape_key_names:
             exported_vert = set()
             morph = pmx.VertexMorph(i, '', 4)
+            morph.name_e = morph_english_names.get(i, '')
             morph.category = morph_categories.get(i, pmx.Morph.CATEGORY_OHTER)
             for mesh in meshes:
                 vertices = []
@@ -413,11 +417,17 @@ class __PmxExporter:
 
     def __export_material_morphs(self, root):
         mmd_root = root.mmd_root
+        categories = {
+                'SYSTEM': pmx.Morph.CATEGORY_SYSTEM,
+                'EYEBROW': pmx.Morph.CATEGORY_EYEBROW,
+                'EYE': pmx.Morph.CATEGORY_EYE,
+                'MOUTH': pmx.Morph.CATEGORY_MOUTH,
+                }
         for morph in mmd_root.material_morphs:
             mat_morph = pmx.MaterialMorph(
                 name=morph.name,
                 name_e=morph.name_e,
-                category=morph.category
+                category=categories.get(morph.category, pmx.Morph.CATEGORY_OHTER)
             )
             for data in morph.data:
                 morph_data = pmx.MaterialMorphOffset()
@@ -425,6 +435,7 @@ class __PmxExporter:
                     morph_data.index = self.__material_name_table.index(data.material)
                 except ValueError:
                     morph_data.index = -1
+                morph_data.offset_type = ['MULT', 'ADD'].index(data.offset_type)
                 morph_data.diffuse_offset = data.diffuse_color
                 morph_data.specular_offset = data.specular_color
                 morph_data.ambient_offset = data.ambient_color
@@ -469,16 +480,23 @@ class __PmxExporter:
         for mat, offset, vert_count in [(x[1], x[2], x[3]) for x in sorted(distances, key=lambda x: x[0])]:
             sorted_faces.extend(faces[offset:offset+vert_count])
             sorted_mat.append(mat)
+            self.__material_name_table.append(mat.name)
         self.__model.materials = sorted_mat
         self.__model.faces = sorted_faces
 
     def __export_bone_morphs(self, root):
         mmd_root = root.mmd_root
+        categories = {
+                'SYSTEM': pmx.Morph.CATEGORY_SYSTEM,
+                'EYEBROW': pmx.Morph.CATEGORY_EYEBROW,
+                'EYE': pmx.Morph.CATEGORY_EYE,
+                'MOUTH': pmx.Morph.CATEGORY_MOUTH,
+                }
         for morph in mmd_root.bone_morphs:
             bone_morph = pmx.BoneMorph(
                 name=morph.name,
                 name_e=morph.name_e,
-                category=morph.category
+                category=categories.get(morph.category, pmx.Morph.CATEGORY_OHTER)
             )
             for data in morph.data:
                 morph_data = pmx.BoneMorphOffset()
@@ -486,6 +504,7 @@ class __PmxExporter:
                     morph_data.index = self.__bone_name_table.index(data.bone)
                 except ValueError:
                     morph_data.index = -1
+                #TODO: convert location and rotation to MMD Coordinate System
                 morph_data.location_offset = data.location
                 morph_data.rotation_offset = data.rotation
                 bone_morph.offsets.append(morph_data)

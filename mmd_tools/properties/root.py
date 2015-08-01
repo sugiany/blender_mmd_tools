@@ -8,6 +8,7 @@ from bpy.props import BoolProperty, CollectionProperty, FloatProperty, IntProper
 import mmd_tools.core.model as mmd_model
 from mmd_tools.properties.morph import BoneMorph
 from mmd_tools.properties.morph import MaterialMorph
+from mmd_tools.properties.morph import VertexMorph
 from mmd_tools import utils
 
 #===========================================
@@ -99,6 +100,11 @@ def _setActiveJointObject(prop, v):
 
 def _getActiveJointObject(prop):
     return prop.get('active_joint_object_index', 0)
+
+def _activeMorphReset(self, context):
+    root = self.id_data
+    root.mmd_root.active_morph = 0
+    
 
 
 #===========================================
@@ -256,4 +262,22 @@ class MMDRoot(PropertyGroup):
     bone_morphs = CollectionProperty(
         name='Bone Morphs',
         type=BoneMorph,
+        )
+    vertex_morphs = CollectionProperty(
+        name='Vertex Morphs',
+        type=VertexMorph
+        )
+    active_morph_type = EnumProperty(
+        name='Active Morph Type',
+        items = [
+            ('MATMORPH', 'Material', '', 0),
+            ('BONEMORPH', 'Bone', '', 1),
+            ('VTXMORPH', 'Vertex', '', 2),
+            ],
+        default='VTXMORPH',
+        update=_activeMorphReset
+        )
+    active_morph = IntProperty(
+        name='Active Morph',
+        default=0
         )

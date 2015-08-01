@@ -13,6 +13,7 @@ import mmd_tools.core.pmx as pmx
 from mmd_tools.core.material import FnMaterial
 from mmd_tools import utils
 from mmd_tools import bpyutils
+from mmd_tools.core.vmd.importer import VMDImporter
 
 
 class PMXImporter:
@@ -452,12 +453,21 @@ class PMXImporter:
 
     def __importVertexMorphs(self):
         pmxModel = self.__model
-
+        mmd_root = self.__rig.rootObject().mmd_root
         utils.selectAObject(self.__meshObj)
         bpy.ops.object.shape_key_add()
-
+        categories = {
+            0: 'SYSTEM',
+            1: 'EYEBROW',
+            2: 'EYE',
+            3: 'MOUTH',
+            }
         for morph in filter(lambda x: isinstance(x, pmx.VertexMorph), pmxModel.morphs):
             shapeKey = self.__meshObj.shape_key_add(morph.name)
+            vtx_morph = mmd_root.vertex_morphs.add()
+            vtx_morph.name = morph.name
+            vtx_morph.name_e = morph.name_e
+            vtx_morph.category = categories.get(morph.category, 'OTHER')
             for md in morph.offsets:
                 shapeKeyPoint = shapeKey.data[md.index]
                 offset = mathutils.Vector(md.offset) * self.TO_BLE_MATRIX
@@ -465,35 +475,50 @@ class PMXImporter:
 
     def __importMaterialMorphs(self):
         mmd_root = self.__rig.rootObject().mmd_root
+        categories = {
+            0: 'SYSTEM',
+            1: 'EYEBROW',
+            2: 'EYE',
+            3: 'MOUTH',
+            }
         for morph in [x for x in self.__model.morphs if isinstance(x, pmx.MaterialMorph)]:
             mat_morph = mmd_root.material_morphs.add()
             mat_morph.name = morph.name
             mat_morph.name_e = morph.name_e
-            mat_morph.category = morph.category
+            mat_morph.category = categories.get(morph.category, 'OTHER')
             for morph_data in morph.offsets:
                 data = mat_morph.data.add()
                 data.material = self.__materialTable[morph_data.index].name
+                data.offset_type = ['MULT', 'ADD'][morph_data.offset_type]
                 data.diffuse_color = morph_data.diffuse_offset
                 data.specular_color = morph_data.specular_offset
                 data.ambient_color = morph_data.ambient_offset
                 data.edge_color = morph_data.edge_color_offset
-                data.edge_size = morph_data.edge_size_offset
+                data.edge_weight = morph_data.edge_size_offset
                 data.texture_factor = morph_data.texture_factor
                 data.sphere_texture_factor = morph_data.sphere_texture_factor
                 data.toon_texture_factor = morph_data.toon_texture_factor
 
     def __importBoneMorphs(self):
         mmd_root = self.__rig.rootObject().mmd_root
+        categories = {
+            0: 'SYSTEM',
+            1: 'EYEBROW',
+            2: 'EYE',
+            3: 'MOUTH',
+            }
         for morph in [x for x in self.__model.morphs if isinstance(x, pmx.BoneMorph)]:
             bone_morph = mmd_root.bone_morphs.add()
             bone_morph.name = morph.name
             bone_morph.name_e = morph.name_e
-            bone_morph.category = morph.category
+            bone_morph.category = categories.get(morph.category, 'OTHER')
             for morph_data in morph.offsets:
-                data = bone_morph.data.add()
-                data.bone = self.__boneTable[morph_data.index].name
-                data.location = morph_data.location_offset
-                data.rotation = morph_data.rotation_offset
+                data = bone_morph.data.add()    
+                bl_bone = self.__boneTable[morph_data.index]            
+                data.bone = bl_bone.name
+                mat = VMDImporter.makeVMDBoneLocationToBlenderMatrix(bl_bone)
+                data.location = mat * mathutils.Vector(morph_data.location_offset) * self.__scale
+                data.rotation = VMDImporter.convertVMDBoneRotationToBlender(bl_bone, morph_data.rotation_offset)
 
     def __importDisplayFrames(self):
         pmxModel = self.__model
