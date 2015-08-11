@@ -64,6 +64,8 @@ class CreateMMDModelRoot(Operator):
             bone = data.edit_bones.new(name=u'全ての親')
             bone.head = [0.0, 0.0, 0.0]
             bone.tail = [0.0, 0.0, 1.0*self.scale]
+        arm.pose.bones[u'全ての親'].mmd_bone.name_j = u'全ての親'
+        arm.pose.bones[u'全ての親'].mmd_bone.name_e = 'Root'
         mmd_root = rig.rootObject().mmd_root
         frame_root = mmd_root.display_item_frames.add()
         frame_root.name = 'Root'

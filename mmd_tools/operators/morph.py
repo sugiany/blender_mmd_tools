@@ -113,7 +113,7 @@ class AddVertexMorph(Operator):
             self.report({ 'ERROR' }, "The model mesh can't be found")
             return { 'CANCELLED' }
         with bpyutils.select_object(meshObj) as data:     
-            if bpy.data.meshes[obj.name].shape_keys is None:
+            if meshObj.data.shape_keys is None:
                 bpy.ops.object.shape_key_add()                
             data.shape_key_add(self.name_j)
         idx = len(meshObj.data.shape_keys.key_blocks)-1
