@@ -448,12 +448,20 @@ class MMDRigidbodySelectorPanel(_PanelBase, Panel):
         rig = mmd_model.Model(root)
         root = rig.rootObject()
         mmd_root = root.mmd_root
-        self.layout.template_list(
+        col = self.layout.column()
+        c = col.column(align=True)
+        c.label('Rigid Bodies')
+        row = c.row()
+        row.template_list(
             "UL_rigidbodies",
             "",
             context.scene, "objects",
             mmd_root, 'active_rigidbody_index',
             )
+        tb = row.column()
+        tb1 = tb.column(align=True)
+        tb1.operator(operators.rigid_body.AddRigidBody.bl_idname, text='', icon='ZOOMIN')
+        tb1.operator(operators.rigid_body.RemoveRigidBody.bl_idname, text='', icon='ZOOMOUT')
 
 
 class UL_joints(UL_ObjectsMixIn, UIList):
