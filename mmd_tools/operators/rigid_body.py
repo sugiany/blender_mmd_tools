@@ -83,8 +83,8 @@ class AddRigidBody(Operator):
             rigid.hide = True
             utils.selectAObject(obj)
             
-        if 'mmd_tools.'+mmd_root.name in bpy.data.groups.keys(): # Add Rigid to allObjectsGroup
-            bpy.data.groups['mmd_tools.'+mmd_root.name].objects.link(rigid)
+        if 'mmd_tools.'+mmd_root.name+'_all' in bpy.data.groups.keys(): # Add Rigid to allObjectsGroup
+            bpy.data.groups['mmd_tools.'+mmd_root.name+'_all'].objects.link(rigid)
         if 'mmd_tools.'+mmd_root.name+'_rigids' in bpy.data.groups.keys(): # Add Rigid to RigidsGroup
             bpy.data.groups['mmd_tools.'+mmd_root.name+'_rigids'].objects.link(rigid)
             
@@ -107,4 +107,57 @@ class RemoveRigidBody(Operator):
             return { 'CANCELLED' }
         utils.selectAObject(obj) #ensure this is the only one object select
         bpy.ops.object.delete(use_global=True)
-        return { 'FINISHED' }      
+        return { 'FINISHED' } 
+
+class AddJoint(Operator): 
+    bl_idname = 'mmd_tools.add_joint'
+    bl_label = 'Add Joint'
+    bl_options = {'PRESET'} 
+    
+    def execute(self, context):
+        obj = context.active_object
+        root = mmd_model.Model.findRoot(obj)
+        rig = mmd_model.Model(root) 
+        mmd_root = rig.rootObject().mmd_root
+        joint = rig.createJoint(
+                name = 'Joint',
+                name_e = 'Joint_e',
+                location = [0, 0, 0],
+                rotation = [0, 0, 0],
+                size = 0.5 * mmd_root.scale,
+                rigid_a = None,
+                rigid_b = None,
+                maximum_location = [0, 0, 0],
+                minimum_location = [0, 0, 0],
+                maximum_rotation = [0, 0, 0],
+                minimum_rotation = [0, 0, 0],
+                spring_linear = [0, 0, 0],
+                spring_angular = [0, 0, 0],
+                )
+        if mmd_root.show_joints:
+            joint.hide = False
+            utils.selectAObject(joint)
+        else:
+            joint.hide = True
+            utils.selectAObject(obj)
+            
+        if 'mmd_tools.'+mmd_root.name+'_all' in bpy.data.groups.keys(): # Add Joint to allGroup
+            bpy.data.groups['mmd_tools.'+mmd_root.name+'_all'].link(joint)
+        if 'mmd_tools.'+mmd_root.name+'_joints' in bpy.data.groups.keys(): # Add Joint to joints group
+            bpy.data.groups['mmd_tools.'+mmd_root.name+'_joints'].link(joint)
+        return { 'FINISHED' }
+    
+class RemoveJoint(Operator):
+    bl_idname = 'mmd_tools.remove_joint'
+    bl_label = 'Remove Joint'
+    bl_description = 'Deletes the currently selected Joint'
+    bl_options = {'PRESET'}  
+    
+    def execute(self, context):
+        obj = context.active_object
+        if obj.mmd_type != 'JOINT':
+            self.report({ 'ERROR' }, "Select the Joint to be deleted")
+            return { 'CANCELLED' }
+        utils.selectAObject(obj) #ensure this is the only one object select
+        bpy.ops.object.delete(use_global=True)
+        return { 'FINISHED' }

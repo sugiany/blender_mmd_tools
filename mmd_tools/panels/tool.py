@@ -252,7 +252,6 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
                  "VTXMORPH":"vertex_morphs"}      
         col = self.layout.column()
         c = col.column(align=True)
-        c.label('Morphs')
         row = c.row()
         row.template_list(
             "UL_Morphs", "",
@@ -368,7 +367,7 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             
     def __draw_bone_data(self, rig, col, morph):
         armature = rig.armature()
-        if armature.type != 'ARMATURE':
+        if armature is None:
             c = col.column(align=True)
             c.label('Armature not found', icon='ERROR')
             return
@@ -432,7 +431,7 @@ class UL_rigidbodies(UL_ObjectsMixIn, UIList):
 
 class MMDRigidbodySelectorPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_rigidbody_list'
-    bl_label = 'Rigidbodies'
+    bl_label = 'Rigid Bodies'
     bl_options = {'DEFAULT_CLOSED'}
 
     def draw(self, context):
@@ -450,7 +449,6 @@ class MMDRigidbodySelectorPanel(_PanelBase, Panel):
         mmd_root = root.mmd_root
         col = self.layout.column()
         c = col.column(align=True)
-        c.label('Rigid Bodies')
         row = c.row()
         row.template_list(
             "UL_rigidbodies",
@@ -486,10 +484,18 @@ class MMDJointSelectorPanel(_PanelBase, Panel):
         rig = mmd_model.Model(root)
         root = rig.rootObject()
         mmd_root = root.mmd_root
-
-        self.layout.template_list(
+        
+        col = self.layout.column()
+        c = col.column(align=True)
+        
+        row = c.row()
+        row.template_list(
             "UL_joints",
             "",
             context.scene, "objects",
             mmd_root, 'active_joint_index',
             )
+        tb = row.column()
+        tb1 = tb.column(align=True)
+        tb1.operator(operators.rigid_body.AddJoint.bl_idname, text='', icon='ZOOMIN')
+        tb1.operator(operators.rigid_body.RemoveJoint.bl_idname, text='', icon='ZOOMOUT')
