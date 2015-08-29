@@ -228,12 +228,14 @@ class MMDRoot(PropertyGroup):
 
     active_rigidbody_index = IntProperty(
         name='Active Rigidbody Index',
+        min=0,
         get=_getActiveRigidbodyObject,
         set=_setActiveRigidbodyObject,
         )
 
     active_joint_index = IntProperty(
         name='Active Joint Index',
+        min=0,
         get=_getActiveJointObject,
         set=_setActiveJointObject,
         )
@@ -248,6 +250,7 @@ class MMDRoot(PropertyGroup):
 
     active_display_item_frame = IntProperty(
         name='Active Display Item Frame',
+        min=0,
         default=0,
         )
 
@@ -279,5 +282,6 @@ class MMDRoot(PropertyGroup):
         )
     active_morph = IntProperty(
         name='Active Morph',
+        min=0,
         default=0
         )
