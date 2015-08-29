@@ -715,6 +715,12 @@ class __PmxExporter:
             self.__model.name_e = root.mmd_root.name_e
 
         self.__model.comment = 'exported by mmd_tools'
+        #We retrieve the comment from the Blender internal texts if present
+        if 'text_'+self.__model.name in bpy.data.texts.keys():
+            self.__model.comment = bpy.data.texts['text_'+self.__model.name].as_string().replace('\n', '\r\n')
+            
+        if 'text_'+self.__model.name+'_e' in bpy.data.texts.keys():
+            self.__model.comment_e = bpy.data.texts['text_'+self.__model.name+'_e'].as_string().replace('\n', '\r\n')
 
         meshes = args.get('meshes', [])
         self.__armature = args.get('armature', None)

@@ -73,6 +73,15 @@ class PMXImporter:
         """
         pmxModel = self.__model
         self.__rig = mmd_model.Model.create(pmxModel.name, pmxModel.name_e, self.__scale)
+        
+        #We will use Blender internal texts to store the model comment/description
+        if pmxModel.comment is not None and pmxModel.comment != '':
+            desc = bpy.data.texts.new('text_'+pmxModel.name)        
+            desc.write(pmxModel.comment.replace('\r\n', '\n'))
+        
+        if pmxModel.comment_e is not None and pmxModel.comment_e != '':
+            desc = bpy.data.texts.new('text_'+pmxModel.name+'_e')
+            desc.write(pmxModel.comment_e.replace('\r\n', '\n'))
 
         mesh = bpy.data.meshes.new(name=pmxModel.name)
         self.__meshObj = bpy.data.objects.new(name=pmxModel.name+'_mesh', object_data=mesh)
