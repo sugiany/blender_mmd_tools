@@ -170,7 +170,8 @@ def import_pmd(**kwargs):
     logging.info('------------------------------')
     for i, mat in enumerate(pmd_model.materials):
         pmx_mat = pmx.Material()
-        pmx_mat.name = 'Material%d'%i
+        pmx_mat.name = '材質%d'%(i+1)
+        pmx_mat.name_e = 'Material%d'%(i+1)
         pmx_mat.diffuse = mat.diffuse
         pmx_mat.specular = mat.specular
         pmx_mat.shininess = mat.shininess
