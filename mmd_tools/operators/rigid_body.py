@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import bpy
+import math
 import mathutils
 
 
@@ -56,7 +57,8 @@ class AddRigidBody(Operator):
 
         if target_bone: # bpy.types.Bone
             loc = (target_bone.head_local+target_bone.tail_local)/2
-            rot = (target_bone.tail_local-target_bone.head_local).to_track_quat('Z','Y').to_euler()
+            rot = target_bone.matrix_local.to_euler('YXZ')
+            rot.rotate_axis('X', math.pi/2)
             bone = target_bone.name
 
         rigid = rig.createRigidBody(
