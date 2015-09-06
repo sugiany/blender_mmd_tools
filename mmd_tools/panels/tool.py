@@ -165,7 +165,7 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
         tb1 = tb.column(align=True)
         tb1.operator(operators.display_item.MoveUpDisplayItemFrame.bl_idname, text='', icon='TRIA_UP')
         tb1.operator(operators.display_item.MoveDownDisplayItemFrame.bl_idname, text='', icon='TRIA_DOWN')
-        if mmd_root.active_display_item_frame not in range(len(mmd_root.display_item_frames)):
+        if len(mmd_root.display_item_frames)==0:
             return
         frame = mmd_root.display_item_frames[mmd_root.active_display_item_frame]
 
@@ -282,7 +282,7 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
         c.prop(mmd_root, 'active_morph_type', text='Active')  
         
         items = getattr(mmd_root, items_map[mmd_root.active_morph_type])      
-        if mmd_root.active_morph < len(items):
+        if len(items) > 0:
             morph = items[mmd_root.active_morph]
             c = col.column(align=True)
             row = c.row()
@@ -343,7 +343,30 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             row = c.row()
             row.operator(operators.morph.CreateWorkMaterial.bl_idname) 
             row.operator(operators.morph.ClearTempMaterials.bl_idname, text='Clear')
-        if work_mat is not None:            
+        if work_mat is None:
+            c = col.column(align=True)
+            c.enabled = False # remove this line to allow user to edit directly
+            row = c.row()
+            row.prop(data, 'offset_type')
+            row = c.row()
+            row.prop(data, 'diffuse_color')
+            row = c.row()
+            row.prop(data, 'specular_color')
+            row = c.row()
+            row.prop(data, 'shininess')
+            row = c.row()
+            row.prop(data, 'ambient_color')
+            row = c.row()
+            row.prop(data, 'edge_color')
+            row = c.row()
+            row.prop(data, 'edge_weight')
+            row = c.row()
+            row.prop(data, 'texture_factor')
+            row = c.row()
+            row.prop(data, 'sphere_texture_factor')
+            row = c.row()
+            row.prop(data, 'toon_texture_factor')
+        else:
             c = col.column(align=True)
             row = c.row()
             row.prop(data, 'offset_type')

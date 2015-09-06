@@ -196,7 +196,7 @@ class AddMaterialOffset(Operator):
             return { 'CANCELLED' }
         # Let's create a temporary material to edit the offset
         orig_mat = meshObj.active_material
-        if "_temp" in orig_mat.name:
+        if orig_mat is None or "_temp" in orig_mat.name:
             self.report({ 'ERROR' }, 'This material is not valid as a base material')
             return { 'CANCELLED' }
         if orig_mat.name+"_temp" in meshObj.data.materials.keys():
@@ -215,6 +215,7 @@ class AddMaterialOffset(Operator):
         morph = mmd_root.material_morphs[mmd_root.active_morph]
         mat_data = morph.data.add()
         mat_data.material = orig_mat.name
+        morph.active_material_data = len(morph.data)-1
         return { 'FINISHED' }
     
 class RemoveMaterialOffset(Operator):
@@ -236,6 +237,8 @@ class RemoveMaterialOffset(Operator):
             self.report({ 'ERROR' }, "The model mesh can't be found")
             return { 'CANCELLED' }
         morph = mmd_root.material_morphs[mmd_root.active_morph]
+        if len(morph.data) == 0:
+            return { 'FINISHED' }
         mat_data = morph.data[morph.active_material_data]
         base_mat = meshObj.data.materials[mat_data.material]
         work_mat_name = base_mat.name+"_temp"
@@ -251,7 +254,7 @@ class RemoveMaterialOffset(Operator):
             mat = meshObj.data.materials.pop(index=copy_idx)
             bpy.data.materials.remove(mat)
         morph.data.remove(morph.active_material_data)
-        morph.active_material_data -= 1
+        morph.active_material_data = max(0, morph.active_material_data-1)
         return { 'FINISHED' }
         
 class ApplyMaterialOffset(Operator):
@@ -386,19 +389,18 @@ class ClearTempMaterials(Operator):
         for meshObj in rig.meshes():
             mats_to_delete = []
             for mat in meshObj.data.materials:
-                if "_temp" in mat.name:
+                if mat and "_temp" in mat.name:
                     mats_to_delete.append(mat)
             for temp_mat in mats_to_delete:            
                 base_mat_name=temp_mat.name[0:-1*len("_temp")]
                 base_idx = meshObj.data.materials.find(base_mat_name)
                 temp_idx = meshObj.data.materials.find(temp_mat.name)
-                for poly in meshObj.data.polygons:
-                    if poly.material_index == temp_idx:
-                        if base_idx == -1:
-                            self.report({ 'ERROR' } ,'Warning! base material for %s was not found'%temp_mat.name)
-                        else:
+                if base_idx == -1:
+                    self.report({ 'ERROR' } ,'Warning! base material for %s was not found'%temp_mat.name)
+                else:
+                    for poly in meshObj.data.polygons:
+                        if poly.material_index == temp_idx:
                             poly.material_index = base_idx
-                if base_idx != -1:
                     mat = meshObj.data.materials.pop(index=temp_idx)
                     bpy.data.materials.remove(mat)
                 
@@ -462,7 +464,7 @@ class AddBoneMorphOffset(Operator):
             morph_data.bone = context.active_pose_bone.name
         elif context.active_bone is not None:
             morph_data.bone = context.active_bone.name        
-        
+        morph.active_bone_data = len(morph.data)-1
         return { 'FINISHED' }
     
     
@@ -477,8 +479,10 @@ class RemoveBoneMorphOffset(Operator):
         root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
         morph = mmd_root.bone_morphs[mmd_root.active_morph]
+        if len(morph.data) == 0:
+            return { 'FINISHED' }
         morph.data.remove(morph.active_bone_data)
-        morph.active_bone_data -= 1
+        morph.active_bone_data = max(0, morph.active_bone_data-1)
         
         return { 'FINISHED' }
         
@@ -603,11 +607,11 @@ class RemoveMorph(Operator):
                 
             facial_frame = mmd_root.display_item_frames[u'表情']
             idx = facial_frame.items.find(active_morph.name)  
-            if facial_frame.active_item == idx:
-                facial_frame.active_item -= 1
+            if facial_frame.active_item >= idx:
+                facial_frame.active_item = max(0, facial_frame.active_item-1)
             facial_frame.items.remove(idx) 
             items.remove(mmd_root.active_morph)
-            mmd_root.active_morph -= 1     
+            mmd_root.active_morph = max(0, mmd_root.active_morph-1)
                 
             
         return { 'FINISHED' }
