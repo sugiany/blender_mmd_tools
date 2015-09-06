@@ -173,7 +173,6 @@ class Model:
             bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
 
         if collision_group_number is not None:
-            obj.data.materials.append(RigidBodyMaterial.getMaterial(collision_group_number))
             obj.mmd_rigid.collision_group_number = collision_group_number
             obj.draw_type = 'SOLID'
             obj.show_transparent = True

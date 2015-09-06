@@ -261,13 +261,13 @@ def import_pmd(**kwargs):
             morph_index = morph_index_map[morph_index]
             if morph_index >= 0:
                 dsp_face.data.append((1, morph_index))
-    eng_flag = pmd_model.bone_disp_names[1]
+    bone_disps_e = pmd_model.bone_disp_names[1]
     for i, bone_disp_name in enumerate(pmd_model.bone_disp_names[0]):
         bone_disp_list = pmd_model.bone_disp_lists[bone_disp_name]
         d = pmx.Display()
         d.name = bone_disp_name.strip()
-        if eng_flag:
-            d.name_e = pmd_model.bone_disp_names[1][i].strip()
+        if bone_disps_e:
+            d.name_e = bone_disps_e[i].strip()
         for bone_index in bone_disp_list:
             d.data.append((0, bone_index))
         pmx_model.display.append(d)

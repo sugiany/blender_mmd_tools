@@ -110,7 +110,7 @@ class MMDJointPanel(_PanelBase, Panel):
 
         c = layout.column()
         if rbc is None:
-            c.operator(bpy.ops.rigidbody.constraint_add.idname())
+            c.operator(bpy.ops.rigidbody.constraint_add.idname(), icon='CONSTRAINT')
         else:
             c.prop(rbc, 'object1')
             c.prop(rbc, 'object2')
