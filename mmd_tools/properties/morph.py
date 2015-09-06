@@ -145,12 +145,20 @@ class MaterialMorphData(PropertyGroup):
     specular_color = FloatVectorProperty(
         name='Specular Color',
         subtype='COLOR',
-        size=4,
+        size=3,
         min=0,
         max=1,
         precision=3,
         step=0.1,
-        default=[0, 0, 0, 1],
+        default=[0, 0, 0],
+        )
+
+    shininess = FloatProperty(
+        name='Shininess',
+        min=0,
+        max=500,
+        step=100.0,
+        default=0.0,
         )
 
     ambient_color = FloatVectorProperty(

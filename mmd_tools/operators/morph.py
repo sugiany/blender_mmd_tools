@@ -286,10 +286,11 @@ class ApplyMaterialOffset(Operator):
                 
             try:
                 diffuse_offset = divide_vector_components(work_mat.diffuse_color, base_mat.diffuse_color) + [special_division(work_mat.alpha, base_mat.alpha)]
-                specular_offset = divide_vector_components(work_mat.specular_color, base_mat.specular_color) + [special_division(work_mat.specular_alpha, base_mat.specular_alpha)]
+                specular_offset = divide_vector_components(work_mat.specular_color, base_mat.specular_color)
                 edge_offset = divide_vector_components(work_mat.mmd_material.edge_color, base_mat.mmd_material.edge_color)
                 mat_data.diffuse_color = diffuse_offset
                 mat_data.specular_color = specular_offset
+                mat_data.shininess = special_division(work_mat.mmd_material.shininess, base_mat.mmd_material.shininess)
                 mat_data.ambient_color = divide_vector_components(work_mat.mmd_material.ambient_color, base_mat.mmd_material.ambient_color)
                 mat_data.edge_color = edge_offset
                 mat_data.edge_weight = special_division(work_mat.mmd_material.edge_weight, base_mat.mmd_material.edge_weight)  
@@ -301,10 +302,11 @@ class ApplyMaterialOffset(Operator):
                     
         if mat_data.offset_type =="ADD":        
             diffuse_offset = list(work_mat.diffuse_color - base_mat.diffuse_color) + [work_mat.alpha - base_mat.alpha]
-            specular_offset = list(work_mat.specular_color - base_mat.specular_color) + [work_mat.specular_alpha - base_mat.specular_alpha]
+            specular_offset = list(work_mat.specular_color - base_mat.specular_color)
             edge_offset = Vector(work_mat.mmd_material.edge_color) - Vector(base_mat.mmd_material.edge_color)
             mat_data.diffuse_color = diffuse_offset
             mat_data.specular_color = specular_offset
+            mat_data.shininess = work_mat.mmd_material.shininess - base_mat.mmd_material.shininess
             mat_data.ambient_color = work_mat.mmd_material.ambient_color - base_mat.mmd_material.ambient_color
             mat_data.edge_color = list(edge_offset)
             mat_data.edge_weight = work_mat.mmd_material.edge_weight - base_mat.mmd_material.edge_weight
@@ -347,25 +349,25 @@ class CreateWorkMaterial(Operator):
         # Apply the offsets
         if mat_data.offset_type == "MULT":
             diffuse_offset = multiply_vector_components(base_mat.diffuse_color, mat_data.diffuse_color[0:3])
-            specular_offset = multiply_vector_components(base_mat.specular_color, mat_data.specular_color[0:3])
+            specular_offset = multiply_vector_components(base_mat.specular_color, mat_data.specular_color)
             edge_offset = multiply_vector_components(base_mat.mmd_material.edge_color, mat_data.edge_color)
             ambient_offset = multiply_vector_components(base_mat.mmd_material.ambient_color, mat_data.ambient_color)
             work_mat.diffuse_color = diffuse_offset
             work_mat.alpha *= mat_data.diffuse_color[3]
             work_mat.specular_color = specular_offset
-            work_mat.specular_alpha *= mat_data.specular_color[3]
+            work_mat.mmd_material.shininess *= mat_data.shininess
             work_mat.mmd_material.ambient_color = ambient_offset
             work_mat.mmd_material.edge_color = edge_offset
             work_mat.mmd_material.edge_weight *= mat_data.edge_weight
         elif mat_data.offset_type == "ADD":
             diffuse_offset = Vector(base_mat.diffuse_color) + Vector(mat_data.diffuse_color[0:3])
-            specular_offset = Vector(base_mat.specular_color) + Vector(mat_data.specular_color[0:3])
+            specular_offset = Vector(base_mat.specular_color) + Vector(mat_data.specular_color)
             edge_offset = Vector(base_mat.mmd_material.edge_color) + Vector(mat_data.edge_color)
             ambient_offset = Vector(base_mat.mmd_material.ambient_color) + Vector(mat_data.ambient_color)
             work_mat.diffuse_color = list(diffuse_offset)
             work_mat.alpha += mat_data.diffuse_color[3]
             work_mat.specular_color = list(specular_offset)
-            work_mat.specular_alpha += mat_data.specular_color[3]
+            work_mat.mmd_material.shininess += mat_data.shininess
             work_mat.mmd_material.ambient_color = list(ambient_offset)
             work_mat.mmd_material.edge_color = list(edge_offset)
             work_mat.mmd_material.edge_weight += mat_data.edge_weight

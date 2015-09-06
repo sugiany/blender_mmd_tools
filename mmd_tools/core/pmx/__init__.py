@@ -1303,6 +1303,7 @@ class MaterialMorphOffset:
         self.offset_type = 0
         self.diffuse_offset = []
         self.specular_offset = []
+        self.shininess_offset = 0
         self.ambient_offset = []
         self.edge_color_offset = []
         self.edge_size_offset = []
@@ -1314,7 +1315,8 @@ class MaterialMorphOffset:
         self.index = fs.readMaterialIndex()
         self.offset_type = fs.readSignedByte()
         self.diffuse_offset = fs.readVector(4)
-        self.specular_offset = fs.readVector(4)
+        self.specular_offset = fs.readVector(3)
+        self.shininess_offset = fs.readFloat()
         self.ambient_offset = fs.readVector(3)
         self.edge_color_offset = fs.readVector(4)
         self.edge_size_offset = fs.readFloat()
@@ -1327,6 +1329,7 @@ class MaterialMorphOffset:
         fs.writeSignedByte(self.offset_type)
         fs.writeVector(self.diffuse_offset)
         fs.writeVector(self.specular_offset)
+        fs.writeFloat(self.shininess_offset)
         fs.writeVector(self.ambient_offset)
         fs.writeVector(self.edge_color_offset)
         fs.writeFloat(self.edge_size_offset)

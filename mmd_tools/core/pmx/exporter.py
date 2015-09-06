@@ -440,6 +440,7 @@ class __PmxExporter:
                 morph_data.offset_type = ['MULT', 'ADD'].index(data.offset_type)
                 morph_data.diffuse_offset = data.diffuse_color
                 morph_data.specular_offset = data.specular_color
+                morph_data.shininess_offset = data.shininess
                 morph_data.ambient_offset = data.ambient_color
                 morph_data.edge_color_offset = data.edge_color
                 morph_data.edge_size_offset = data.edge_weight

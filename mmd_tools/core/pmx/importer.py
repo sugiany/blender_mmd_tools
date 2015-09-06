@@ -490,6 +490,7 @@ class PMXImporter:
                 data.offset_type = ['MULT', 'ADD'][morph_data.offset_type]
                 data.diffuse_color = morph_data.diffuse_offset
                 data.specular_color = morph_data.specular_offset
+                data.shininess = morph_data.shininess_offset
                 data.ambient_color = morph_data.ambient_offset
                 data.edge_color = morph_data.edge_color_offset
                 data.edge_weight = morph_data.edge_size_offset
