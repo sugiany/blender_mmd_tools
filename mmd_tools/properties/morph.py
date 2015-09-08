@@ -54,12 +54,14 @@ class BoneMorphData(PropertyGroup):
         name='Location',
         subtype='TRANSLATION',
         size=3,
+        default=[0, 0, 0],
         )
 
     rotation = FloatVectorProperty(
         name='Rotation',
         subtype='QUATERNION',
         size=4,
+        default=[1, 0, 0, 0],
         )
 
 class BoneMorph(PropertyGroup):
@@ -89,6 +91,7 @@ class BoneMorph(PropertyGroup):
         )
     active_bone_data = IntProperty(
         name='Active Bone Data',
+        min=0,
         default=0,
         )
 
@@ -251,6 +254,7 @@ class MaterialMorph(PropertyGroup):
         )
     active_material_data = IntProperty(
         name='Active Material Data',
+        min=0,
         default=0,
         )
 class VertexMorph(PropertyGroup):

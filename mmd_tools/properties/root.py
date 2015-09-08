@@ -161,6 +161,7 @@ class MMDDisplayItemFrame(PropertyGroup):
     ## 現在アクティブな項目のインデックス
     active_item = IntProperty(
         name='Active Display Item',
+        min=0,
         default=0,
         )
 

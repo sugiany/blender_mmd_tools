@@ -4,7 +4,7 @@ import bpy
 from mmd_tools import bpyutils
 from mmd_tools import utils
 from bpy.types import Operator
-from mathutils import Vector
+from mathutils import Vector, Quaternion
 
 import mmd_tools.core.model as mmd_model
 
@@ -240,9 +240,9 @@ class RemoveMaterialOffset(Operator):
         if len(morph.data) == 0:
             return { 'FINISHED' }
         mat_data = morph.data[morph.active_material_data]
-        base_mat = meshObj.data.materials[mat_data.material]
-        work_mat_name = base_mat.name+"_temp"
+        work_mat_name = mat_data.material+"_temp"
         if work_mat_name in meshObj.data.materials.keys():
+            base_mat = meshObj.data.materials[mat_data.material]
             work_mat = meshObj.data.materials[work_mat_name]
             base_idx = meshObj.data.materials.find(base_mat.name)
             copy_idx = meshObj.data.materials.find(work_mat.name)
@@ -391,7 +391,7 @@ class ClearTempMaterials(Operator):
             for mat in meshObj.data.materials:
                 if mat and "_temp" in mat.name:
                     mats_to_delete.append(mat)
-            for temp_mat in mats_to_delete:            
+            for temp_mat in reversed(mats_to_delete):
                 base_mat_name=temp_mat.name[0:-1*len("_temp")]
                 base_idx = meshObj.data.materials.find(base_mat_name)
                 temp_idx = meshObj.data.materials.find(temp_mat.name)
@@ -425,6 +425,10 @@ class AddBoneMorph(Operator):
             ],
         default='OTHER',
         )
+    create_from_pose = bpy.props.BoolProperty(
+        name='Create From Pose',
+        default=False,
+        )
     
     def execute(self, context):
         obj = context.active_object
@@ -441,11 +445,52 @@ class AddBoneMorph(Operator):
         item.name = bone_morph.name 
         item.type = 'MORPH'
         item.morph_category = self.category
+
+        if self.create_from_pose:
+            armature = mmd_model.Model(root).armature()
+            def_loc = Vector((0,0,0))
+            def_rot = Quaternion((1,0,0,0))
+            for p_bone in armature.pose.bones:
+                if p_bone.location != def_loc or p_bone.rotation_quaternion != def_rot:
+                    morph_data = bone_morph.data.add()
+                    morph_data.bone = p_bone.name
+                    morph_data.location = p_bone.location
+                    morph_data.rotation = p_bone.rotation_quaternion
+                    p_bone.bone.select = True
+                else:
+                    p_bone.bone.select = False
         return { 'FINISHED' }
     
     def invoke(self, context, event):
         vm = context.window_manager
         return vm.invoke_props_dialog(self)
+
+class ViewBoneMorph(Operator):
+    bl_idname = 'mmd_tools.view_bone_morph'
+    bl_label = 'View Bone Morph'
+    bl_description = ''
+    bl_options = {'PRESET'}
+
+    def execute(self, context):
+        obj = context.active_object
+        root = mmd_model.Model.findRoot(obj)
+        mmd_root=root.mmd_root
+        rig = mmd_model.Model(root)
+        armature = rig.armature()
+        mmd_root.show_armature = True
+        utils.selectAObject(armature)
+        bpy.ops.object.mode_set(mode='POSE')
+        bpy.ops.pose.select_all(action='SELECT')
+        bpy.ops.pose.transforms_clear()
+        bpy.ops.pose.select_all(action='DESELECT')
+        morph = mmd_root.bone_morphs[mmd_root.active_morph]
+        for morph_data in morph.data:
+            if morph_data.bone in armature.pose.bones:
+                p_bone = armature.pose.bones[morph_data.bone]
+                p_bone.bone.select = True
+                p_bone.location = morph_data.location
+                p_bone.rotation_quaternion = morph_data.rotation
+        return { 'FINISHED' }
 
 class AddBoneMorphOffset(Operator):
     bl_idname = 'mmd_tools.add_bone_morph_offset'
@@ -470,7 +515,7 @@ class AddBoneMorphOffset(Operator):
     
 class RemoveBoneMorphOffset(Operator):
     bl_idname = 'mmd_tools.remove_bone_morph_offset'
-    bl_label = 'Add Bone Morph Offset'
+    bl_label = 'Remove Bone Morph Offset'
     bl_description = ''
     bl_options = {'PRESET'}
     
@@ -515,7 +560,7 @@ class SelectRelatedBone(Operator):
 
 class AssignBoneToOffset(Operator):
     bl_idname = 'mmd_tools.assign_bone_morph_offset_bone'
-    bl_label = 'Select Related Bone'
+    bl_label = 'Assign Related Bone'
     bl_description = 'Assign the selected bone to this offset'
     bl_options = {'PRESET'}
     
@@ -535,7 +580,7 @@ class AssignBoneToOffset(Operator):
      
 class EditBoneOffset(Operator): 
     bl_idname = 'mmd_tools.edit_bone_morph_offset'
-    bl_label = 'Select Related Bone'
+    bl_label = 'Edit Related Bone'
     bl_description = 'Applies the location and rotation of this offset to the bone'
     bl_options = {'PRESET'}    
     

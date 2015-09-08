@@ -63,15 +63,14 @@ class MMD_ROOT_UL_display_item_frames(UIList):
         frame = item
 
         if self.layout_type in {'DEFAULT'}:
-            split = layout.split(0.4, False)
+            row = layout.split(percentage=0.4, align=True)
             if frame.is_special:
-                split.label(text=frame.name, translate=False, icon_value=icon)
-                row = split.row(align=True)
+                row.label(text=frame.name, translate=False, icon_value=icon)
+                row = row.row(align=True)
                 row.label(text=frame.name_e, translate=False, icon_value=icon)
                 row.label(text='', icon='LOCKED')
             else:
-                split.prop(frame, 'name', text='', emboss=False, icon_value=icon)
-                row = split.row(align=True)
+                row.prop(frame, 'name', text='', emboss=False, icon_value=icon)
                 row.prop(frame, 'name_e', text='', emboss=True, icon_value=icon)
         elif self.layout_type in {'COMPACT'}:
             pass
@@ -210,7 +209,11 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
 class UL_Morphs(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if self.layout_type in {'DEFAULT'}:            
-            layout.label(text=item.name, translate=False, icon='SHAPEKEY_DATA')
+            row = layout.split(percentage=0.4, align=True)
+            row.prop(item, 'name', text='', emboss=False, icon='SHAPEKEY_DATA')
+            row = row.split(percentage=0.6, align=True)
+            row.prop(item, 'name_e', text='', emboss=True, icon_value=icon)
+            row.prop(item, 'category', text='', emboss=False, icon_value=icon)
         elif self.layout_type in {'COMPACT'}:
             pass
         elif self.layout_type in {'GRID'}:
@@ -259,6 +262,7 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
                  "BONEMORPH":"bone_morphs", 
                  "VTXMORPH":"vertex_morphs"}      
         col = self.layout.column()
+        col.prop(mmd_root, 'active_morph_type', text='Active')
         c = col.column(align=True)
         row = c.row()
         row.template_list(
@@ -279,19 +283,10 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
         tb1 = tb.column(align=True)
         tb1.operator(operators.morph.MoveUpMorph.bl_idname, text='', icon='TRIA_UP')
         tb1.operator(operators.morph.MoveDownMorph.bl_idname, text='', icon='TRIA_DOWN')
-        c.prop(mmd_root, 'active_morph_type', text='Active')  
         
         items = getattr(mmd_root, items_map[mmd_root.active_morph_type])      
         if len(items) > 0:
             morph = items[mmd_root.active_morph]
-            c = col.column(align=True)
-            row = c.row()
-            row.prop(morph, 'name')
-            row = c.row()
-            row.prop(morph, 'name_e')
-            row = c.row()
-            row.prop(morph, 'category') 
-            
             if mmd_root.active_morph_type == "MATMORPH":
                 self.__draw_material_data(rig, col, morph)
             elif mmd_root.active_morph_type == "BONEMORPH":
@@ -326,24 +321,21 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
         if len(morph.data) == 0:
             return # If the list is empty we should stop drawing the panel here
         data = morph.data[morph.active_material_data]
-        c.prop_search(data, 'material', meshObj.data, 'materials')
+        c_mat = col.column(align=True)
+        c_mat.prop_search(data, 'material', meshObj.data, 'materials')
          
-        base_mat = meshObj.data.materials[data.material] # Base Material of this Offset
-        if "_temp" in base_mat.name:
+        if "_temp" in data.material or data.material not in meshObj.data.materials:
             c = col.column(align=True)
             c.label('This is not a valid base material', icon='ERROR')
             return
          
-        work_mat = None # Temporary material to edit this offset (and see a live preview)
-        work_mat_name = base_mat.name + "_temp"
-        if work_mat_name in meshObj.data.materials.keys():
-            work_mat = meshObj.data.materials[work_mat_name] 
-        else:
+        work_mat_name = data.material + "_temp"
+        if work_mat_name not in meshObj.data.materials.keys():
             c = col.column(align=True)
-            row = c.row()
-            row.operator(operators.morph.CreateWorkMaterial.bl_idname) 
+            row = c.row(align=True)
+            row.operator(operators.morph.CreateWorkMaterial.bl_idname)
             row.operator(operators.morph.ClearTempMaterials.bl_idname, text='Clear')
-        if work_mat is None:
+
             c = col.column(align=True)
             c.enabled = False # remove this line to allow user to edit directly
             row = c.row()
@@ -367,6 +359,14 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             row = c.row()
             row.prop(data, 'toon_texture_factor')
         else:
+            c_mat.enabled = False
+            base_mat = meshObj.data.materials[data.material] # Base Material of this Offset
+            work_mat = meshObj.data.materials[work_mat_name] # Temporary material to edit this offset (and see a live preview)
+            c = col.column(align=True)
+            row = c.row(align=True)
+            row.operator(operators.morph.ApplyMaterialOffset.bl_idname, text='Apply')
+            row.operator(operators.morph.ClearTempMaterials.bl_idname, text='Clear')
+
             c = col.column(align=True)
             row = c.row()
             row.prop(data, 'offset_type')
@@ -392,9 +392,6 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             row.prop(data, 'sphere_texture_factor')
             row = c.row()
             row.prop(data, 'toon_texture_factor')
-            row = c.row()
-            row.operator(operators.morph.ApplyMaterialOffset.bl_idname, text='Apply')
-            row.operator(operators.morph.ClearTempMaterials.bl_idname, text='Clear')
             
     def __draw_bone_data(self, rig, col, morph):
         armature = rig.armature()
@@ -402,6 +399,12 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             c = col.column(align=True)
             c.label('Armature not found', icon='ERROR')
             return
+
+        c = col.column(align=True)
+        row = c.row(align=True)
+        row.operator(operators.morph.ViewBoneMorph.bl_idname, text='View')
+        row.operator('pose.transforms_clear', text='Clear')
+
         c = col.column(align=True)
         c.label('Bone Offsets')
         row = c.row()
@@ -417,21 +420,16 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
         if len(morph.data) == 0:
             return # If the list is empty we should stop drawing the panel here
         data = morph.data[morph.active_bone_data]
-        c.prop_search(data, 'bone', armature.pose, 'bones')
+        row = c.split(percentage=0.67, align=True)
+        row.prop_search(data, 'bone', armature.pose, 'bones')
+        row.operator(operators.morph.AssignBoneToOffset.bl_idname, text='Assign')
         if data.bone in armature.pose.bones.keys():
             c = col.column(align=True)
-            row = c.row()
+            row = c.row(align=True)
             row.operator(operators.morph.SelectRelatedBone.bl_idname, text='Select')
             row.operator(operators.morph.EditBoneOffset.bl_idname, text='Edit')
-            row.operator(operators.morph.AssignBoneToOffset.bl_idname, text='Assign')
-            row = c.row()
-            row.operator('pose.transforms_clear', text='Clear')
             row.operator(operators.morph.ApplyBoneOffset.bl_idname, text='Apply')
-        else:
-            c = col.column(align=True)
-            row = c.row()
-            row.operator(operators.morph.AssignBoneToOffset.bl_idname, text='Assign')
-            
+
 
 class UL_ObjectsMixIn(object):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
