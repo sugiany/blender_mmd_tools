@@ -504,7 +504,7 @@ class Model:
                 'mmd_bonetrack',
                 None)
             bpy.context.scene.objects.link(empty)
-            empty.location = target_bone.tail
+            empty.location = target_bone.bone.tail_local # target_bone.tail could be changed by ik constraints
             empty.empty_draw_size = 0.1
             empty.empty_draw_type = 'ARROWS'
             empty.mmd_type = 'TRACK_TARGET'
