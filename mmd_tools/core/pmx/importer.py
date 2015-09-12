@@ -39,7 +39,6 @@ class PMXImporter:
         self.__vertexGroupTable = None
         self.__textureTable = None
 
-        self.__mutedIkConsts = []
         self.__boneTable = []
         self.__rigidTable = []
         self.__nonCollisionJointTable = None
@@ -209,8 +208,6 @@ class PMXImporter:
         target_bone = pose_bones[index]
 
         ikConst = self.__rig.create_ik_constraint(ik_bone, target_bone)
-        ikConst.mute = True
-        self.__mutedIkConsts.append(ikConst)
         ikConst.iterations = pmx_bone.loopCount
         ikConst.chain_count = len(pmx_bone.ik_links)
         if pmx_bone.isRotatable and not pmx_bone.isMovable :
@@ -333,8 +330,6 @@ class PMXImporter:
             self.__rigidObjGroup.objects.link(obj)
             self.__rigidTable.append(obj)
 
-        for c in self.__mutedIkConsts:
-            c.mute = False
         logging.debug('Finished importing rigid bodies in %f seconds.', time.time() - start_time)
 
 
@@ -610,9 +605,12 @@ class PMXImporter:
             for j in i:
                 self.__allObjGroup.objects.link(j)
 
-        bpy.context.scene.gravity[2] = -9.81 * 10 * self.__scale
-        self.__rig.rootObject().mmd_root.show_meshes = True
+        #bpy.context.scene.gravity[2] = -9.81 * 10 * self.__scale
         self.__rig.applyAdditionalTransformConstraints()
+        root = self.__rig.rootObject()
+        root.mmd_root.show_meshes = True
+        bpy.context.scene.objects.active = root
+        root.select = True
 
         logging.info(' Finished importing the model in %f seconds.', time.time() - start_time)
         logging.info('----------------------------------------')

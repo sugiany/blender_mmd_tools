@@ -241,6 +241,7 @@ class __PmxExporter:
                 pmx_bone.location = world_mat * mathutils.Vector(bone.head) * self.__scale * self.TO_PMX_MATRIX
                 pmx_bone.parent = bone.parent
                 pmx_bone.visible = mmd_bone.is_visible
+                pmx_bone.isControllable = mmd_bone.is_controllable
                 pmx_bone.isMovable = not all(p_bone.lock_location)
                 pmx_bone.isRotatable = not all(p_bone.lock_rotation)
                 pmx_bones.append(pmx_bone)

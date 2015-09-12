@@ -8,9 +8,9 @@ from mmd_tools import bpyutils
 
 class FnBone(object):
     AT_DUMMY_CONSTRAINT_NAME = 'mmd_tools_at_dummy'
-    AT_ROTATION_CONSTRAINT_NAME = 'mmd_tools_at_rotation'
-    AT_LOCATION_CONSTRAINT_NAME = 'mmd_tools_at_location'
-    AT_PARENT_CONSTRAINT = 'mmd_tools_at_parent'
+    AT_ROTATION_CONSTRAINT_NAME = 'mmd_additional_rotation'
+    AT_LOCATION_CONSTRAINT_NAME = 'mmd_additional_location'
+    AT_PARENT_CONSTRAINT_NAME = 'mmd_additional_parent'
 
     def __init__(self, pose_bone=None):
         if pose_bone is not None and not isinstance(pose_bone, PoseBone):
@@ -65,7 +65,6 @@ class FnBone(object):
 
         rot_constraint, loc_constraint, parent_constraint = self.__create_constraints()
 
-        self.__bone.bone.use_inherit_rotation = False
         shadow_bone = self.__get_at_shadow_bone(source_bone, influence < 0)
 
         rot_constraint.subtarget = shadow_bone.name
@@ -143,7 +142,7 @@ class FnBone(object):
                 rot_constraint = c
             elif c.name == self.AT_LOCATION_CONSTRAINT_NAME:
                 loc_constraint = c
-            elif c.name == self.AT_PARENT_CONSTRAINT:
+            elif c.name == self.AT_PARENT_CONSTRAINT_NAME:
                 parent_constraint = c
         return (rot_constraint, loc_constraint, parent_constraint)
 
@@ -174,7 +173,7 @@ class FnBone(object):
 
         rot_constraint = self.__bone.constraints.new('CHILD_OF')
         rot_constraint.mute = True
-        rot_constraint.name = 'mmd_additional_rotation'
+        rot_constraint.name = self.AT_ROTATION_CONSTRAINT_NAME
         rot_constraint.target = arm
         rot_constraint.use_location_x = False
         rot_constraint.use_location_y = False
@@ -188,7 +187,7 @@ class FnBone(object):
 
         loc_constraint = self.__bone.constraints.new('CHILD_OF')
         loc_constraint.mute = True
-        loc_constraint.name = 'mmd_additional_location'
+        loc_constraint.name = self.AT_LOCATION_CONSTRAINT_NAME
         loc_constraint.target = arm
         loc_constraint.use_location_x = True
         loc_constraint.use_location_y = True
@@ -201,10 +200,10 @@ class FnBone(object):
         loc_constraint.use_scale_z = False
 
         parent_constraint = None
-        if self.__bone.parent:
+        if False and self.__bone.parent: # may not be necessary
             parent_constraint = self.__bone.constraints.new('CHILD_OF')
             parent_constraint.mute = False
-            parent_constraint.name = 'mmd_additional_parent'
+            parent_constraint.name = self.AT_PARENT_CONSTRAINT_NAME
             parent_constraint.target = arm
             parent_constraint.subtarget = self.__bone.parent.name
             parent_constraint.use_location_x = False
@@ -217,5 +216,6 @@ class FnBone(object):
             parent_constraint.use_scale_y = False
             parent_constraint.use_scale_z = False
             parent_constraint.inverse_matrix = mathutils.Matrix(self.__bone.parent.matrix).inverted()
+            self.__bone.bone.use_inherit_rotation = False
 
         return (rot_constraint, loc_constraint, parent_constraint)

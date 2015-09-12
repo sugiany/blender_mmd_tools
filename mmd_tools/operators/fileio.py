@@ -111,6 +111,23 @@ class ImportVmd(Operator, ImportHelper):
     update_scene_settings = bpy.props.BoolProperty(name='Update scene settings', default=True)
 
     def execute(self, context):
+        active_object = context.active_object
+        hidden_obj = []
+        for i in context.selected_objects:
+            root = mmd_model.Model.findRoot(i)
+            if root:
+                rig = mmd_model.Model(root)
+                arm = rig.armature()
+                if arm.hide:
+                    arm.hide = False
+                    hidden_obj.append(arm)
+                arm.select = True
+                for m in rig.meshes():
+                    if m.hide:
+                        m.hide = False
+                        hidden_obj.append(m)
+                    m.select = True
+
         importer = vmd_importer.VMDImporter(filepath=self.filepath, scale=self.scale, frame_margin=self.margin)
         for i in context.selected_objects:
             importer.assign(i)
@@ -118,6 +135,12 @@ class ImportVmd(Operator, ImportHelper):
             auto_scene_setup.setupFrameRanges()
             auto_scene_setup.setupFps()
 
+        for i in hidden_obj:
+            i.select = False
+            i.hide = True
+
+        active_object.select = True
+        context.scene.objects.active = active_object
         return {'FINISHED'}
 
     def invoke(self, context, event):
@@ -178,6 +201,11 @@ class ExportPmx(Operator, ExportHelper):
 
     log_level = bpy.props.EnumProperty(items=LOG_LEVEL_ITEMS, name='Log level', default='DEBUG')
     save_log = bpy.props.BoolProperty(name='Create a log file', default=False)
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        return obj and mmd_model.Model.findRoot(obj)
 
     def execute(self, context):
         logger = logging.getLogger()

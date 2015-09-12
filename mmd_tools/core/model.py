@@ -493,7 +493,7 @@ class Model:
         if int(rigid.type) == rigid_body.MODE_STATIC:
             if arm is not None and bone_name != '':
                 relation.mute = False
-                relation.inverse_matrix = mathutils.Matrix(target_bone.matrix).inverted()
+                relation.inverse_matrix = mathutils.Matrix(target_bone.bone.matrix_local).inverted()
             else:
                 relation.mute = True
         else:
@@ -597,7 +597,6 @@ class Model:
             rbc = joint.rigid_body_constraint
             rbc.disable_collisions = False
             jointMap[frozenset((rbc.object1, rbc.object2))] = joint
-            jointMap[frozenset((rbc.object2, rbc.object1))] = joint
 
         logging.info('Creating non collision constraints')
         # create non collision constraints
@@ -621,7 +620,6 @@ class Model:
                         if distance < distance_of_ignore_collisions * (self.__getRigidRange(obj_a) + self.__getRigidRange(obj_b)) * 0.5:
                             nonCollisionJointTable.append((obj_a, obj_b))
                     non_collision_pairs.add(pair)
-                    non_collision_pairs.add(frozenset((obj_b, obj_a)))
         
         self.__createNonCollisionConstraint(nonCollisionJointTable)
         return rigid_objects

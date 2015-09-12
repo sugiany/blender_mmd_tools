@@ -16,7 +16,9 @@ class MMDBonePanel(Panel):
     def draw(self, context):
         if context.mode == 'EDIT_ARMATURE':
             edit_bone = context.active_bone
-            pose_bone = context.active_object.pose.bones[edit_bone.name]
+            pose_bone = context.active_object.pose.bones.get(edit_bone.name, None)
+            if pose_bone is None:
+                return
         else:
             pose_bone = context.active_pose_bone
 
@@ -68,7 +70,9 @@ class MMDBoneATPanel(Panel):
     def draw(self, context):
         if context.mode == 'EDIT_ARMATURE':
             edit_bone = context.active_bone
-            pose_bone = context.active_object.pose.bones[edit_bone.name]
+            pose_bone = context.active_object.pose.bones.get(edit_bone.name, None)
+            if pose_bone is None:
+                return
         else:
             pose_bone = context.active_pose_bone
 

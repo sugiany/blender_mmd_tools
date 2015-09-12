@@ -3,6 +3,7 @@
 import bpy
 from bpy.types import Operator
 
+from mmd_tools import utils
 import mmd_tools.core.model as mmd_model
 
 
@@ -149,23 +150,8 @@ class SelectCurrentDisplayItem(Operator):
         root = mmd_model.Model.findRoot(obj)
         rig = mmd_model.Model(root)
         mmd_root = root.mmd_root
-
-        try:
-            bpy.ops.object.mode_set(mode='OBJECT')
-        except Exception:
-            pass
-
         arm = rig.armature()
-        for i in context.scene.objects:
-            i.select = False
-        arm.hide = False
-        arm.select = True
-        context.scene.objects.active = arm
-
-        bpy.ops.object.mode_set(mode='POSE')
         frame = mmd_root.display_item_frames[mmd_root.active_display_item_frame]
         item = frame.items[frame.active_item]
-        bone_name = item.name
-        for i in arm.pose.bones:
-            i.bone.select = (i.name == bone_name)
+        utils.selectSingleBone(context, arm, item.name)
         return {'FINISHED'}

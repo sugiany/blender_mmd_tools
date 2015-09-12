@@ -51,10 +51,7 @@ class MoveUpMorph(Operator):
         root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
         if mmd_root.active_morph > 0:
-            items_map = {"MATMORPH":mmd_root.material_morphs, 
-                 "BONEMORPH":mmd_root.bone_morphs, 
-                 "VTXMORPH":mmd_root.vertex_morphs} 
-            items_map[mmd_root.active_morph_type].move(mmd_root.active_morph, mmd_root.active_morph-1)
+            getattr(mmd_root, mmd_root.active_morph_type).move(mmd_root.active_morph, mmd_root.active_morph-1)
             mmd_root.active_morph -= 1
             
         return {'FINISHED'}
@@ -69,10 +66,7 @@ class MoveDownMorph(Operator):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
-        items_map = {"MATMORPH":mmd_root.material_morphs, 
-                 "BONEMORPH":mmd_root.bone_morphs, 
-                 "VTXMORPH":mmd_root.vertex_morphs}
-        items = items_map[mmd_root.active_morph_type]
+        items = getattr(mmd_root, mmd_root.active_morph_type)
         if mmd_root.active_morph+1 < len(items):             
             items.move(mmd_root.active_morph, mmd_root.active_morph+1)
             mmd_root.active_morph += 1
@@ -242,10 +236,8 @@ class RemoveMaterialOffset(Operator):
         mat_data = morph.data[morph.active_material_data]
         work_mat_name = mat_data.material+"_temp"
         if work_mat_name in meshObj.data.materials.keys():
-            base_mat = meshObj.data.materials[mat_data.material]
-            work_mat = meshObj.data.materials[work_mat_name]
-            base_idx = meshObj.data.materials.find(base_mat.name)
-            copy_idx = meshObj.data.materials.find(work_mat.name)
+            base_idx = meshObj.data.materials.find(mat_data.material)
+            copy_idx = meshObj.data.materials.find(work_mat_name)
             
             for poly in meshObj.data.polygons:
                 if poly.material_index == copy_idx:
@@ -477,12 +469,7 @@ class ViewBoneMorph(Operator):
         mmd_root=root.mmd_root
         rig = mmd_model.Model(root)
         armature = rig.armature()
-        mmd_root.show_armature = True
-        utils.selectAObject(armature)
-        bpy.ops.object.mode_set(mode='POSE')
-        bpy.ops.pose.select_all(action='SELECT')
-        bpy.ops.pose.transforms_clear()
-        bpy.ops.pose.select_all(action='DESELECT')
+        utils.selectSingleBone(context, armature, None, True)
         morph = mmd_root.bone_morphs[mmd_root.active_morph]
         for morph_data in morph.data:
             if morph_data.bone in armature.pose.bones:
@@ -503,12 +490,17 @@ class AddBoneMorphOffset(Operator):
         root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
         morph = mmd_root.bone_morphs[mmd_root.active_morph]
-        morph_data = morph.data.add()
-        morph_data.bone = u'全ての親'
-        if context.active_pose_bone is not None:
-            morph_data.bone = context.active_pose_bone.name
-        elif context.active_bone is not None:
-            morph_data.bone = context.active_bone.name        
+        if context.selected_pose_bones is None or len(context.selected_pose_bones) == 0:
+            bone = context.active_bone or context.active_pose_bone
+            morph_data = morph.data.add()
+            if bone:
+                morph_data.bone = bone.name
+        else:
+            for p_bone in context.selected_pose_bones:
+                morph_data = morph.data.add()
+                morph_data.bone = p_bone.name
+                morph_data.location = p_bone.location
+                morph_data.rotation = p_bone.rotation_quaternion
         morph.active_bone_data = len(morph.data)-1
         return { 'FINISHED' }
     
@@ -545,16 +537,9 @@ class SelectRelatedBone(Operator):
         mmd_root=root.mmd_root
         rig = mmd_model.Model(root)
         armature = rig.armature()
-        mmd_root.show_armature = True
-        utils.selectAObject(armature)
         morph = mmd_root.bone_morphs[mmd_root.active_morph]
         morph_data = morph.data[morph.active_bone_data]
-        if morph_data.bone not in armature.pose.bones.keys():
-            self.report({ 'ERROR' }, "Bone not found")
-            return { 'CANCELLED' }                    
-        armature.data.bones.active = armature.pose.bones[morph_data.bone].bone
-        bpy.ops.object.mode_set(mode='POSE')
-        armature.pose.bones[morph_data.bone].bone.select=True
+        utils.selectSingleBone(context, armature, morph_data.bone)
         
         return { 'FINISHED' }
 
@@ -563,17 +548,20 @@ class AssignBoneToOffset(Operator):
     bl_label = 'Assign Related Bone'
     bl_description = 'Assign the selected bone to this offset'
     bl_options = {'PRESET'}
-    
+
+    @classmethod
+    def poll(cls, context):
+        bone = context.active_bone or context.active_pose_bone
+        return bone and bone.name in context.object.pose.bones
+
     def execute(self, context):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
         mmd_root=root.mmd_root    
-        if context.active_pose_bone is None:
-            self.report({ 'ERROR' }, "Please select a bone first")
-            return { 'CANCELLED' }
+        bone = context.active_bone or context.active_pose_bone
         morph = mmd_root.bone_morphs[mmd_root.active_morph]
         morph_data = morph.data[morph.active_bone_data]
-        morph_data.bone = context.active_pose_bone.name
+        morph_data.bone = bone.name
         
         return { 'FINISHED' }
     
@@ -590,16 +578,12 @@ class EditBoneOffset(Operator):
         mmd_root=root.mmd_root  
         rig = mmd_model.Model(root)
         armature = rig.armature()  
-        mmd_root.show_armature = True
-        utils.selectAObject(armature)
-        bpy.ops.object.mode_set(mode='POSE')
         morph = mmd_root.bone_morphs[mmd_root.active_morph]
         morph_data = morph.data[morph.active_bone_data]
         p_bone = armature.pose.bones[morph_data.bone]
-        p_bone.bone.select = True
-        bpy.ops.pose.transforms_clear()
         p_bone.location = morph_data.location
         p_bone.rotation_quaternion = morph_data.rotation
+        utils.selectSingleBone(context, armature, p_bone.name)
         
         return { 'FINISHED' }   
 
@@ -635,10 +619,7 @@ class RemoveMorph(Operator):
         root = mmd_model.Model.findRoot(obj)
         rig = mmd_model.Model(root)
         mmd_root = root.mmd_root
-        items_map = {"MATMORPH":"material_morphs", 
-                 "BONEMORPH":"bone_morphs", 
-                 "VTXMORPH":"vertex_morphs"}
-        attr_name = items_map[mmd_root.active_morph_type]
+        attr_name = mmd_root.active_morph_type
         items = getattr(mmd_root, attr_name)
         if mmd_root.active_morph >= 0 and mmd_root.active_morph < len(items):
             active_morph = items[mmd_root.active_morph]

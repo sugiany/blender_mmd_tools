@@ -30,30 +30,27 @@ class MMDToolsObjectPanel(_PanelBase, Panel):
         row.operator(operators.fileio.ImportPmx.bl_idname, text='Import Model')
         col = layout.column(align=True)
         col.operator(operators.material.ConvertMaterialsForCycles.bl_idname, text='Convert Materials For Cycles')
-        if active_obj is not None and active_obj.type == 'MESH':
-            col.operator('mmd_tools.separate_by_materials', text='Separate By Materials')
+        col.operator('mmd_tools.separate_by_materials', text='Separate By Materials')
 
         if active_obj is None:
             return
 
         root = mmd_model.Model.findRoot(active_obj)
-        if root is None:
-            return
+        if root:
+            col = self.layout.column(align=True)
+            col.label('Rigidbody:')
+            row = col.row(align=True)
+            row.operator('mmd_tools.build_rig')
+            row.operator('mmd_tools.clean_rig')
+            if not root.mmd_root.is_built:
+                col.label(text='Press the "Build" button before playing the physical animation.', icon='ERROR')
 
-        col = self.layout.column(align=True)
-        col.label('Rigidbody:')
-        row = col.row(align=True)
-        row.operator('mmd_tools.build_rig')
-        row.operator('mmd_tools.clean_rig')
-        if not root.mmd_root.is_built:
-            col.label(text='Press the "Build" button before playing the physical animation.', icon='ERROR')
-
-        col.label('Bone Constraints:')
-        col.operator('mmd_tools.apply_additioinal_transform')
+            col.label('Bone Constraints:')
+            col.operator('mmd_tools.apply_additioinal_transform')
 
         col = self.layout.column(align=True)
         col.label('Import/Export:')
-        col.operator(operators.fileio.ImportVmdToMMDModel.bl_idname, text='Import Motion')
+        col.operator(operators.fileio.ImportVmd.bl_idname, text='Import Motion')
         col.operator(operators.fileio.ExportPmx.bl_idname, text='Export Model')
 
 
@@ -101,6 +98,12 @@ class MMD_ROOT_UL_display_items(UIList):
             else:
                 ic = 'SHAPEKEY_DATA'
             layout.label(text=item.name, translate=False, icon=ic)
+            if item.type == 'BONE':
+                p_bone = mmd_model.Model(item.id_data).armature().pose.bones.get(item.name, None)
+                if p_bone:
+                    bone = p_bone.bone
+                    ic = 'RESTRICT_VIEW_ON' if bone.hide else 'RESTRICT_VIEW_OFF'
+                    layout.prop(bone, 'hide', text='', emboss=p_bone.mmd_bone.is_tip, icon=ic)
         elif self.layout_type in {'COMPACT'}:
             pass
         elif self.layout_type in {'GRID'}:
@@ -235,6 +238,11 @@ class UL_BoneMorphOffsets(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if self.layout_type in {'DEFAULT'}:            
             layout.label(text=item.bone, translate=False, icon='BONE_DATA')
+            p_bone = mmd_model.Model(item.id_data).armature().pose.bones.get(item.bone, None)
+            if p_bone:
+                bone = p_bone.bone
+                ic = 'RESTRICT_VIEW_ON' if bone.hide else 'RESTRICT_VIEW_OFF'
+                layout.prop(bone, 'hide', text='', emboss=p_bone.mmd_bone.is_tip, icon=ic)
         elif self.layout_type in {'COMPACT'}:
             pass
         elif self.layout_type in {'GRID'}:
@@ -258,25 +266,23 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
         rig = mmd_model.Model(root)
         root = rig.rootObject()
         mmd_root = root.mmd_root        
-        items_map = {"MATMORPH":"material_morphs", 
-                 "BONEMORPH":"bone_morphs", 
-                 "VTXMORPH":"vertex_morphs"}      
         col = self.layout.column()
-        col.prop(mmd_root, 'active_morph_type', text='Active')
+        row = col.row()
+        row.prop(mmd_root, 'active_morph_type', expand=True)
         c = col.column(align=True)
         row = c.row()
         row.template_list(
             "UL_Morphs", "",
-            mmd_root, items_map[mmd_root.active_morph_type],
+            mmd_root, mmd_root.active_morph_type,
             mmd_root, "active_morph"
             )
         tb = row.column()
         tb1 = tb.column(align=True)
-        if mmd_root.active_morph_type == "VTXMORPH":
+        if mmd_root.active_morph_type == "vertex_morphs":
             tb1.operator(operators.morph.AddVertexMorph.bl_idname, text='', icon='ZOOMIN')   
-        elif mmd_root.active_morph_type == "MATMORPH":
+        elif mmd_root.active_morph_type == "material_morphs":
             tb1.operator(operators.morph.AddMaterialMorph.bl_idname, text='', icon='ZOOMIN')
-        elif mmd_root.active_morph_type == "BONEMORPH":
+        elif mmd_root.active_morph_type == "bone_morphs":
             tb1.operator(operators.morph.AddBoneMorph.bl_idname, text='', icon='ZOOMIN')
         tb1.operator(operators.morph.RemoveMorph.bl_idname, text='', icon='ZOOMOUT')
         tb.separator()
@@ -284,13 +290,13 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
         tb1.operator(operators.morph.MoveUpMorph.bl_idname, text='', icon='TRIA_UP')
         tb1.operator(operators.morph.MoveDownMorph.bl_idname, text='', icon='TRIA_DOWN')
         
-        items = getattr(mmd_root, items_map[mmd_root.active_morph_type])      
+        items = getattr(mmd_root, mmd_root.active_morph_type)
         if len(items) > 0:
             morph = items[mmd_root.active_morph]
-            if mmd_root.active_morph_type == "MATMORPH":
+            if mmd_root.active_morph_type == "material_morphs":
                 self.__draw_material_data(rig, col, morph)
-            elif mmd_root.active_morph_type == "BONEMORPH":
-                self.__draw_bone_data(rig, col, morph)
+            elif mmd_root.active_morph_type == "bone_morphs":
+                self.__draw_bone_data(context, rig, col, morph)
                 
                 
     def __draw_material_data(self, rig, col, morph):
@@ -329,8 +335,8 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             c.label('This is not a valid base material', icon='ERROR')
             return
          
-        work_mat_name = data.material + "_temp"
-        if work_mat_name not in meshObj.data.materials.keys():
+        work_mat = meshObj.data.materials.get(data.material + "_temp", None) # Temporary material to edit this offset (and see a live preview)
+        if work_mat is None:
             c = col.column(align=True)
             row = c.row(align=True)
             row.operator(operators.morph.CreateWorkMaterial.bl_idname)
@@ -360,8 +366,6 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             row.prop(data, 'toon_texture_factor')
         else:
             c_mat.enabled = False
-            base_mat = meshObj.data.materials[data.material] # Base Material of this Offset
-            work_mat = meshObj.data.materials[work_mat_name] # Temporary material to edit this offset (and see a live preview)
             c = col.column(align=True)
             row = c.row(align=True)
             row.operator(operators.morph.ApplyMaterialOffset.bl_idname, text='Apply')
@@ -393,7 +397,7 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             row = c.row()
             row.prop(data, 'toon_texture_factor')
             
-    def __draw_bone_data(self, rig, col, morph):
+    def __draw_bone_data(self, context, rig, col, morph):
         armature = rig.armature()
         if armature is None:
             c = col.column(align=True)
@@ -428,7 +432,19 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             row = c.row(align=True)
             row.operator(operators.morph.SelectRelatedBone.bl_idname, text='Select')
             row.operator(operators.morph.EditBoneOffset.bl_idname, text='Edit')
+            row = row.row(align=True)
             row.operator(operators.morph.ApplyBoneOffset.bl_idname, text='Apply')
+            b = context.active_pose_bone
+            if b is None or b.name != data.bone:
+                row.enabled = False
+
+        c = col.column(align=True)
+        c.enabled = False # remove this line to allow user to edit directly
+        row = c.row()
+        c1 = row.column(align=True)
+        c1.prop(data, 'location')
+        c1 = row.column(align=True)
+        c1.prop(data, 'rotation')
 
 
 class UL_ObjectsMixIn(object):

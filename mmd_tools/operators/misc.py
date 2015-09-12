@@ -11,10 +11,11 @@ class SeparateByMaterials(Operator):
     bl_description = 'Separate by materials'
     bl_options = {'PRESET'}
 
-    def execute(self, context):
+    @classmethod
+    def poll(cls, context):
         obj = context.active_object
-        if obj is None or obj.type != 'MESH':
-            return {'FINISHED'}
+        return obj and obj.type == 'MESH'
 
-        utils.separateByMaterials(obj)
+    def execute(self, context):
+        utils.separateByMaterials(context.active_object)
         return {'FINISHED'}

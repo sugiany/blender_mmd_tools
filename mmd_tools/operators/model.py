@@ -45,7 +45,7 @@ class ApplyAdditionalTransformConstraints(Operator):
 
     def execute(self, context):
         root = mmd_model.Model.findRoot(context.active_object)
-        mmd_model.Model(root)
+        mmd_model.Model(root).applyAdditionalTransformConstraints()
         #context.scene.objects.active = obj
         return {'FINISHED'}
 

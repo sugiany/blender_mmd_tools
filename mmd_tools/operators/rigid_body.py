@@ -163,6 +163,10 @@ class AddJoint(Operator):
                 loc = arm.data.bones[bone_name].head_local
             else:
                 loc = rigid_b.location if rigid_a is None else (rigid_a.location+rigid_b.location)/2
+
+        if context.scene.rigidbody_world is None:
+            bpy.ops.rigidbody.world_add()
+
         joint = rig.createJoint(
                 name = name,
                 name_e = name_e,

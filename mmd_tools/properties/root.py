@@ -273,12 +273,13 @@ class MMDRoot(PropertyGroup):
         )
     active_morph_type = EnumProperty(
         name='Active Morph Type',
+        description='Active Morph Type',
         items = [
-            ('MATMORPH', 'Material', '', 0),
-            ('BONEMORPH', 'Bone', '', 1),
-            ('VTXMORPH', 'Vertex', '', 2),
+            ('material_morphs', 'Material', '', 0),
+            ('bone_morphs', 'Bone', '', 1),
+            ('vertex_morphs', 'Vertex', '', 2),
             ],
-        default='VTXMORPH',
+        default='vertex_morphs',
         update=_activeMorphReset
         )
     active_morph = IntProperty(
