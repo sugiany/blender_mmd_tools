@@ -35,6 +35,10 @@ def setParentToBone(obj, parent, bone_name):
 def selectSingleBone(context, armature, bone_name, reset_pose=False):
     import bpy
     from mathutils import Vector, Quaternion
+    try:
+        bpy.ops.object.mode_set(mode='OBJECT')
+    except:
+        pass
     for i in context.scene.objects:
         i.select = False
     armature.hide = False

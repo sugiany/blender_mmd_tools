@@ -488,7 +488,34 @@ class __PmxExporter:
         self.__model.materials = sorted_mat
         self.__model.faces = sorted_faces
 
+    @staticmethod
+    def makeVMDBoneLocationMatrix(blender_bone): #TODO may move to vmd exporter function
+        mat = mathutils.Matrix([
+                [blender_bone.x_axis.x, blender_bone.x_axis.y, blender_bone.x_axis.z, 0.0],
+                [blender_bone.y_axis.x, blender_bone.y_axis.y, blender_bone.y_axis.z, 0.0],
+                [blender_bone.z_axis.x, blender_bone.z_axis.y, blender_bone.z_axis.z, 0.0],
+                [0.0, 0.0, 0.0, 1.0]
+                ])
+        mat2 = mathutils.Matrix([
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0]])
+        return mat2 * mat.inverted()
+
+    @staticmethod
+    def convertToVMDBoneRotation(blender_bone, rotation): #TODO may move to vmd exporter function
+        mat = mathutils.Matrix()
+        mat[0][0], mat[1][0], mat[2][0] = blender_bone.x_axis.x, blender_bone.y_axis.x, blender_bone.z_axis.x
+        mat[0][1], mat[1][1], mat[2][1] = blender_bone.x_axis.y, blender_bone.y_axis.y, blender_bone.z_axis.y
+        mat[0][2], mat[1][2], mat[2][2] = blender_bone.x_axis.z, blender_bone.y_axis.z, blender_bone.z_axis.z
+        (vec, angle) = rotation.to_axis_angle()
+        vec = mat.inverted() * vec
+        v = mathutils.Vector((-vec.x, -vec.z, -vec.y))
+        return mathutils.Quaternion(v, angle).normalized()
+
     def __export_bone_morphs(self, root):
+        pose_bones = self.__armature.pose.bones
         mmd_root = root.mmd_root
         categories = {
                 'SYSTEM': pmx.Morph.CATEGORY_SYSTEM,
@@ -496,6 +523,7 @@ class __PmxExporter:
                 'EYE': pmx.Morph.CATEGORY_EYE,
                 'MOUTH': pmx.Morph.CATEGORY_MOUTH,
                 }
+        #TODO clear pose before exporting bone morphs
         for morph in mmd_root.bone_morphs:
             bone_morph = pmx.BoneMorph(
                 name=morph.name,
@@ -508,9 +536,16 @@ class __PmxExporter:
                     morph_data.index = self.__bone_name_table.index(data.bone)
                 except ValueError:
                     morph_data.index = -1
-                #TODO: convert location and rotation to MMD Coordinate System
-                morph_data.location_offset = data.location
-                morph_data.rotation_offset = data.rotation
+                blender_bone = pose_bones.get(data.bone, None)
+                if blender_bone:
+                    mat = self.makeVMDBoneLocationMatrix(blender_bone)
+                    morph_data.location_offset = mat * mathutils.Vector(data.location) * self.__scale
+                    rw, rx, ry, rz = self.convertToVMDBoneRotation(blender_bone, data.rotation)
+                    morph_data.rotation_offset = (rx, ry, rz, rw)
+                else:
+                    logging.warning('Bone Morph (%s): Bone %s was not found.', morph.name, data.bone)
+                    morph_data.location_offset = (0, 0, 0)
+                    morph_data.rotation_offset = (0, 0, 0, 1)
                 bone_morph.offsets.append(morph_data)
             self.__model.morphs.append(bone_morph)
 
@@ -743,9 +778,9 @@ class __PmxExporter:
         rigid_map = self.__exportRigidBodies(rigid_bodeis, nameMap)
         self.__exportJoints(joints, rigid_map)
         if root is not None:
-            self.__exportDisplayItems(root, nameMap)
             self.__export_bone_morphs(root)
             self.__export_material_morphs(root)
+            self.__exportDisplayItems(root, nameMap)
 
         if self.__copyTextures:
             tex_dir = os.path.join(os.path.dirname(filepath), 'textures')

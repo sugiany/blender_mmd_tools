@@ -472,8 +472,8 @@ class ViewBoneMorph(Operator):
         utils.selectSingleBone(context, armature, None, True)
         morph = mmd_root.bone_morphs[mmd_root.active_morph]
         for morph_data in morph.data:
-            if morph_data.bone in armature.pose.bones:
-                p_bone = armature.pose.bones[morph_data.bone]
+            p_bone = armature.pose.bones.get(morph_data.bone, None)
+            if p_bone:
                 p_bone.bone.select = True
                 p_bone.location = morph_data.location
                 p_bone.rotation_quaternion = morph_data.rotation
@@ -551,14 +551,14 @@ class AssignBoneToOffset(Operator):
 
     @classmethod
     def poll(cls, context):
-        bone = context.active_bone or context.active_pose_bone
+        bone = context.active_bone
         return bone and bone.name in context.object.pose.bones
 
     def execute(self, context):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
         mmd_root=root.mmd_root    
-        bone = context.active_bone or context.active_pose_bone
+        bone = context.active_bone
         morph = mmd_root.bone_morphs[mmd_root.active_morph]
         morph_data = morph.data[morph.active_bone_data]
         morph_data.bone = bone.name
@@ -625,11 +625,15 @@ class RemoveMorph(Operator):
             active_morph = items[mmd_root.active_morph]
             if attr_name == "vertex_morphs":
                 for meshObj in rig.meshes():
+                    shape_keys = meshObj.data.shape_keys
+                    if shape_keys is None:
+                        continue
+                    i = shape_keys.key_blocks.find(active_morph.name)
+                    if i < 0:
+                        continue
                     with bpyutils.select_object(meshObj) as m: 
-                        if m.data.shape_keys is not None:
-                            i = m.data.shape_keys.key_blocks.find(active_morph.name)                        
-                            m.active_shape_key_index = i                                                   
-                            bpy.ops.object.shape_key_remove()
+                        m.active_shape_key_index = i
+                        bpy.ops.object.shape_key_remove()
                 
             facial_frame = mmd_root.display_item_frames[u'表情']
             idx = facial_frame.items.find(active_morph.name)  
