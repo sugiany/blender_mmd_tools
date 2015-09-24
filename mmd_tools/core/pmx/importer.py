@@ -22,6 +22,23 @@ class PMXImporter:
         [0.0, 0.0, 1.0, 0.0],
         [0.0, 1.0, 0.0, 0.0],
         [0.0, 0.0, 0.0, 1.0]])
+    CATEGORIES = {
+        0: 'SYSTEM',
+        1: 'EYEBROW',
+        2: 'EYE',
+        3: 'MOUTH',
+        }
+    MORPH_TYPES = {
+        0: 'group_morphs',
+        1: 'vertex_morphs',
+        2: 'bone_morphs',
+        3: 'uv_morphs',
+        4: 'uv_morphs',
+        5: 'uv_morphs',
+        6: 'uv_morphs',
+        7: 'uv_morphs',
+        8: 'material_morphs',
+        }
 
     def __init__(self):
         self.__model = None
@@ -449,12 +466,7 @@ class PMXImporter:
         mmd_root = self.__rig.rootObject().mmd_root
         utils.selectAObject(self.__meshObj)
         bpy.ops.object.shape_key_add()
-        categories = {
-            0: 'SYSTEM',
-            1: 'EYEBROW',
-            2: 'EYE',
-            3: 'MOUTH',
-            }
+        categories = self.CATEGORIES
         for morph in filter(lambda x: isinstance(x, pmx.VertexMorph), pmxModel.morphs):
             shapeKey = self.__meshObj.shape_key_add(morph.name)
             vtx_morph = mmd_root.vertex_morphs.add()
@@ -468,12 +480,7 @@ class PMXImporter:
 
     def __importMaterialMorphs(self):
         mmd_root = self.__rig.rootObject().mmd_root
-        categories = {
-            0: 'SYSTEM',
-            1: 'EYEBROW',
-            2: 'EYE',
-            3: 'MOUTH',
-            }
+        categories = self.CATEGORIES
         for morph in [x for x in self.__model.morphs if isinstance(x, pmx.MaterialMorph)]:
             mat_morph = mmd_root.material_morphs.add()
             mat_morph.name = morph.name
@@ -495,12 +502,7 @@ class PMXImporter:
 
     def __importBoneMorphs(self):
         mmd_root = self.__rig.rootObject().mmd_root
-        categories = {
-            0: 'SYSTEM',
-            1: 'EYEBROW',
-            2: 'EYE',
-            3: 'MOUTH',
-            }
+        categories = self.CATEGORIES
         for morph in [x for x in self.__model.morphs if isinstance(x, pmx.BoneMorph)]:
             bone_morph = mmd_root.bone_morphs.add()
             bone_morph.name = morph.name
@@ -514,15 +516,43 @@ class PMXImporter:
                 data.location = mat * mathutils.Vector(morph_data.location_offset) * self.__scale
                 data.rotation = VMDImporter.convertVMDBoneRotationToBlender(bl_bone, morph_data.rotation_offset)
 
+    def __importUVMorphs(self):
+        mmd_root = self.__rig.rootObject().mmd_root
+        categories = self.CATEGORIES
+        for morph in [x for x in self.__model.morphs if isinstance(x, pmx.UVMorph)]:
+            uv_morph = mmd_root.uv_morphs.add()
+            uv_morph.name = morph.name
+            uv_morph.name_e = morph.name_e
+            uv_morph.category = categories.get(morph.category, 'OTHER')
+            uv_morph.uv_index = morph.uv_index
+            for morph_data in morph.offsets:
+                idx = morph_data.index
+                dx, dy, dz, dw = morph_data.offset
+                data = uv_morph.data.add()
+                data.index = idx
+                data.offset = (dx, -dy, dz, dw) # dz, dw are not used
+
+    def __importGroupMorphs(self):
+        mmd_root = self.__rig.rootObject().mmd_root
+        categories = self.CATEGORIES
+        morph_types = self.MORPH_TYPES
+        pmx_morphs = self.__model.morphs
+        for morph in [x for x in pmx_morphs if isinstance(x, pmx.GroupMorph)]:
+            group_morph = mmd_root.group_morphs.add()
+            group_morph.name = morph.name
+            group_morph.name_e = morph.name_e
+            group_morph.category = categories.get(morph.category, 'OTHER')
+            for morph_data in morph.offsets:
+                data = group_morph.data.add()
+                m = pmx_morphs[morph_data.morph]
+                data.name = m.name
+                data.morph_type = morph_types[m.type_index()]
+                data.factor = morph_data.factor
+
     def __importDisplayFrames(self):
         pmxModel = self.__model
         root = self.__rig.rootObject()
-        categories = {
-            0: 'SYSTEM',
-            1: 'EYEBROW',
-            2: 'EYE',
-            3: 'MOUTH',
-            }
+        morph_types = self.MORPH_TYPES
 
         for i in pmxModel.display:
             frame = root.mmd_root.display_item_frames.add()
@@ -538,7 +568,7 @@ class PMXImporter:
                     item.type = 'MORPH'
                     morph = pmxModel.morphs[index]
                     item.name = morph.name
-                    item.morph_category = categories.get(morph.category, 'OTHER')
+                    item.morph_type = morph_types[morph.type_index()]
                 else:
                     raise Exception('Unknown display item type.')
         root.mmd_root.display_item_frames
@@ -589,8 +619,10 @@ class PMXImporter:
         self.__importJoints()
         self.__importDisplayFrames()
 
+        self.__importGroupMorphs()
         self.__importVertexMorphs()
         self.__importBoneMorphs()
+        self.__importUVMorphs()
         self.__importMaterialMorphs()
 
         if args.get('rename_LR_bones', False):

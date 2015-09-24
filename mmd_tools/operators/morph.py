@@ -40,6 +40,40 @@ def special_division(n1, n2):
             raise ValueError("Invalid Input: a non-zero value can't be divided by zero")
     return n1/n2
 
+class _AddMorphBase(object):
+    name_j = bpy.props.StringProperty(name='Name', default='Morph')
+    name_e = bpy.props.StringProperty(name='Name(Eng)', default='Morph_e')
+    category = bpy.props.EnumProperty(
+        name='Category',
+        items = [
+            ('SYSTEM', 'System', '', 0),
+            ('EYEBROW', 'Eye Brow', '', 1),
+            ('EYE', 'Eye', '', 2),
+            ('MOUTH', 'Mouth', '', 3),
+            ('OTHER', 'Other', '', 4),
+            ],
+        default='OTHER',
+        )
+
+    def _addMorph(self, mmd_root):
+        morphs = getattr(mmd_root, mmd_root.active_morph_type)
+        m = morphs.add()
+        m.name = self.name_j
+        m.name_e = self.name_e
+        m.category = self.category
+        mmd_root.active_morph = len(morphs)-1
+
+        items = mmd_root.display_item_frames[u'表情'].items
+        i = items.add()
+        i.type = 'MORPH'
+        i.name = m.name
+        i.morph_type = mmd_root.active_morph_type
+        return m
+
+    def invoke(self, context, event):
+        vm = context.window_manager
+        return vm.invoke_props_dialog(self)
+
 class MoveUpMorph(Operator):
     bl_idname = 'mmd_tools.move_up_morph'
     bl_label = 'Move Up Morph'
@@ -72,28 +106,18 @@ class MoveDownMorph(Operator):
             mmd_root.active_morph += 1
             
         return {'FINISHED'}
-    
-class AddVertexMorph(Operator):
+
+class AddVertexMorph(Operator, _AddMorphBase):
     bl_idname = 'mmd_tools.add_vertex_morph'
     bl_label = 'Add Vertex Morph'
     bl_description = ''
     bl_options = {'PRESET'}
-    
-    name_j = bpy.props.StringProperty(name='Name', default='Morph')
-    name_e = bpy.props.StringProperty(name='Name(Eng)', default='Morph_e')
-    category = bpy.props.EnumProperty(
-        name='Category',
-        items = [
-            ('SYSTEM', 'System', '', 0),
-            ('EYEBROW', 'Eye Brow', '', 1),
-            ('EYE', 'Eye', '', 2),
-            ('MOUTH', 'Mouth', '', 3),
-            ('OTHER', 'Other', '', 4),
-            ],
-        default='OTHER',
-        )
-    
-    
+
+    #XXX Fix for draw order
+    name_j = _AddMorphBase.name_j
+    name_e = _AddMorphBase.name_e
+    category = _AddMorphBase.category
+
     def execute(self, context):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
@@ -112,64 +136,27 @@ class AddVertexMorph(Operator):
             data.shape_key_add(self.name_j)
         idx = len(meshObj.data.shape_keys.key_blocks)-1
         meshObj.active_shape_key_index = idx
-        vtx_morph = mmd_root.vertex_morphs.add()
-        vtx_morph.name = self.name_j
-        vtx_morph.name_e = self.name_e
-        vtx_morph.category = self.category        
-        mmd_root.active_morph = len(mmd_root.vertex_morphs)-1
-        
-        frame = mmd_root.display_item_frames[u'表情']
-        item = frame.items.add()
-        item.name = vtx_morph.name 
-        item.type = 'MORPH'
-        item.morph_category = self.category
-        
+        self._addMorph(mmd_root)
         return { 'FINISHED' }
-        
-    def invoke(self, context, event):
-        vm = context.window_manager
-        return vm.invoke_props_dialog(self)
-        
-class AddMaterialMorph(Operator):
+
+class AddMaterialMorph(Operator, _AddMorphBase):
     bl_idname = 'mmd_tools.add_material_morph'
     bl_label = 'Add Material Morph'
     bl_description = ''
     bl_options = {'PRESET'}
-    
-    name_j = bpy.props.StringProperty(name='Name', default='Morph')
-    name_e = bpy.props.StringProperty(name='Name(Eng)', default='Morph_e')
-    category = bpy.props.EnumProperty(
-        name='Category',
-        items = [
-            ('SYSTEM', 'System', '', 0),
-            ('EYEBROW', 'Eye Brow', '', 1),
-            ('EYE', 'Eye', '', 2),
-            ('MOUTH', 'Mouth', '', 3),
-            ('OTHER', 'Other', '', 4),
-            ],
-        default='OTHER',
-        )
+
+    #XXX Fix for draw order
+    name_j = _AddMorphBase.name_j
+    name_e = _AddMorphBase.name_e
+    category = _AddMorphBase.category
+
     def execute(self, context):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
-        mat_morph = mmd_root.material_morphs.add()
-        mat_morph.name = self.name_j
-        mat_morph.name_e = self.name_e
-        mat_morph.category = self.category
-        mmd_root.active_morph = len(mmd_root.material_morphs)-1
-        
-        frame = mmd_root.display_item_frames[u'表情']
-        item = frame.items.add()
-        item.name = mat_morph.name 
-        item.type = 'MORPH'
-        item.morph_category = self.category
+        self._addMorph(mmd_root)
         return { 'FINISHED' }
-    
-    def invoke(self, context, event):
-        vm = context.window_manager
-        return vm.invoke_props_dialog(self)
-    
+
 class AddMaterialOffset(Operator):
     bl_idname = 'mmd_tools.add_material_morph_offset'
     bl_label = 'Add Material Offset'
@@ -398,25 +385,17 @@ class ClearTempMaterials(Operator):
                 
         return { 'FINISHED' }
     
-class AddBoneMorph(Operator):
+class AddBoneMorph(Operator, _AddMorphBase):
     bl_idname = 'mmd_tools.add_bone_morph'
     bl_label = 'Add Bone Morph'
     bl_description = ''
     bl_options = {'PRESET'}
-    
-    name_j = bpy.props.StringProperty(name='Name', default='Morph')
-    name_e = bpy.props.StringProperty(name='Name(Eng)', default='Morph_e')
-    category = bpy.props.EnumProperty(
-        name='Category',
-        items = [
-            ('SYSTEM', 'System', '', 0),
-            ('EYEBROW', 'Eye Brow', '', 1),
-            ('EYE', 'Eye', '', 2),
-            ('MOUTH', 'Mouth', '', 3),
-            ('OTHER', 'Other', '', 4),
-            ],
-        default='OTHER',
-        )
+
+    #XXX Fix for draw order
+    name_j = _AddMorphBase.name_j
+    name_e = _AddMorphBase.name_e
+    category = _AddMorphBase.category
+
     create_from_pose = bpy.props.BoolProperty(
         name='Create From Pose',
         default=False,
@@ -426,20 +405,12 @@ class AddBoneMorph(Operator):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
-        bone_morph = mmd_root.bone_morphs.add()
-        bone_morph.name = self.name_j
-        bone_morph.name_e = self.name_e
-        bone_morph.category = self.category        
-        mmd_root.active_morph = len(mmd_root.bone_morphs)-1
-        
-        frame = mmd_root.display_item_frames[u'表情']
-        item = frame.items.add()
-        item.name = bone_morph.name 
-        item.type = 'MORPH'
-        item.morph_category = self.category
+        bone_morph = self._addMorph(mmd_root)
 
         if self.create_from_pose:
             armature = mmd_model.Model(root).armature()
+            if armature is None:
+                return { 'FINISHED' }
             def_loc = Vector((0,0,0))
             def_rot = Quaternion((1,0,0,0))
             for p_bone in armature.pose.bones:
@@ -452,10 +423,6 @@ class AddBoneMorph(Operator):
                 else:
                     p_bone.bone.select = False
         return { 'FINISHED' }
-    
-    def invoke(self, context, event):
-        vm = context.window_manager
-        return vm.invoke_props_dialog(self)
 
 class ViewBoneMorph(Operator):
     bl_idname = 'mmd_tools.view_bone_morph'
@@ -606,7 +573,74 @@ class ApplyBoneOffset(Operator):
         morph_data.rotation = p_bone.rotation_quaternion
         
         return { 'FINISHED' }  
-        
+
+class AddUVMorph(Operator, _AddMorphBase):
+    bl_idname = 'mmd_tools.add_uv_morph'
+    bl_label = 'Add UV Morph'
+    bl_description = ''
+    bl_options = {'PRESET'}
+
+    #XXX Fix for draw order
+    name_j = _AddMorphBase.name_j
+    name_e = _AddMorphBase.name_e
+    category = _AddMorphBase.category
+
+    def execute(self, context):
+        obj = context.active_object
+        root = mmd_model.Model.findRoot(obj)
+        mmd_root = root.mmd_root
+        self._addMorph(mmd_root)
+        return { 'FINISHED' }
+
+class AddGroupMorph(Operator, _AddMorphBase):
+    bl_idname = 'mmd_tools.add_group_morph'
+    bl_label = 'Add Group Morph'
+    bl_description = ''
+    bl_options = {'PRESET'}
+
+    #XXX Fix for draw order
+    name_j = _AddMorphBase.name_j
+    name_e = _AddMorphBase.name_e
+    category = _AddMorphBase.category
+
+    def execute(self, context):
+        obj = context.active_object
+        root = mmd_model.Model.findRoot(obj)
+        mmd_root = root.mmd_root
+        self._addMorph(mmd_root)
+        return { 'FINISHED' }
+
+class AddGroupMorphOffset(Operator):
+    bl_idname = 'mmd_tools.add_group_morph_offset'
+    bl_label = 'Add Group Morph Offset'
+    bl_description = ''
+    bl_options = {'PRESET'}
+
+    def execute(self, context):
+        obj = context.active_object
+        root = mmd_model.Model.findRoot(obj)
+        mmd_root = root.mmd_root
+        morph = mmd_root.group_morphs[mmd_root.active_morph]
+        data = morph.data.add()
+        morph.active_group_data = len(morph.data)-1
+        return { 'FINISHED' }
+
+class RemoveGroupMorphOffset(Operator):
+    bl_idname = 'mmd_tools.remove_group_morph_offset'
+    bl_label = 'Remove Group Morph Offset'
+    bl_description = ''
+    bl_options = {'PRESET'}
+
+    def execute(self, context):
+        obj = context.active_object
+        root = mmd_model.Model.findRoot(obj)
+        mmd_root = root.mmd_root
+        morph = mmd_root.group_morphs[mmd_root.active_morph]
+        if len(morph.data) == 0:
+            return { 'FINISHED' }
+        morph.data.remove(morph.active_group_data)
+        morph.active_group_data = max(0, morph.active_group_data-1)
+        return { 'FINISHED' }
 
 class RemoveMorph(Operator):
     bl_idname = 'mmd_tools.remove_morph'
@@ -636,10 +670,12 @@ class RemoveMorph(Operator):
                         bpy.ops.object.shape_key_remove()
                 
             facial_frame = mmd_root.display_item_frames[u'表情']
-            idx = facial_frame.items.find(active_morph.name)  
-            if facial_frame.active_item >= idx:
-                facial_frame.active_item = max(0, facial_frame.active_item-1)
-            facial_frame.items.remove(idx) 
+            for idx, i in enumerate(facial_frame.items):
+                if i.name == active_morph.name and i.morph_type == attr_name:
+                    if facial_frame.active_item >= idx:
+                        facial_frame.active_item = max(0, facial_frame.active_item-1)
+                    facial_frame.items.remove(idx)
+                    break
             items.remove(mmd_root.active_morph)
             mmd_root.active_morph = max(0, mmd_root.active_morph-1)
                 

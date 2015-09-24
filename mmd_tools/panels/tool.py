@@ -79,31 +79,44 @@ class MMD_ROOT_UL_display_items(UIList):
     morph_filter = bpy.props.EnumProperty(
         name="Morph Filter",
         items = [
-            ('OTHER', 'Other', '', 4),
-            ('MOUTH', 'Mouth', '', 3),
-            ('EYE', 'Eye', '', 2),
-            ('EYEBROW', 'Eye Brow', '', 1),
             ('SYSTEM', 'System', '', 0),
+            ('EYEBROW', 'Eye Brow', '', 1),
+            ('EYE', 'Eye', '', 2),
+            ('MOUTH', 'Mouth', '', 3),
+            ('OTHER', 'Other', '', 4),
             ('NONE', 'All', '', 10),
             ],
         default='NONE',
         )
+
+    @staticmethod
+    def draw_bone_item(layout, armature, bone_name):
+        layout.label(text=bone_name, translate=False, icon='BONE_DATA')
+        if armature is None:
+            return
+        row = layout.row(align=True)
+        p_bone = armature.pose.bones.get(bone_name, None)
+        if p_bone:
+            bone = p_bone.bone
+            ic = 'RESTRICT_VIEW_ON' if bone.hide else 'RESTRICT_VIEW_OFF'
+            row.prop(bone, 'hide', text='', emboss=p_bone.mmd_bone.is_tip, icon=ic)
+        else:
+            row.label() # for alignment only
+            row.label(icon='ERROR')
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         mmd_root = data
 
         if self.layout_type in {'DEFAULT'}:
             if item.type == 'BONE':
-                ic = 'BONE_DATA'
+                MMD_ROOT_UL_display_items.draw_bone_item(layout, mmd_model.Model(item.id_data).armature(), item.name)
             else:
-                ic = 'SHAPEKEY_DATA'
-            layout.label(text=item.name, translate=False, icon=ic)
-            if item.type == 'BONE':
-                p_bone = mmd_model.Model(item.id_data).armature().pose.bones.get(item.name, None)
-                if p_bone:
-                    bone = p_bone.bone
-                    ic = 'RESTRICT_VIEW_ON' if bone.hide else 'RESTRICT_VIEW_OFF'
-                    layout.prop(bone, 'hide', text='', emboss=p_bone.mmd_bone.is_tip, icon=ic)
+                row = layout.split(percentage=0.6, align=True)
+                row.label(text=item.name, translate=False, icon='SHAPEKEY_DATA')
+                row = row.row(align=True)
+                row.prop(item, 'morph_type', text='', emboss=False, icon_value=icon)
+                if item.name not in getattr(item.id_data.mmd_root, item.morph_type):
+                    row.label(icon='ERROR')
         elif self.layout_type in {'COMPACT'}:
             pass
         elif self.layout_type in {'GRID'}:
@@ -120,7 +133,8 @@ class MMD_ROOT_UL_display_items(UIList):
         flt_neworder = []
 
         for i, item in enumerate(objects):
-            if item.morph_category == self.morph_filter:
+            morph = getattr(item.id_data.mmd_root, item.morph_type).get(item.name, None)
+            if morph and morph.category == self.morph_filter:
                 flt_flags[i] = self.bitflag_filter_item
 
         return flt_flags, flt_neworder
@@ -128,7 +142,7 @@ class MMD_ROOT_UL_display_items(UIList):
 
     def draw_filter(self, context, layout):
         row = layout.row()
-        row.prop(self, 'morph_filter')
+        row.prop(self, 'morph_filter', expand=True)
 
 
 class MMDDisplayItemsPanel(_PanelBase, Panel):
@@ -193,14 +207,19 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
         row = col.row(align=True)
         row.prop(item, 'type', text='')
         if item.type == 'BONE':
-            row.prop_search(item, 'name', rig.armature().pose, 'bones', icon='BONE_DATA', text='')
+            armature = rig.armature()
+            if armature is None:
+                row.label('Armature not found', icon='ERROR')
+                return
+            row.prop_search(item, 'name', armature.pose, 'bones', icon='BONE_DATA', text='')
 
             row = col.row(align=True)
             row.operator(operators.display_item.SelectCurrentDisplayItem.bl_idname, text='Select')
         elif item.type == 'MORPH':
-            row.prop(item, 'morph_category', text='')
-            row.prop(item, 'name', text='')
-
+            row.prop(item, 'morph_type', text='')
+            row.prop_search(item, 'name', mmd_root, item.morph_type, icon='SHAPEKEY_DATA', text='')
+            if item.morph_type != 'vertex_morphs':
+                return
             for i in rig.meshes():
                 if i.data.shape_keys is not None and item.name in i.data.shape_keys.key_blocks:
                     row = col.row(align=True)
@@ -232,22 +251,45 @@ class UL_MaterialMorphOffsets(UIList):
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'
             layout.label(text="", icon_value=icon) 
-            
-               
+
+class UL_UVMorphOffsets(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        if self.layout_type in {'DEFAULT'}:
+            layout.label(text=str(item.index), translate=False, icon='MESH_DATA')
+            layout.prop(item, 'offset', text='', emboss=False, icon_value=icon, slider=True)
+        elif self.layout_type in {'COMPACT'}:
+            pass
+        elif self.layout_type in {'GRID'}:
+            layout.alignment = 'CENTER'
+            layout.label(text="", icon_value=icon)
+
 class UL_BoneMorphOffsets(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if self.layout_type in {'DEFAULT'}:            
-            layout.label(text=item.bone, translate=False, icon='BONE_DATA')
-            p_bone = mmd_model.Model(item.id_data).armature().pose.bones.get(item.bone, None)
-            if p_bone:
-                bone = p_bone.bone
-                ic = 'RESTRICT_VIEW_ON' if bone.hide else 'RESTRICT_VIEW_OFF'
-                layout.prop(bone, 'hide', text='', emboss=p_bone.mmd_bone.is_tip, icon=ic)
+            MMD_ROOT_UL_display_items.draw_bone_item(layout, mmd_model.Model(item.id_data).armature(), item.bone)
         elif self.layout_type in {'COMPACT'}:
             pass
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'
             layout.label(text="", icon_value=icon)    
+
+class UL_GroupMorphOffsets(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        if self.layout_type in {'DEFAULT'}:
+            row = layout.split(percentage=0.4, align=True)
+            row.label(item.name, translate=False, icon='SHAPEKEY_DATA')
+            #row.prop(item, 'name', text='', emboss=False, icon='SHAPEKEY_DATA')
+            row = row.row(align=True)
+            row.prop(item, 'morph_type', text='', emboss=False, icon_value=icon)
+            if item.name in getattr(item.id_data.mmd_root, item.morph_type):
+                row.prop(item, 'factor', text='', emboss=False, icon_value=icon, slider=True)
+            else:
+                row.label(icon='ERROR')
+        elif self.layout_type in {'COMPACT'}:
+            pass
+        elif self.layout_type in {'GRID'}:
+            layout.alignment = 'CENTER'
+            layout.label(text="", icon_value=icon)
 
 class MMDMorphToolsPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_morph_tools'
@@ -278,12 +320,7 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             )
         tb = row.column()
         tb1 = tb.column(align=True)
-        if mmd_root.active_morph_type == "vertex_morphs":
-            tb1.operator(operators.morph.AddVertexMorph.bl_idname, text='', icon='ZOOMIN')   
-        elif mmd_root.active_morph_type == "material_morphs":
-            tb1.operator(operators.morph.AddMaterialMorph.bl_idname, text='', icon='ZOOMIN')
-        elif mmd_root.active_morph_type == "bone_morphs":
-            tb1.operator(operators.morph.AddBoneMorph.bl_idname, text='', icon='ZOOMIN')
+        tb1.operator('mmd_tools.add_%s'%mmd_root.active_morph_type[:-1], text='', icon='ZOOMIN')
         tb1.operator(operators.morph.RemoveMorph.bl_idname, text='', icon='ZOOMOUT')
         tb.separator()
         tb1 = tb.column(align=True)
@@ -293,13 +330,11 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
         items = getattr(mmd_root, mmd_root.active_morph_type)
         if len(items) > 0:
             morph = items[mmd_root.active_morph]
-            if mmd_root.active_morph_type == "material_morphs":
-                self.__draw_material_data(rig, col, morph)
-            elif mmd_root.active_morph_type == "bone_morphs":
-                self.__draw_bone_data(context, rig, col, morph)
-                
-                
-    def __draw_material_data(self, rig, col, morph):
+            draw_func = getattr(self, '_draw_%s_data'%mmd_root.active_morph_type[:-7], None)
+            if draw_func:
+                draw_func(context, rig, col, morph)
+
+    def _draw_material_data(self, context, rig, col, morph):
         meshObj = None
         for i in rig.meshes():
             meshObj = i 
@@ -397,7 +432,7 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             row = c.row()
             row.prop(data, 'toon_texture_factor')
             
-    def __draw_bone_data(self, context, rig, col, morph):
+    def _draw_bone_data(self, context, rig, col, morph):
         armature = rig.armature()
         if armature is None:
             c = col.column(align=True)
@@ -445,6 +480,48 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
         c1.prop(data, 'location')
         c1 = row.column(align=True)
         c1.prop(data, 'rotation')
+
+    def _draw_uv_data(self, context, rig, col, morph):
+        meshObj = None
+        for i in rig.meshes():
+            meshObj = i
+            break
+        if meshObj is None:
+            c = col.column(align=True)
+            c.label("The model mesh can't be found", icon='ERROR')
+            return
+
+        c = col.column(align=True)
+        row = c.row(align=True)
+        row.label('UV Offsets')
+        row.prop(morph, 'uv_index')
+        row = c.row()
+        row.template_list(
+            "UL_UVMorphOffsets", "",
+            morph, "data",
+            morph, "active_uv_data",
+            )
+
+    def _draw_group_data(self, context, rig, col, morph):
+        c = col.column(align=True)
+        c.label('Group Offsets')
+        row = c.row()
+        row.template_list(
+            "UL_GroupMorphOffsets", "",
+            morph, "data",
+            morph, "active_group_data"
+            )
+        tb = row.column()
+        tb1 = tb.column(align=True)
+        tb1.operator(operators.morph.AddGroupMorphOffset.bl_idname, text='', icon='ZOOMIN')
+        tb1.operator(operators.morph.RemoveGroupMorphOffset.bl_idname, text='', icon='ZOOMOUT')
+        if len(morph.data) == 0:
+            return
+        c = col.column(align=True)
+        row = c.row(align=True)
+        item = morph.data[morph.active_group_data]
+        row.prop(item, 'morph_type', text='')
+        row.prop_search(item, 'name', morph.id_data.mmd_root, item.morph_type, icon='SHAPEKEY_DATA', text='')
 
 
 class UL_ObjectsMixIn(object):

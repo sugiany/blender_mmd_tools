@@ -386,10 +386,9 @@ class __PmxExporter:
                 'EYE': pmx.Morph.CATEGORY_EYE,
                 'MOUTH': pmx.Morph.CATEGORY_MOUTH,
                 }
-            for item in root.mmd_root.display_item_frames[u'表情'].items:
-                morph_categories[item.name] = categories.get(item.morph_category, pmx.Morph.CATEGORY_OHTER)
             for vtx_morph in root.mmd_root.vertex_morphs:
                 morph_english_names[vtx_morph.name] = vtx_morph.name_e
+                morph_categories[vtx_morph.name] = categories.get(vtx_morph.category, pmx.Morph.CATEGORY_OHTER)
 
         for i in shape_key_names:
             exported_vert = set()

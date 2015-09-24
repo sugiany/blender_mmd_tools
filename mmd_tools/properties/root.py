@@ -9,6 +9,8 @@ import mmd_tools.core.model as mmd_model
 from mmd_tools.properties.morph import BoneMorph
 from mmd_tools.properties.morph import MaterialMorph
 from mmd_tools.properties.morph import VertexMorph
+from mmd_tools.properties.morph import UVMorph
+from mmd_tools.properties.morph import GroupMorph
 from mmd_tools import utils
 
 #===========================================
@@ -122,16 +124,17 @@ class MMDDisplayItem(PropertyGroup):
             ],
         )
 
-    morph_category = EnumProperty(
-        name='Category',
+    morph_type = EnumProperty(
+        name='Morph Type',
+        description='Morph Type',
         items = [
-            ('SYSTEM', 'System', '', 0),
-            ('EYEBROW', 'Eye Brow', '', 1),
-            ('EYE', 'Eye', '', 2),
-            ('MOUTH', 'Mouth', '', 3),
-            ('OTHER', 'Other', '', 4),
+            ('material_morphs', 'Material', '', 0),
+            ('uv_morphs', 'UV', '', 1),
+            ('bone_morphs', 'Bone', '', 2),
+            ('vertex_morphs', 'Vertex', '', 3),
+            ('group_morphs', 'Group', '', 4),
             ],
-        default='OTHER',
+        default='vertex_morphs',
         )
 
 class MMDDisplayItemFrame(PropertyGroup):
@@ -262,7 +265,10 @@ class MMDRoot(PropertyGroup):
         name='Material Morphs',
         type=MaterialMorph,
         )
-
+    uv_morphs = CollectionProperty(
+        name='UV Morphs',
+        type=UVMorph,
+        )
     bone_morphs = CollectionProperty(
         name='Bone Morphs',
         type=BoneMorph,
@@ -271,13 +277,19 @@ class MMDRoot(PropertyGroup):
         name='Vertex Morphs',
         type=VertexMorph
         )
+    group_morphs = CollectionProperty(
+        name='Group Morphs',
+        type=GroupMorph,
+        )
     active_morph_type = EnumProperty(
         name='Active Morph Type',
         description='Active Morph Type',
         items = [
             ('material_morphs', 'Material', '', 0),
-            ('bone_morphs', 'Bone', '', 1),
-            ('vertex_morphs', 'Vertex', '', 2),
+            ('uv_morphs', 'UV', '', 1),
+            ('bone_morphs', 'Bone', '', 2),
+            ('vertex_morphs', 'Vertex', '', 3),
+            ('group_morphs', 'Group', '', 4),
             ],
         default='vertex_morphs',
         update=_activeMorphReset

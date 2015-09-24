@@ -257,6 +257,114 @@ class MaterialMorph(PropertyGroup):
         min=0,
         default=0,
         )
+
+class UVMorphOffset(PropertyGroup):
+    """UV Morph Offset
+    """
+    index = IntProperty(
+        name='Vertex Index',
+        min=0,
+        default=0,
+        )
+    offset = FloatVectorProperty(
+        name='UV Offset',
+        size=4,
+        #min=-1,
+        #max=1,
+        #precision=3,
+        step=0.1,
+        default=[0, 0, 0, 0],
+        )
+
+class UVMorph(PropertyGroup):
+    """UV Morph
+    """
+    name_e = StringProperty(
+        name='Name(Eng)',
+        description='English Name',
+        default=''
+        )
+    category = EnumProperty(
+        name='Category',
+        items = [
+            ('SYSTEM', 'System', '', 0),
+            ('EYEBROW', 'Eye Brow', '', 1),
+            ('EYE', 'Eye', '', 2),
+            ('MOUTH', 'Mouth', '', 3),
+            ('OTHER', 'Other', '', 4),
+            ],
+        default='OTHER',
+        )
+    uv_index = IntProperty(
+        name='UV Index',
+        min=0,
+        max=4,
+        default=0,
+        )
+    data = CollectionProperty(
+        name='Morph Data',
+        type=UVMorphOffset,
+        )
+    active_uv_data = IntProperty(
+        name='Active UV Data',
+        min=0,
+        default=0,
+        )
+
+class GroupMorphOffset(PropertyGroup):
+    """Group Morph Offset
+    """
+    morph_type = EnumProperty(
+        name='Morph Type',
+        description='Morph Type',
+        items = [
+            ('material_morphs', 'Material', '', 0),
+            ('uv_morphs', 'UV', '', 1),
+            ('bone_morphs', 'Bone', '', 2),
+            ('vertex_morphs', 'Vertex', '', 3),
+            #('group_morphs', 'Group', '', 4),
+            ],
+        default='vertex_morphs',
+        )
+    factor = FloatProperty(
+        name='Factor',
+        description='Factor',
+        min=0,
+        max=1,
+        precision=3,
+        step=0.1,
+        default=0
+        )
+
+class GroupMorph(PropertyGroup):
+    """Group Morph
+    """
+    name_e = StringProperty(
+        name='Name(Eng)',
+        description='English Name',
+        default=''
+        )
+    category = EnumProperty(
+        name='Category',
+        items = [
+            ('SYSTEM', 'System', '', 0),
+            ('EYEBROW', 'Eye Brow', '', 1),
+            ('EYE', 'Eye', '', 2),
+            ('MOUTH', 'Mouth', '', 3),
+            ('OTHER', 'Other', '', 4),
+            ],
+        default='OTHER',
+        )
+    data = CollectionProperty(
+        name='Morph Data',
+        type=GroupMorphOffset,
+        )
+    active_group_data = IntProperty(
+        name='Active Group Data',
+        min=0,
+        default=0,
+        )
+
 class VertexMorph(PropertyGroup):
     """Vertex Morph
     """
