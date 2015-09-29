@@ -6,6 +6,7 @@ from bpy.types import PropertyGroup
 from bpy.props import BoolProperty, CollectionProperty, FloatProperty, IntProperty, StringProperty, EnumProperty
 
 import mmd_tools.core.model as mmd_model
+from mmd_tools.core.material import FnMaterial
 from mmd_tools.properties.morph import BoneMorph
 from mmd_tools.properties.morph import MaterialMorph
 from mmd_tools.properties.morph import VertexMorph
@@ -25,6 +26,16 @@ def _toggleVisibilityOfMeshes(self, context):
         context.scene.objects.active = root
     for i in objects:
         i.hide = hide
+
+def _toggleUseToonTexture(self, context):
+    root = self.id_data
+    rig = mmd_model.Model(root)
+    use_toon = self.use_toon_texture
+    for i in rig.meshes():
+        for m in i.data.materials:
+            toon_tex_slot = m.texture_slots[FnMaterial.TOON_TEX_SLOT]
+            if toon_tex_slot:
+                toon_tex_slot.use = use_toon
 
 def _toggleVisibilityOfRigidBodies(self, context):
     root = self.id_data
@@ -218,6 +229,12 @@ class MMDRoot(PropertyGroup):
     show_names_of_joints = BoolProperty(
         name='Show Joint Names',
         update=_toggleShowNamesOfJoints,
+        )
+
+    use_toon_texture = BoolProperty(
+        name='Use Toon Texture',
+        update=_toggleUseToonTexture,
+        default=True,
         )
 
     scale = FloatProperty(

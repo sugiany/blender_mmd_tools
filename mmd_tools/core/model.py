@@ -406,6 +406,11 @@ class Model:
             return []
         return filter(lambda x: x.type == 'MESH' and x.mmd_type == 'NONE', self.allObjects(arm))
 
+    def firstMesh(self):
+        for i in self.meshes():
+            return i
+        return None
+
     def rigidBodies(self):
         return filter(isRigidBodyObject, self.allObjects(self.rigidGroupObject()))
 

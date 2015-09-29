@@ -123,10 +123,7 @@ class AddVertexMorph(Operator, _AddMorphBase):
         root = mmd_model.Model.findRoot(obj)
         rig = mmd_model.Model(root)
         mmd_root = root.mmd_root
-        meshObj = None
-        for i in rig.meshes():
-            meshObj = i
-            break
+        meshObj = rig.firstMesh()
         if meshObj is None:
             self.report({ 'ERROR' }, "The model mesh can't be found")
             return { 'CANCELLED' }
@@ -168,10 +165,7 @@ class AddMaterialOffset(Operator):
         root = mmd_model.Model.findRoot(obj)
         rig = mmd_model.Model(root)
         mmd_root = root.mmd_root
-        meshObj = None
-        for i in rig.meshes():
-            meshObj = i
-            break
+        meshObj = rig.firstMesh()
         if meshObj is None:
             self.report({ 'ERROR' }, "The model mesh can't be found")
             return { 'CANCELLED' }
@@ -210,10 +204,7 @@ class RemoveMaterialOffset(Operator):
         root = mmd_model.Model.findRoot(obj)
         rig = mmd_model.Model(root)
         mmd_root = root.mmd_root
-        meshObj = None
-        for i in rig.meshes():
-            meshObj = i
-            break
+        meshObj = rig.firstMesh()
         if meshObj is None:
             self.report({ 'ERROR' }, "The model mesh can't be found")
             return { 'CANCELLED' }
@@ -247,10 +238,7 @@ class ApplyMaterialOffset(Operator):
         root = mmd_model.Model.findRoot(obj)
         rig = mmd_model.Model(root)
         mmd_root = root.mmd_root
-        meshObj = None
-        for i in rig.meshes():
-            meshObj = i
-            break
+        meshObj = rig.firstMesh()
         if meshObj is None:
             self.report({ 'ERROR' }, "The model mesh can't be found")
             return { 'CANCELLED' }
@@ -308,10 +296,7 @@ class CreateWorkMaterial(Operator):
         root = mmd_model.Model.findRoot(obj)
         rig = mmd_model.Model(root)
         mmd_root = root.mmd_root
-        meshObj = None
-        for i in rig.meshes():
-            meshObj = i
-            break
+        meshObj = rig.firstMesh()
         if meshObj is None:
             self.report({ 'ERROR' }, "The model mesh can't be found")
             return { 'CANCELLED' }
@@ -590,6 +575,239 @@ class AddUVMorph(Operator, _AddMorphBase):
         root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
         self._addMorph(mmd_root)
+        return { 'FINISHED' }
+
+class ViewUVMorph(Operator):
+    bl_idname = 'mmd_tools.view_uv_morph'
+    bl_label = 'View UV Morph'
+    bl_description = ''
+    bl_options = {'PRESET'}
+
+    with_animation = bpy.props.BoolProperty(
+        name='With Animation',
+        default=False,
+        )
+
+    def invoke(self, context, event):
+        vm = context.window_manager
+        return vm.invoke_props_dialog(self)
+
+    def execute(self, context):
+        obj = context.active_object
+        root = mmd_model.Model.findRoot(obj)
+        rig = mmd_model.Model(root)
+        mmd_root = root.mmd_root
+        meshObj = rig.firstMesh()
+        if meshObj is None:
+            self.report({ 'ERROR' }, "The model mesh can't be found")
+            return { 'CANCELLED' }
+
+        bpy.ops.mmd_tools.clear_uv_morph_view()
+
+        selected = meshObj.select
+        with bpyutils.select_object(meshObj) as data:
+            morph = mmd_root.uv_morphs[mmd_root.active_morph]
+            mesh = meshObj.data
+            uv_textures = mesh.uv_textures
+            if morph.uv_index >= len(uv_textures):
+                self.report({ 'ERROR' }, "Invalid uv index: %d"%morph.uv_index)
+                return { 'CANCELLED' }
+
+            uv_textures.active_index = morph.uv_index
+            uv_tex = uv_textures.new(name='__uv.%s'%uv_textures.active.name)
+            if uv_tex is None:
+                self.report({ 'ERROR' }, "Failed to create a temporary uv layer")
+                return { 'CANCELLED' }
+
+            if len(morph.data) > 0:
+                uv_id_map = dict([(i, []) for i in range(len(mesh.vertices))])
+                uv_id = 0
+                for f in mesh.polygons:
+                    for vertex_id in f.vertices:
+                        uv_id_map[vertex_id].append(uv_id)
+                        uv_id += 1
+
+                base_uv_data = mesh.uv_layers.active.data
+                temp_uv_data = mesh.uv_layers[uv_tex.name].data
+
+                if self.with_animation:
+                    morph_name = '__uv.%s'%morph.name
+                    a = mesh.animation_data_create()
+                    act = bpy.data.actions.new(name=morph_name)
+                    old_act = a.action
+                    a.action = act
+
+                    for data in morph.data:
+                        offset = Vector(data.offset[:2]) # only use dx, dy
+                        for i in uv_id_map.get(data.index, []):
+                            t = temp_uv_data[i]
+                            t.keyframe_insert('uv', frame=0, group=morph_name)
+                            t.uv = base_uv_data[i].uv + offset
+                            t.keyframe_insert('uv', frame=100, group=morph_name)
+
+                    for fcurve in act.fcurves:
+                        for kp in fcurve.keyframe_points:
+                            kp.interpolation = 'LINEAR'
+                        fcurve.lock = True
+
+                    nla = a.nla_tracks.new()
+                    nla.name = morph_name
+                    nla.strips.new(name=morph_name, start=0, action=act)
+                    a.action = old_act
+                else:
+                    for data in morph.data:
+                        offset = Vector(data.offset[:2]) # only use dx, dy
+                        for i in uv_id_map.get(data.index, []):
+                             temp_uv_data[i].uv = base_uv_data[i].uv + offset
+
+            context.scene.frame_current = 100
+            uv_textures.active = uv_tex
+            uv_tex.active_render = True
+        meshObj.hide = False
+        meshObj.select = selected
+        return { 'FINISHED' }
+
+class ClearUVMorphView(Operator):
+    bl_idname = 'mmd_tools.clear_uv_morph_view'
+    bl_label = 'Clear UV Morph View'
+    bl_description = ''
+    bl_options = {'PRESET'}
+
+    def execute(self, context):
+        obj = context.active_object
+        root = mmd_model.Model.findRoot(obj)
+        rig = mmd_model.Model(root)
+        for m in rig.meshes():
+            mesh = m.data
+            uv_textures = mesh.uv_textures
+            for t in uv_textures:
+                if t.name.startswith('__uv.'):
+                    uv_textures.remove(t)
+            if len(uv_textures) > 0:
+                uv_textures[0].active_render = True
+
+            animation_data = mesh.animation_data
+            if animation_data:
+                nla_tracks = animation_data.nla_tracks
+                for t in nla_tracks:
+                    if t.name.startswith('__uv.'):
+                        nla_tracks.remove(t)
+                if animation_data.action and animation_data.action.name.startswith('__uv.'):
+                    animation_data.action = None
+                if animation_data.action is None and len(nla_tracks) == 0:
+                    mesh.animation_data_clear()
+
+        for act in bpy.data.actions:
+            if act.name.startswith('__uv.') and act.users < 1:
+                bpy.data.actions.remove(act)
+        bpy.ops.screen.frame_jump(end=False)
+        return { 'FINISHED' }
+
+class EditUVMorph(Operator):
+    bl_idname = 'mmd_tools.edit_uv_morph'
+    bl_label = 'Edit UV Morph'
+    bl_description = ''
+    bl_options = {'PRESET'}
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        if obj.type != 'MESH' or context.scene.frame_current < 100:
+            return False
+        uv_textures = obj.data.uv_textures
+        return uv_textures.active and uv_textures.active.name.startswith('__uv.')
+
+    def execute(self, context):
+        obj = context.active_object
+        root = mmd_model.Model.findRoot(obj)
+        rig = mmd_model.Model(root)
+        mmd_root = root.mmd_root
+        meshObj = rig.firstMesh()
+        if meshObj != obj:
+            self.report({ 'ERROR' }, "The model mesh can't be found")
+            return { 'CANCELLED' }
+
+        #bpy.ops.mmd_tools.view_uv_morph()
+
+        selected = meshObj.select
+        with bpyutils.select_object(meshObj) as data:
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.select_mode(type='VERT', action='ENABLE')
+            bpy.ops.mesh.reveal() # unhide all vertices
+            bpy.ops.mesh.select_all(action='DESELECT')
+            bpy.ops.object.mode_set(mode='OBJECT')
+
+            vertices = meshObj.data.vertices
+            morph = mmd_root.uv_morphs[mmd_root.active_morph]
+            for data in morph.data:
+                if 0 <= data.index < len(vertices):
+                    vertices[data.index].select = True
+            bpy.ops.object.mode_set(mode='EDIT')
+        meshObj.select = selected
+        return { 'FINISHED' }
+
+class ApplyUVMorph(Operator):
+    bl_idname = 'mmd_tools.apply_uv_morph'
+    bl_label = 'Apply UV Morph'
+    bl_description = ''
+    bl_options = {'PRESET'}
+
+    with_animation = bpy.props.BoolProperty(
+        name='With Animation',
+        default=False,
+        )
+
+    def invoke(self, context, event):
+        vm = context.window_manager
+        return vm.invoke_props_dialog(self)
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        if obj.type != 'MESH' or obj.mode != 'EDIT':
+            return False
+        uv_textures = obj.data.uv_textures
+        return uv_textures.active and uv_textures.active.name.startswith('__uv.')
+
+    def execute(self, context):
+        obj = context.active_object
+        root = mmd_model.Model.findRoot(obj)
+        rig = mmd_model.Model(root)
+        mmd_root = root.mmd_root
+        meshObj = rig.firstMesh()
+        if meshObj != obj:
+            self.report({ 'ERROR' }, "The model mesh can't be found")
+            return { 'CANCELLED' }
+
+        selected = meshObj.select
+        with bpyutils.select_object(meshObj) as data:
+            morph = mmd_root.uv_morphs[mmd_root.active_morph]
+            morph.data.clear()
+            mesh = meshObj.data
+
+            base_uv_layers = [l for l in mesh.uv_layers if not l.name.startswith('__uv.')]
+            if morph.uv_index >= len(base_uv_layers):
+                self.report({ 'ERROR' }, "Invalid uv index: %d"%morph.uv_index)
+                return { 'CANCELLED' }
+            base_uv_data = base_uv_layers[morph.uv_index].data
+            temp_uv_data = mesh.uv_layers.active.data
+
+            uv_vertices = []
+            for f in mesh.polygons:
+                uv_vertices.extend(f.vertices)
+
+            for bv in mesh.vertices:
+                if not bv.select:
+                    continue
+                uv_idx = uv_vertices.index(bv.index) #XXX only get the first one
+                dx, dy = temp_uv_data[uv_idx].uv - base_uv_data[uv_idx].uv
+
+                data = morph.data.add()
+                data.index = bv.index
+                data.offset = (dx, dy, 0, 0)
+
+        meshObj.select = selected
+        bpy.ops.mmd_tools.view_uv_morph(with_animation=self.with_animation)
         return { 'FINISHED' }
 
 class AddGroupMorph(Operator, _AddMorphBase):

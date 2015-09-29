@@ -40,6 +40,7 @@ class MMDModelObjectDisplayPanel(_PanelBase, Panel):
         c.prop(root.mmd_root, 'show_temporary_objects', text='Temporary Object')
         c.prop(root.mmd_root, 'show_names_of_rigid_bodies', text='Rigidbody Name')
         c.prop(root.mmd_root, 'show_names_of_joints', text='Joint Name')
+        c.prop(root.mmd_root, 'use_toon_texture', text='Toon Texture')
 
 
 class MMDViewPanel(_PanelBase, Panel):

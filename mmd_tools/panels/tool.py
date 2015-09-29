@@ -335,16 +335,13 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
                 draw_func(context, rig, col, morph)
 
     def _draw_material_data(self, context, rig, col, morph):
-        meshObj = None
-        for i in rig.meshes():
-            meshObj = i 
-            break
+        meshObj = rig.firstMesh()
         if meshObj is None:
             c = col.column(align=True)
             c.label("The model mesh can't be found", icon='ERROR')
             return
         c = col.column(align=True)
-        c.label('Material Offsets')
+        c.label('Material Offsets (%d)'%len(morph.data))
         row = c.row()
         row.template_list(
             "UL_MaterialMorphOffsets", "",
@@ -445,7 +442,7 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
         row.operator('pose.transforms_clear', text='Clear')
 
         c = col.column(align=True)
-        c.label('Bone Offsets')
+        c.label('Bone Offsets (%d)'%len(morph.data))
         row = c.row()
         row.template_list(
             "UL_BoneMorphOffsets", "",
@@ -482,10 +479,7 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
         c1.prop(data, 'rotation')
 
     def _draw_uv_data(self, context, rig, col, morph):
-        meshObj = None
-        for i in rig.meshes():
-            meshObj = i
-            break
+        meshObj = rig.firstMesh()
         if meshObj is None:
             c = col.column(align=True)
             c.label("The model mesh can't be found", icon='ERROR')
@@ -493,7 +487,15 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
 
         c = col.column(align=True)
         row = c.row(align=True)
-        row.label('UV Offsets')
+        row.operator(operators.morph.ViewUVMorph.bl_idname, text='View')
+        row.operator(operators.morph.ClearUVMorphView.bl_idname, text='Clear')
+        row = c.row(align=True)
+        row.operator(operators.morph.EditUVMorph.bl_idname, text='Edit')
+        row.operator(operators.morph.ApplyUVMorph.bl_idname, text='Apply')
+
+        c = col.column(align=True)
+        row = c.row(align=True)
+        row.label('UV Offsets (%d)'%len(morph.data))
         row.prop(morph, 'uv_index')
         row = c.row()
         row.template_list(
@@ -504,7 +506,7 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
 
     def _draw_group_data(self, context, rig, col, morph):
         c = col.column(align=True)
-        c.label('Group Offsets')
+        c.label('Group Offsets (%d)'%len(morph.data))
         row = c.row()
         row.template_list(
             "UL_GroupMorphOffsets", "",

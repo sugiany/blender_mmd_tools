@@ -208,6 +208,7 @@ class ExportPmx(Operator, ExportHelper):
         return obj and mmd_model.Model.findRoot(obj)
 
     def execute(self, context):
+        active_object = context.active_object
         logger = logging.getLogger()
         logger.setLevel(self.log_level)
         if self.save_log:
@@ -233,6 +234,8 @@ class ExportPmx(Operator, ExportHelper):
         finally:
             logger.removeHandler(handler)
 
+        active_object.select = True
+        context.scene.objects.active = active_object
         return {'FINISHED'}
 
     def invoke(self, context, event):

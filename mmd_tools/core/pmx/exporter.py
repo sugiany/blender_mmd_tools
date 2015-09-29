@@ -16,11 +16,12 @@ import mmd_tools.core.model as mmd_model
 
 
 class _Vertex:
-    def __init__(self, co, groups, normal, offsets):
+    def __init__(self, co, groups, normal, offsets, old_index):
         self.co = copy.deepcopy(co)
         self.groups = copy.copy(groups) # [(group_number, weight), ...]
         self.normal = copy.deepcopy(normal)
         self.offsets = copy.deepcopy(offsets)
+        self.old_index = old_index # used for exporting uv morphs
         self.index = None
         self.uv = None
 
@@ -50,11 +51,18 @@ class __PmxExporter:
         [0.0, 0.0, 1.0, 0.0],
         [0.0, 1.0, 0.0, 0.0],
         [0.0, 0.0, 0.0, 1.0]])
+    CATEGORIES = {
+            'SYSTEM': pmx.Morph.CATEGORY_SYSTEM,
+            'EYEBROW': pmx.Morph.CATEGORY_EYEBROW,
+            'EYE': pmx.Morph.CATEGORY_EYE,
+            'MOUTH': pmx.Morph.CATEGORY_MOUTH,
+            }
 
     def __init__(self):
         self.__model = None
         self.__bone_name_table = []
         self.__material_name_table = []
+        self.__vertex_index_map = {} # used for exporting uv morphs
 
     @staticmethod
     def flipUV_V(uv):
@@ -83,6 +91,9 @@ class __PmxExporter:
                         continue
 
                     v.index = len(self.__model.vertices)
+                    if v.old_index is not None:
+                        self.__vertex_index_map[v.old_index].append(v.index)
+
                     pv = pmx.Vertex()
                     pv.co = list(v.co)
                     pv.normal = v.normal * -1
@@ -380,12 +391,7 @@ class __PmxExporter:
         morph_categories = {}
         morph_english_names = {}
         if root:
-            categories = {
-                'SYSTEM': pmx.Morph.CATEGORY_SYSTEM,
-                'EYEBROW': pmx.Morph.CATEGORY_EYEBROW,
-                'EYE': pmx.Morph.CATEGORY_EYE,
-                'MOUTH': pmx.Morph.CATEGORY_MOUTH,
-                }
+            categories = self.CATEGORIES
             for vtx_morph in root.mmd_root.vertex_morphs:
                 morph_english_names[vtx_morph.name] = vtx_morph.name_e
                 morph_categories[vtx_morph.name] = categories.get(vtx_morph.category, pmx.Morph.CATEGORY_OHTER)
@@ -419,12 +425,7 @@ class __PmxExporter:
 
     def __export_material_morphs(self, root):
         mmd_root = root.mmd_root
-        categories = {
-                'SYSTEM': pmx.Morph.CATEGORY_SYSTEM,
-                'EYEBROW': pmx.Morph.CATEGORY_EYEBROW,
-                'EYE': pmx.Morph.CATEGORY_EYE,
-                'MOUTH': pmx.Morph.CATEGORY_MOUTH,
-                }
+        categories = self.CATEGORIES
         for morph in mmd_root.material_morphs:
             mat_morph = pmx.MaterialMorph(
                 name=morph.name,
@@ -514,14 +515,11 @@ class __PmxExporter:
         return mathutils.Quaternion(v, angle).normalized()
 
     def __export_bone_morphs(self, root):
-        pose_bones = self.__armature.pose.bones
         mmd_root = root.mmd_root
-        categories = {
-                'SYSTEM': pmx.Morph.CATEGORY_SYSTEM,
-                'EYEBROW': pmx.Morph.CATEGORY_EYEBROW,
-                'EYE': pmx.Morph.CATEGORY_EYE,
-                'MOUTH': pmx.Morph.CATEGORY_MOUTH,
-                }
+        if len(mmd_root.bone_morphs) == 0:
+            return
+        categories = self.CATEGORIES
+        pose_bones = self.__armature.pose.bones
         #TODO clear pose before exporting bone morphs
         for morph in mmd_root.bone_morphs:
             bone_morph = pmx.BoneMorph(
@@ -548,11 +546,54 @@ class __PmxExporter:
                 bone_morph.offsets.append(morph_data)
             self.__model.morphs.append(bone_morph)
 
+    def __export_uv_morphs(self, root):
+        mmd_root = root.mmd_root
+        if len(mmd_root.uv_morphs) == 0:
+            return
+        categories = self.CATEGORIES
+        for morph in mmd_root.uv_morphs:
+            uv_morph = pmx.UVMorph(
+                name=morph.name,
+                name_e=morph.name_e,
+                category=categories.get(morph.category, pmx.Morph.CATEGORY_OHTER)
+            )
+            offsets = []
+            for data in morph.data:
+                for idx in self.__vertex_index_map[data.index]:
+                    morph_data = pmx.UVMorphOffset()
+                    morph_data.index = idx
+                    dx, dy, dz, dw = data.offset
+                    morph_data.offset = (dx, -dy, 0, 0) # dz, dw are not used
+                    offsets.append(morph_data)
+            uv_morph.offsets = sorted(offsets, key=lambda x: x.index)
+            self.__model.morphs.append(uv_morph)
+
+    def __export_group_morphs(self, root):
+        mmd_root = root.mmd_root
+        if len(mmd_root.group_morphs) == 0:
+            return
+        categories = self.CATEGORIES
+        morph_map = self.__get_pmx_morph_map()
+        for morph in mmd_root.group_morphs:
+            group_morph = pmx.GroupMorph(
+                name=morph.name,
+                name_e=morph.name_e,
+                category=categories.get(morph.category, pmx.Morph.CATEGORY_OHTER)
+            )
+            for data in morph.data:
+                morph_index = morph_map.get((data.morph_type, data.name), -1)
+                if morph_index >= 0:
+                    morph_data = pmx.GroupMorphOffset()
+                    morph_data.morph = morph_index
+                    morph_data.factor = data.factor
+                    group_morph.offsets.append(morph_data)
+                else:
+                    logging.warning('Group Morph (%s): Morph %s was not found.', morph.name, data.name)
+            self.__model.morphs.append(group_morph)
+
     def __exportDisplayItems(self, root, bone_map):
         res = []
-        morph_map = {}
-        for i, m in enumerate(self.__model.morphs):
-            morph_map[m.name] = i
+        morph_map = self.__get_pmx_morph_map()
         for i in root.mmd_root.display_item_frames:
             d = pmx.Display()
             d.name = i.name
@@ -562,13 +603,26 @@ class __PmxExporter:
             for j in i.items:
                 if j.type == 'BONE' and j.name in bone_map:
                     items.append((0, bone_map[j.name]))
-                elif j.type == 'MORPH' and j.name in morph_map:
-                    items.append((1, morph_map[j.name]))
+                elif j.type == 'MORPH' and (j.morph_type, j.name) in morph_map:
+                    items.append((1, morph_map[(j.morph_type, j.name)]))
                 else:
                     logging.warning('Display item (%s, %s) was not found.', j.type, j.name)
             d.data = items
             res.append(d)
         self.__model.display = res
+
+    def __get_pmx_morph_map(self):
+        morph_types = {
+            pmx.GroupMorph : 'group_morphs',
+            pmx.VertexMorph : 'vertex_morphs',
+            pmx.BoneMorph : 'bone_morphs',
+            pmx.UVMorph : 'uv_morphs',
+            pmx.MaterialMorph : 'material_morphs',
+            }
+        morph_map = {}
+        for i, m in enumerate(self.__model.morphs):
+            morph_map[(morph_types[type(m)], m.name)] = i
+        return morph_map
 
 
     def __exportRigidBodies(self, rigid_bodies, bone_map):
@@ -692,13 +746,18 @@ class __PmxExporter:
         self.__triangulate(base_mesh)
         base_mesh.update(calc_tessface=True)
 
+        is_first_mesh = len(self.__vertex_index_map) == 0
+        if is_first_mesh:
+            self.__vertex_index_map = dict([(v.index, []) for v in base_mesh.vertices])
+
         base_vertices = {}
         for v in base_mesh.vertices:
             base_vertices[v.index] = [_Vertex(
                 v.co,
                 list([(x.group, x.weight) for x in v.groups if x.weight > 0]),
                 v.normal,
-                [])]
+                [],
+                v.index if is_first_mesh else None)]
 
         # calculate offsets
         shape_key_names = []
@@ -779,6 +838,8 @@ class __PmxExporter:
         if root is not None:
             self.__export_bone_morphs(root)
             self.__export_material_morphs(root)
+            self.__export_uv_morphs(root)
+            self.__export_group_morphs(root)
             self.__exportDisplayItems(root, nameMap)
 
         if self.__copyTextures:
