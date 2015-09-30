@@ -654,13 +654,13 @@ class ViewUVMorph(Operator):
                     nla.name = morph_name
                     nla.strips.new(name=morph_name, start=0, action=act)
                     a.action = old_act
+                    context.scene.frame_current = 100
                 else:
                     for data in morph.data:
                         offset = Vector(data.offset[:2]) # only use dx, dy
                         for i in uv_id_map.get(data.index, []):
                              temp_uv_data[i].uv = base_uv_data[i].uv + offset
 
-            context.scene.frame_current = 100
             uv_textures.active = uv_tex
             uv_tex.active_render = True
         meshObj.hide = False
@@ -712,7 +712,7 @@ class EditUVMorph(Operator):
     @classmethod
     def poll(cls, context):
         obj = context.active_object
-        if obj.type != 'MESH' or context.scene.frame_current < 100:
+        if obj.type != 'MESH':
             return False
         uv_textures = obj.data.uv_textures
         return uv_textures.active and uv_textures.active.name.startswith('__uv.')
@@ -801,10 +801,10 @@ class ApplyUVMorph(Operator):
                     continue
                 uv_idx = uv_vertices.index(bv.index) #XXX only get the first one
                 dx, dy = temp_uv_data[uv_idx].uv - base_uv_data[uv_idx].uv
-
-                data = morph.data.add()
-                data.index = bv.index
-                data.offset = (dx, dy, 0, 0)
+                if abs(dx) > 0.0001 or abs(dy) > 0.0001:
+                    data = morph.data.add()
+                    data.index = bv.index
+                    data.offset = (dx, dy, 0, 0)
 
         meshObj.select = selected
         bpy.ops.mmd_tools.view_uv_morph(with_animation=self.with_animation)

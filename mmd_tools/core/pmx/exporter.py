@@ -559,11 +559,12 @@ class __PmxExporter:
             )
             offsets = []
             for data in morph.data:
-                for idx in self.__vertex_index_map[data.index]:
+                dx, dy, dz, dw = data.offset
+                offset = (dx, -dy, 0, 0) # dz, dw are not used
+                for idx in self.__vertex_index_map.get(data.index, []):
                     morph_data = pmx.UVMorphOffset()
                     morph_data.index = idx
-                    dx, dy, dz, dw = data.offset
-                    morph_data.offset = (dx, -dy, 0, 0) # dz, dw are not used
+                    morph_data.offset = offset
                     offsets.append(morph_data)
             uv_morph.offsets = sorted(offsets, key=lambda x: x.index)
             self.__model.morphs.append(uv_morph)
