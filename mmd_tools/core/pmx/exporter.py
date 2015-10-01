@@ -62,7 +62,7 @@ class __PmxExporter:
         self.__model = None
         self.__bone_name_table = []
         self.__material_name_table = []
-        self.__vertex_index_map = {} # used for exporting uv morphs
+        self.__vertex_index_map = None # used for exporting uv morphs
 
     @staticmethod
     def flipUV_V(uv):
@@ -747,8 +747,8 @@ class __PmxExporter:
         self.__triangulate(base_mesh)
         base_mesh.update(calc_tessface=True)
 
-        is_first_mesh = len(self.__vertex_index_map) == 0
-        if is_first_mesh:
+        has_uv_morphs = self.__vertex_index_map is None
+        if has_uv_morphs:
             self.__vertex_index_map = dict([(v.index, []) for v in base_mesh.vertices])
 
         base_vertices = {}
@@ -758,7 +758,7 @@ class __PmxExporter:
                 list([(x.group, x.weight) for x in v.groups if x.weight > 0]),
                 v.normal,
                 [],
-                v.index if is_first_mesh else None)]
+                v.index if has_uv_morphs else None)]
 
         # calculate offsets
         shape_key_names = []
@@ -811,6 +811,8 @@ class __PmxExporter:
         if root is not None:
             self.__model.name = root.mmd_root.name
             self.__model.name_e = root.mmd_root.name_e
+            if len(root.mmd_root.uv_morphs) == 0:
+                self.__vertex_index_map = {} # no need to create the map
 
         self.__model.comment = 'exported by mmd_tools'
 
