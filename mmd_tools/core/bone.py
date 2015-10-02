@@ -69,7 +69,7 @@ class FnBone(object):
 
         rot_constraint.subtarget = shadow_bone.name
         rot_constraint.influence = abs(influence)
-        rot_constraint.inverse_matrix = mathutils.Matrix(shadow_bone.matrix).inverted()
+        rot_constraint.inverse_matrix = mathutils.Matrix(shadow_bone.bone.matrix_local).inverted()
 
         loc_constraint.subtarget = shadow_bone.name
         loc_constraint.influence = abs(influence)
@@ -200,7 +200,7 @@ class FnBone(object):
         loc_constraint.use_scale_z = False
 
         parent_constraint = None
-        if False and self.__bone.parent: # may not be necessary
+        if self.__bone.parent:
             parent_constraint = self.__bone.constraints.new('CHILD_OF')
             parent_constraint.mute = False
             parent_constraint.name = self.AT_PARENT_CONSTRAINT_NAME
@@ -215,7 +215,7 @@ class FnBone(object):
             parent_constraint.use_scale_x = False
             parent_constraint.use_scale_y = False
             parent_constraint.use_scale_z = False
-            parent_constraint.inverse_matrix = mathutils.Matrix(self.__bone.parent.matrix).inverted()
+            parent_constraint.inverse_matrix = mathutils.Matrix(self.__bone.parent.bone.matrix_local).inverted()
             self.__bone.bone.use_inherit_rotation = False
 
         return (rot_constraint, loc_constraint, parent_constraint)
