@@ -61,6 +61,7 @@ class PMXImporter:
         self.__nonCollisionJointTable = None
         self.__jointTable = []
         self.__materialTable = []
+        self.__imageTable = {}
 
         self.__materialFaceCountTable = None
 
@@ -433,6 +434,7 @@ class PMXImporter:
             if i.texture != -1:
                 texture_slot = fnMat.create_texture(self.__textureTable[i.texture])
                 texture_slot.texture.use_mipmap = self.__use_mipmap
+                self.__imageTable[len(self.__materialTable)-1] = texture_slot.texture.image
             if i.sphere_texture_mode == 2:
                 amount = self.__spa_blend_factor
             else:
@@ -460,6 +462,7 @@ class PMXImporter:
             uv.uv3 = self.flipUV_V(pmxModel.vertices[f[2]].uv)
 
             bf.material_index = self.__getMaterialIndexFromFaceIndex(i)
+            uv.image = self.__imageTable.get(bf.material_index, None)
 
     def __importVertexMorphs(self):
         pmxModel = self.__model
@@ -630,8 +633,6 @@ class PMXImporter:
 
         self.__addArmatureModifier(self.__meshObj, self.__armObj)
         self.__meshObj.data.update()
-
-        self.__armObj.pmx_import_scale = self.__scale
 
         for i in [self.__rigidObjGroup.objects, self.__jointObjGroup.objects, self.__tempObjGroup.objects]:
             for j in i:

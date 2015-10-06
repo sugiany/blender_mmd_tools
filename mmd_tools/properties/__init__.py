@@ -34,8 +34,6 @@ __properties = {
         'is_mmd_lamp': bpy.props.BoolProperty(name='is_mmd_lamp', default=False),
         'is_mmd_rigid_track_target': bpy.props.BoolProperty(name='is_mmd_rigid_track_target', default=False),
         'is_mmd_glsl_light': bpy.props.BoolProperty(name='is_mmd_glsl_light', default=False),
-        'pmx_import_scale': bpy.props.FloatProperty(name='pmx_import_scale'),
-
         },
     bpy.types.Material: {
         'mmd_material': bpy.props.PointerProperty(type=material.MMDMaterial),

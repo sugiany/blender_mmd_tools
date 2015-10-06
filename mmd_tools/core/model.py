@@ -562,8 +562,7 @@ class Model:
         rb = ncc_obj.rigid_body_constraint
         rb.disable_collisions = True
         
-        ncc_objs = []
-        last_selected = [ncc_obj]
+        last_selected = ncc_objs = [ncc_obj]
         while len(ncc_objs) < total_len:
             bpy.ops.object.duplicate()
             ncc_objs.extend(bpy.context.selected_objects)
@@ -578,10 +577,10 @@ class Model:
             last_selected = bpy.context.selected_objects
         logging.debug(' created %d ncc.', len(ncc_objs))
 
-        for i in range(total_len):
-            rb = ncc_objs[i].rigid_body_constraint
-            rb.object1, rb.object2 = nonCollisionJointTable[i]
-        
+        for ncc_obj, pair in zip(ncc_objs, nonCollisionJointTable):
+            rbc = ncc_obj.rigid_body_constraint
+            rbc.object1, rbc.object2 = pair
+            ncc_obj.hide = ncc_obj.hide_select = True
         logging.debug(' finish in %f seconds.', time.time() - start_time)
         logging.debug('-'*60)
 
@@ -614,6 +613,8 @@ class Model:
                 if not ignore:
                     continue
                 for obj_b in rigid_object_groups[n]:
+                    if obj_a == obj_b:
+                        continue
                     pair = frozenset((obj_a, obj_b))
                     if pair in non_collision_pairs:
                         continue
