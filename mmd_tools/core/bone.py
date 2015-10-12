@@ -92,6 +92,28 @@ class FnBone(object):
         if invert:
             mmd_shadow_bone_type += '_INVERT'
 
+        src_mmd_bone = arm.pose.bones[bone_name].mmd_bone
+        if src_mmd_bone.has_additional_rotation or src_mmd_bone.has_additional_location:
+            dummy_name = '_dummy.%s'%bone_name
+            if dummy_name not in arm.pose.bones: # A bone should have only one dummy bone
+                with bpyutils.edit_object(arm) as data:
+                    src_bone = data.edit_bones[bone_name]
+                    dummy = data.edit_bones.new(name=dummy_name)
+                    dummy.parent = src_bone.parent
+                    dummy.head = src_bone.head
+                    dummy.tail = src_bone.tail
+                    dummy.layers = tuple(x==9 for x in range(len(dummy.layers)))
+                dummy_p_bone = arm.pose.bones[dummy_name]
+                dummy_p_bone.is_mmd_shadow_bone = True
+                dummy_p_bone.mmd_shadow_bone_type = 'DUMMY'
+                c = dummy_p_bone.constraints.new('COPY_TRANSFORMS')
+                c.name = self.AT_DUMMY_CONSTRAINT_NAME
+                c.target = arm
+                c.subtarget = bone_name
+                c.target_space = 'POSE'
+                c.owner_space = 'POSE'
+            bone_name = dummy_name
+
         shadow_bone = self.__get_shadow_bone(bone_name, mmd_shadow_bone_type)
         if shadow_bone:
             return shadow_bone

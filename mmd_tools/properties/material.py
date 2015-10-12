@@ -14,17 +14,16 @@ def _updateSphereMapType(prop, context):
     FnMaterial(prop.id_data).update_sphere_texture_type()
 
 def _updateToonTexture(prop, context):
-    mat = FnMaterial(prop.id_data)
-    mmd_mat = prop.id_data.mmd_material
-    if mmd_mat.is_shared_toon_texture:
-        user_preferences = context.user_preferences
-        addon_prefs = user_preferences.addons['mmd_tools'].preferences
-        toon_path = os.path.join(addon_prefs.shared_toon_folder, 'toon%02d.bmp'%(mmd_mat.shared_toon_texture+1))
-        mat.create_toon_texture(bpy.path.resolve_ncase(path=toon_path))
-    elif mmd_mat.toon_texture != '':
-        mat.create_toon_texture(mmd_mat.toon_texture)
-    else:
-        mat.remove_toon_texture()
+    FnMaterial(prop.id_data).update_toon_texture()
+
+def _updateDropShadow(prop, context):
+    FnMaterial(prop.id_data).update_drop_shadow()
+
+def _updateSelfShadowMap(prop, context):
+    FnMaterial(prop.id_data).update_self_shadow_map()
+
+def _updateSelfShadow(prop, context):
+    FnMaterial(prop.id_data).update_self_shadow()
 
 
 #===========================================
@@ -79,18 +78,21 @@ class MMDMaterial(PropertyGroup):
         name='Drop Shadow',
         description='',
         default=True,
+        update=_updateDropShadow,
         )
 
     enabled_self_shadow_map = BoolProperty(
         name='Self Shadow Map',
         description='',
         default=True,
+        update=_updateSelfShadowMap,
         )
 
     enabled_self_shadow = BoolProperty(
         name='Self Shadow',
         description='',
         default=True,
+        update=_updateSelfShadow,
         )
 
     enabled_toon_edge = BoolProperty(

@@ -391,13 +391,6 @@ class PMXImporter:
             mat.alpha = i.diffuse[3]
             mat.specular_color = i.specular
             mat.specular_hardness = i.shininess
-            mat.use_shadows = i.enabled_self_shadow
-            mat.use_transparent_shadows = i.enabled_self_shadow
-            mat.use_cast_buffer_shadows = i.enabled_self_shadow_map # only buffer shadows
-            if hasattr(mat, 'use_cast_shadows'):
-                # "use_cast_shadows" is not supported in older Blender (< 2.71),
-                # so we still use "use_cast_buffer_shadows".
-                mat.use_cast_shadows = i.enabled_self_shadow_map
             if mat.alpha < 1.0 or mat.specular_alpha < 1.0 or i.texture != -1:
                 mat.use_transparency = True
                 mat.transparency_method = 'Z_TRANSPARENCY'

@@ -38,6 +38,10 @@ bl_info= {
 #         imp.reload(auto_scene_setup)
 
 
+def addon_preferences(attrname, default=None):
+    addon = bpy.context.user_preferences.addons.get(__name__, None)
+    return getattr(addon.preferences, attrname, default) if addon else default
+
 class MMDToolsAddonPreferences(AddonPreferences):
     # this must match the addon name, use '__package__'
     # when defining this in a submodule of a python package.

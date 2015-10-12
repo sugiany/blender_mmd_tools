@@ -4,6 +4,7 @@ import logging
 import os
 
 import bpy
+import mmd_tools
 
 SPHERE_MODE_OFF    = 0
 SPHERE_MODE_MULT   = 1
@@ -144,6 +145,36 @@ class FnMaterial(object):
         texture_slot.texture.extension = 'EXTEND'
         return texture_slot
 
+    def update_toon_texture(self):
+        mmd_mat = self.__material.mmd_material
+        if mmd_mat.is_shared_toon_texture:
+            shared_toon_folder = mmd_tools.addon_preferences('shared_toon_folder', '')
+            toon_path = os.path.join(shared_toon_folder, 'toon%02d.bmp'%(mmd_mat.shared_toon_texture+1))
+            self.create_toon_texture(bpy.path.resolve_ncase(path=toon_path))
+        elif mmd_mat.toon_texture != '':
+            self.create_toon_texture(mmd_mat.toon_texture)
+        else:
+            self.remove_toon_texture()
+
     def remove_toon_texture(self):
         self.remove_texture(self.TOON_TEX_SLOT)
+
+
+    def update_drop_shadow(self):
+        pass
+
+    def update_self_shadow_map(self):
+        mat = self.__material
+        mmd_mat = mat.mmd_material
+        mat.use_cast_buffer_shadows = mmd_mat.enabled_self_shadow_map # only buffer shadows
+        if hasattr(mat, 'use_cast_shadows'):
+            # "use_cast_shadows" is not supported in older Blender (< 2.71),
+            # so we still use "use_cast_buffer_shadows".
+            mat.use_cast_shadows = mmd_mat.enabled_self_shadow_map
+
+    def update_self_shadow(self):
+        mat = self.__material
+        mmd_mat = mat.mmd_material
+        mat.use_shadows = mmd_mat.enabled_self_shadow
+        mat.use_transparent_shadows = mmd_mat.enabled_self_shadow
 
