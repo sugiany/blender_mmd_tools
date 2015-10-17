@@ -251,6 +251,7 @@ class Model:
             obj.mmd_joint.name_e = name_e
 
         obj.location = location
+        obj.rotation_mode = 'YXZ'
         obj.rotation_euler = rotation
         obj.empty_draw_size = size
         obj.empty_draw_type = 'ARROWS'
@@ -589,9 +590,6 @@ class Model:
         logging.debug(' Build riggings of rigid bodies')
         logging.debug('--------------------------------')
         rigid_objects = list(self.rigidBodies())
-        for i in rigid_objects:
-            logging.debug(' Updating rigid body %s', i.name)
-            self.updateRigid(i)
         rigid_object_groups = [[] for i in range(16)]
         for i in rigid_objects:
             rigid_object_groups[i.mmd_rigid.collision_group_number].append(i)
@@ -626,7 +624,9 @@ class Model:
                         if distance < distance_of_ignore_collisions * (self.__getRigidRange(obj_a) + self.__getRigidRange(obj_b)) * 0.5:
                             nonCollisionJointTable.append((obj_a, obj_b))
                     non_collision_pairs.add(pair)
-        
+        for i in rigid_objects:
+            logging.debug(' Updating rigid body %s', i.name)
+            self.updateRigid(i)
         self.__createNonCollisionConstraint(nonCollisionJointTable)
         return rigid_objects
 
