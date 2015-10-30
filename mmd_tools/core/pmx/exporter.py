@@ -3,6 +3,7 @@ import os
 import copy
 import logging
 import shutil
+import time
 
 import mathutils
 import bpy
@@ -413,8 +414,8 @@ class __PmxExporter:
                             continue
                         exported_vert.add(v.index)
 
-                        offset = v.offsets[mesh.shape_key_names.index(i)]
-                        if mathutils.Vector(offset).length < 0.001:
+                        offset = v.offsets.get(i, None)
+                        if offset is None:
                             continue
 
                         mo = pmx.VertexMorphOffset()
@@ -757,7 +758,7 @@ class __PmxExporter:
                 v.co,
                 list([(x.group, x.weight) for x in v.groups if x.weight > 0]),
                 v.normal,
-                [],
+                {},
                 v.index if has_uv_morphs else None)]
 
         # calculate offsets
@@ -772,7 +773,10 @@ class __PmxExporter:
             for key in base_vertices.keys():
                 base = base_vertices[key][0]
                 v = mesh.vertices[key]
-                base.offsets.append(mathutils.Vector(v.co) - mathutils.Vector(base.co))
+                offset = mathutils.Vector(v.co) - mathutils.Vector(base.co)
+                if offset.length < 0.001:
+                    continue
+                base.offsets[i.name] = offset
             bpy.data.meshes.remove(mesh)
             i.value = 0.0
 
@@ -852,5 +856,13 @@ class __PmxExporter:
         pmx.save(filepath, self.__model)
 
 def export(filepath, **kwargs):
+    logging.info('****************************************')
+    logging.info(' %s module'%__name__)
+    logging.info('----------------------------------------')
+    start_time = time.time()
     exporter = __PmxExporter()
     exporter.execute(filepath, **kwargs)
+    logging.info(' Finished exporting the model in %f seconds.', time.time() - start_time)
+    logging.info('----------------------------------------')
+    logging.info(' %s module'%__name__)
+    logging.info('****************************************')
