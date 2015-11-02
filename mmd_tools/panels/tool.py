@@ -100,6 +100,7 @@ class MMD_ROOT_UL_display_items(UIList):
             bone = p_bone.bone
             ic = 'RESTRICT_VIEW_ON' if bone.hide else 'RESTRICT_VIEW_OFF'
             row.prop(bone, 'hide', text='', emboss=p_bone.mmd_bone.is_tip, icon=ic)
+            row.active = armature.mode != 'EDIT'
         else:
             row.label() # for alignment only
             row.label(icon='ERROR')

@@ -14,9 +14,11 @@ class CleanRiggingObjects(Operator):
     bl_options = {'PRESET'}
 
     def execute(self, context):
+        obj = context.active_object
         root = mmd_model.Model.findRoot(context.active_object)
         rig = mmd_model.Model(root)
         rig.clean()
+        context.scene.objects.active = obj
         return {'FINISHED'}
 
 class BuildRig(Operator):

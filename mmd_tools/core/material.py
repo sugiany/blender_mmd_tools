@@ -41,9 +41,20 @@ class FnMaterial(object):
         return self.__material
 
 
+    def __same_image_file(self, image, filepath):
+        if image and image.source == 'FILE':
+            img_filepath = image.filepath_from_user()
+            if img_filepath == filepath:
+                return True
+            try:
+                return os.path.samefile(img_filepath, filepath)
+            except:
+                pass
+        return False
+
     def __load_image(self, filepath):
         for i in bpy.data.images:
-            if i.filepath == filepath:
+            if self.__same_image_file(i, filepath):
                 return i
 
         try:
@@ -55,6 +66,14 @@ class FnMaterial(object):
         img.source = 'FILE'
         img.filepath = filepath
         return img
+
+    def __load_texture(self, filepath):
+        for t in bpy.data.textures:
+            if t.type == 'IMAGE' and self.__same_image_file(t.image, filepath):
+                return t
+        tex = bpy.data.textures.new(name=bpy.path.display_name_from_filepath(filepath), type='IMAGE')
+        tex.image = self.__load_image(filepath)
+        return tex
 
 
     def create_texture(self, filepath):
@@ -71,18 +90,24 @@ class FnMaterial(object):
         texture_slot.use_map_alpha = True
         texture_slot.texture_coords = 'UV'
         texture_slot.blend_type = 'MULTIPLY'
-        texture_slot.texture = bpy.data.textures.new(name=self.__material.name, type='IMAGE')
-        texture_slot.texture.image = self.__load_image(filepath)
+        texture_slot.texture = self.__load_texture(filepath)
         return texture_slot
 
 
     def remove_texture(self, index=BASE_TEX_SLOT):
         texture_slot = self.__material.texture_slots[index]
         if texture_slot:
+            tex = texture_slot.texture
             self.__material.texture_slots.clear(index)
-            if texture_slot.texture and texture_slot.texture.users < 1:
-                texture_slot.texture.image = None
-                bpy.data.textures.remove(texture_slot.texture)
+            #print('clear texture: %s  users: %d'%(tex.name, tex.users))
+            if tex and tex.users < 1:
+                #print(' - remove texture: '+tex.name)
+                img = tex.image
+                tex.image = None
+                bpy.data.textures.remove(tex)
+                if img and img.users < 1:
+                    #print('    - remove image: '+img.name)
+                    bpy.data.images.remove(img)
 
 
     def create_sphere_texture(self, filepath):
@@ -97,8 +122,8 @@ class FnMaterial(object):
         """
         texture_slot = self.__material.texture_slots.create(self.SPHERE_TEX_SLOT)
         texture_slot.texture_coords = 'NORMAL'
-        texture_slot.texture = bpy.data.textures.new(name=self.__material.name + '_sph', type='IMAGE')
-        texture_slot.texture.image = self.__load_image(filepath)
+        texture_slot.texture = self.__load_texture(filepath)
+        texture_slot.texture.use_alpha = texture_slot.texture.image.use_alpha = False
         self.update_sphere_texture_type()
         return texture_slot
 
@@ -127,21 +152,11 @@ class FnMaterial(object):
         Returns:
             bpy.types.MaterialTextureSlot object
         """
-        try:
-            texture_slot = self.__material.texture_slots[self.TOON_TEX_SLOT]
-            if texture_slot.texture.image.filepath != filepath:
-                texture_slot.texture.image = self.__load_image(filepath)
-                texture_slot.texture.image.use_alpha = False
-            return texture_slot
-        except:
-            pass
-
         texture_slot = self.__material.texture_slots.create(self.TOON_TEX_SLOT)
         texture_slot.texture_coords = 'NORMAL'
         texture_slot.blend_type = 'MULTIPLY'
-        texture_slot.texture = bpy.data.textures.new(name=self.__material.name + '_toon', type='IMAGE')
-        texture_slot.texture.image = self.__load_image(filepath)
-        texture_slot.texture.image.use_alpha = False
+        texture_slot.texture = self.__load_texture(filepath)
+        texture_slot.texture.use_alpha = texture_slot.texture.image.use_alpha = False
         texture_slot.texture.extension = 'EXTEND'
         return texture_slot
 

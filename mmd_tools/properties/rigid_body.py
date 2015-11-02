@@ -3,14 +3,15 @@
 from bpy.types import PropertyGroup
 from bpy.props import StringProperty, IntProperty, BoolVectorProperty, EnumProperty, FloatVectorProperty
 
-from mmd_tools.core import rigid_body, model
+from mmd_tools.core import rigid_body
 
 def _updateCollisionGroup(prop, context):
-    materials = prop.id_data.data.materials
+    obj = prop.id_data
+    materials = obj.data.materials
     if len(materials) == 0:
-        materials.append(model.RigidBodyMaterial.getMaterial(prop.collision_group_number))
+        materials.append(rigid_body.RigidBodyMaterial.getMaterial(prop.collision_group_number))
     else:
-        materials[0] = model.RigidBodyMaterial.getMaterial(prop.collision_group_number)
+        obj.material_slots[0].material = rigid_body.RigidBodyMaterial.getMaterial(prop.collision_group_number)
 
 class MMDRigidBody(PropertyGroup):
     name_j = StringProperty(

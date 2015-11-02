@@ -46,7 +46,6 @@ class ImportPmx(Operator, ImportHelper):
 
     scale = bpy.props.FloatProperty(name='Scale', default=0.2)
     renameBones = bpy.props.BoolProperty(name='Rename bones', default=True)
-    ignore_non_collision_groups = bpy.props.BoolProperty(name='Ignore  non collision groups', default=False)
     use_mipmap = bpy.props.BoolProperty(name='use MIP maps for UV textures', default=True)
     sph_blend_factor = bpy.props.FloatProperty(name='influence of .sph textures', default=1.0)
     spa_blend_factor = bpy.props.FloatProperty(name='influence of .spa textures', default=1.0)
@@ -67,7 +66,6 @@ class ImportPmx(Operator, ImportHelper):
                     filepath=self.filepath,
                     scale=self.scale,
                     rename_LR_bones=self.renameBones,
-                    ignore_non_collision_groups=self.ignore_non_collision_groups,
                     use_mipmap=self.use_mipmap,
                     sph_blend_factor=self.sph_blend_factor,
                     spa_blend_factor=self.spa_blend_factor
@@ -78,7 +76,6 @@ class ImportPmx(Operator, ImportHelper):
                     filepath=self.filepath,
                     scale=self.scale,
                     rename_LR_bones=self.renameBones,
-                    ignore_non_collision_groups=self.ignore_non_collision_groups,
                     use_mipmap=self.use_mipmap,
                     sph_blend_factor=self.sph_blend_factor,
                     spa_blend_factor=self.spa_blend_factor
@@ -109,6 +106,10 @@ class ImportVmd(Operator, ImportHelper):
     scale = bpy.props.FloatProperty(name='Scale', default=0.2)
     margin = bpy.props.IntProperty(name='Margin', default=5, min=0)
     update_scene_settings = bpy.props.BoolProperty(name='Update scene settings', default=True)
+
+    @classmethod
+    def poll(cls, context):
+        return len(context.selected_objects) > 0
 
     def execute(self, context):
         active_object = context.active_object

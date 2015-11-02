@@ -132,6 +132,7 @@ class MaterialMorphData(PropertyGroup):
 
     material_id = IntProperty(
         name='Material ID',
+        default=-1,
         )
 
     diffuse_color = FloatVectorProperty(

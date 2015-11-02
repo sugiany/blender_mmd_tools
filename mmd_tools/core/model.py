@@ -444,8 +444,7 @@ class Model:
         bone.name = new_bone_name
 
     def build(self):
-        rigidbody_world_enabled = bpy.context.scene.rigidbody_world.enabled
-        bpy.context.scene.rigidbody_world.enabled = False
+        rigidbody_world_enabled = rigid_body.setRigidBodyWorldEnabled(False)
         if self.__root.mmd_root.is_built:
             self.clean()
         logging.info('****************************************')
@@ -456,11 +455,10 @@ class Model:
         self.buildJoints()
         self.__postBuild()
         self.__root.mmd_root.is_built = True
-        bpy.context.scene.rigidbody_world.enabled = rigidbody_world_enabled
+        rigid_body.setRigidBodyWorldEnabled(rigidbody_world_enabled)
 
     def clean(self):
-        rigidbody_world_enabled = bpy.context.scene.rigidbody_world.enabled
-        bpy.context.scene.rigidbody_world.enabled = False
+        rigidbody_world_enabled = rigid_body.setRigidBodyWorldEnabled(False)
 
         pose_bones = []
         arm = self.armature()
@@ -509,8 +507,11 @@ class Model:
             with bpyutils.edit_object(arm):
                 pass # XXX update armature only
 
-        self.rootObject().mmd_root.is_built = False
-        bpy.context.scene.rigidbody_world.enabled = rigidbody_world_enabled
+        mmd_root = self.rootObject().mmd_root
+        if mmd_root.show_temporary_objects:
+            mmd_root.show_temporary_objects = False
+        mmd_root.is_built = False
+        rigid_body.setRigidBodyWorldEnabled(rigidbody_world_enabled)
 
     def __restoreTransforms(self, obj):
         for attr in ('location', 'rotation_euler'):
@@ -788,40 +789,3 @@ class Model:
             fnBone.pose_bone = bone
             fnBone.apply_additional_transformation()
 
-
-class RigidBodyMaterial:
-    COLORS = [
-        0x7fddd4,
-        0xf0e68c,
-        0xee82ee,
-        0xffe4e1,
-        0x8feeee,
-        0xadff2f,
-        0xfa8072,
-        0x9370db,
-
-        0x40e0d0,
-        0x96514d,
-        0x5a964e,
-        0xe6bfab,
-        0xd3381c,
-        0x165e83,
-        0x701682,
-        0x828216,
-        ]
-    @classmethod
-    def getMaterial(cls, number):
-        number = int(number)
-        material_name = 'mmd_tools_rigid_%d'%(number)
-        if material_name not in bpy.data.materials:
-            mat = bpy.data.materials.new(material_name)
-            color = cls.COLORS[number]
-            mat.diffuse_color = [((0xff0000 & color) >> 16) / float(255), ((0x00ff00 & color) >> 8) / float(255), (0x0000ff & color) / float(255)]
-            mat.diffuse_intensity = 1
-            mat.specular_intensity = 0
-            mat.alpha = 0.5
-            mat.use_transparency = True
-            mat.use_shadeless = True
-        else:
-            mat = bpy.data.materials[material_name]
-        return mat

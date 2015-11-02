@@ -52,14 +52,11 @@ class PMXImporter:
         self.__rigidsSetObj = None
         self.__jointsSetObj = None
 
-        self.__vertexTable = None
         self.__vertexGroupTable = None
         self.__textureTable = None
 
         self.__boneTable = []
         self.__rigidTable = []
-        self.__nonCollisionJointTable = None
-        self.__jointTable = []
         self.__materialTable = []
         self.__imageTable = {}
 
@@ -352,7 +349,6 @@ class PMXImporter:
 
 
     def __importJoints(self):
-        self.__jointTable = []
         for joint in self.__model.joints:
             loc = mathutils.Vector(joint.location) * self.TO_BLE_MATRIX * self.__scale
             rot = mathutils.Vector(joint.rotation) * self.TO_BLE_MATRIX * -1
@@ -373,7 +369,6 @@ class PMXImporter:
                 spring_angular = mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX,
                 )
             obj.hide = True
-            self.__jointTable.append(obj)
             self.__jointObjGroup.objects.link(obj)
 
 
@@ -434,8 +429,6 @@ class PMXImporter:
                 amount = self.__sph_blend_factor
             if i.sphere_texture != -1 and amount != 0.0:
                 texture_slot = fnMat.create_sphere_texture(self.__textureTable[i.sphere_texture])
-                if isinstance(texture_slot.texture.image, bpy.types.Image):
-                    texture_slot.texture.image.use_alpha = False
                 texture_slot.diffuse_color_factor = amount
 
     def __importFaces(self):
@@ -590,7 +583,6 @@ class PMXImporter:
             self.__model = pmx.load(args['filepath'])
 
         self.__scale = args.get('scale', 1.0)
-        self.__ignoreNonCollisionGroups = args.get('ignore_non_collision_groups', True)
         self.__use_mipmap = args.get('use_mipmap', True)
         self.__sph_blend_factor = args.get('sph_blend_factor', 1.0)
         self.__spa_blend_factor = args.get('spa_blend_factor', 1.0)
