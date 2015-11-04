@@ -815,10 +815,17 @@ class __PmxExporter:
         if root is not None:
             self.__model.name = root.mmd_root.name
             self.__model.name_e = root.mmd_root.name_e
+            txt = bpy.data.texts.get(root.mmd_root.comment_text, None)
+            if txt:
+                self.__model.comment = txt.as_string().replace('\n', '\r\n')
+            txt = bpy.data.texts.get(root.mmd_root.comment_e_text, None)
+            if txt:
+                self.__model.comment_e = txt.as_string().replace('\n', '\r\n')
             if len(root.mmd_root.uv_morphs) == 0:
                 self.__vertex_index_map = {} # no need to create the map
 
-        self.__model.comment = 'exported by mmd_tools'
+        self.__model.comment += '\r\nexported by mmd_tools'
+        self.__model.comment_e += '\r\nexported by mmd_tools'
 
         meshes = args.get('meshes', [])
         self.__armature = args.get('armature', None)

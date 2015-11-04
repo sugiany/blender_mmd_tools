@@ -38,6 +38,9 @@ class MMDModelObjectPanel(_PanelBase, Panel):
         c.prop(root.mmd_root, 'name')
         c.prop(root.mmd_root, 'name_e')
         c.prop(root.mmd_root, 'scale')
+        c = layout.column()
+        c.prop_search(root.mmd_root, 'comment_text', search_data=bpy.data, search_property='texts')
+        c.prop_search(root.mmd_root, 'comment_e_text', search_data=bpy.data, search_property='texts')
 
 
 class MMDRigidPanel(_PanelBase, Panel):

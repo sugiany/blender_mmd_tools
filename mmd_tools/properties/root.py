@@ -195,6 +195,16 @@ class MMDRoot(PropertyGroup):
         default='',
         )
 
+    comment_text = StringProperty(
+        name='Comment',
+        default='',
+        )
+
+    comment_e_text = StringProperty(
+        name='Comment (English)',
+        default='',
+        )
+
     show_meshes = BoolProperty(
         name='Show Meshes',
         update=_toggleVisibilityOfMeshes,

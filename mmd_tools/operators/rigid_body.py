@@ -83,11 +83,6 @@ class AddRigidBody(Operator):
             mmd_root.show_rigid_bodies = True
         utils.selectAObject(rigid)
 
-        if 'mmd_tools.'+mmd_root.name+'_all' in bpy.data.groups.keys(): # Add Rigid to allObjectsGroup
-            bpy.data.groups['mmd_tools.'+mmd_root.name+'_all'].objects.link(rigid)
-        if 'mmd_tools.'+mmd_root.name+'_rigids' in bpy.data.groups.keys(): # Add Rigid to RigidsGroup
-            bpy.data.groups['mmd_tools.'+mmd_root.name+'_rigids'].objects.link(rigid)
-            
         return { 'FINISHED' }
         
     def invoke(self, context, event):
@@ -177,8 +172,8 @@ class AddJoint(Operator):
                 rigid_b = rigid_b,
                 maximum_location = [0, 0, 0],
                 minimum_location = [0, 0, 0],
-                maximum_rotation = [0, 0, 0],
-                minimum_rotation = [0, 0, 0],
+                maximum_rotation = [math.pi/4]*3,
+                minimum_rotation = [-math.pi/4]*3,
                 spring_linear = [0, 0, 0],
                 spring_angular = [0, 0, 0],
                 )
@@ -186,10 +181,6 @@ class AddJoint(Operator):
             mmd_root.show_joints = True
         utils.selectAObject(joint)
 
-        if 'mmd_tools.'+mmd_root.name+'_all' in bpy.data.groups.keys(): # Add Joint to allGroup
-            bpy.data.groups['mmd_tools.'+mmd_root.name+'_all'].objects.link(joint)
-        if 'mmd_tools.'+mmd_root.name+'_joints' in bpy.data.groups.keys(): # Add Joint to joints group
-            bpy.data.groups['mmd_tools.'+mmd_root.name+'_joints'].objects.link(joint)
         return { 'FINISHED' }
     
 class RemoveJoint(Operator):

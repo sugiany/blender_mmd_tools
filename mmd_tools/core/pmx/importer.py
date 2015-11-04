@@ -62,13 +62,6 @@ class PMXImporter:
 
         self.__materialFaceCountTable = None
 
-        # object groups
-        self.__allObjGroup = None    # a group which contains all objects created for the target model by mmd_tools.
-        self.__mainObjGroup = None    # a group which contains armature and mesh objects.
-        self.__rigidObjGroup = None  # a group which contains objects of rigid bodies imported from a pmx model.
-        self.__jointObjGroup = None  # a group which contains objects of joints imported from a pmx model.
-        self.__tempObjGroup = None   # a group which contains temporary objects.
-
     @staticmethod
     def flipUV_V(uv):
         u, v = uv
@@ -87,6 +80,15 @@ class PMXImporter:
         """
         pmxModel = self.__model
         self.__rig = mmd_model.Model.create(pmxModel.name, pmxModel.name_e, self.__scale)
+        mmd_root = self.__rig.rootObject().mmd_root
+        txt = bpy.data.texts.new(pmxModel.name+'_comment')
+        txt.from_string(pmxModel.comment.replace('\r', ''))
+        txt.current_line_index = 0
+        mmd_root.comment_text = txt.name
+        txt = bpy.data.texts.new(pmxModel.name+'_comment_e')
+        txt.from_string(pmxModel.comment_e.replace('\r', ''))
+        txt.current_line_index = 0
+        mmd_root.comment_e_text = txt.name
 
         mesh = bpy.data.meshes.new(name=pmxModel.name)
         self.__meshObj = bpy.data.objects.new(name=pmxModel.name+'_mesh', object_data=mesh)
@@ -95,19 +97,6 @@ class PMXImporter:
         self.__armObj = self.__rig.armature()
         self.__armObj.hide = True
         self.__meshObj.parent = self.__armObj
-
-    def __createGroups(self):
-        pmxModel = self.__model
-        self.__mainObjGroup = bpy.data.groups.new(name='mmd_tools.' + pmxModel.name)
-        logging.debug('Create main group: %s', self.__mainObjGroup.name)
-        self.__allObjGroup = bpy.data.groups.new(name='mmd_tools.' + pmxModel.name + '_all')
-        logging.debug('Create all group: %s', self.__allObjGroup.name)
-        self.__rigidObjGroup = bpy.data.groups.new(name='mmd_tools.' + pmxModel.name + '_rigids')
-        logging.debug('Create rigid group: %s', self.__rigidObjGroup.name)
-        self.__jointObjGroup = bpy.data.groups.new(name='mmd_tools.' + pmxModel.name + '_joints')
-        logging.debug('Create joint group: %s', self.__jointObjGroup.name)
-        self.__tempObjGroup = bpy.data.groups.new(name='mmd_tools.' + pmxModel.name + '_temp')
-        logging.debug('Create temporary group: %s', self.__tempObjGroup.name)
 
     def __importVertexGroup(self):
         self.__vertexGroupTable = []
@@ -225,9 +214,6 @@ class PMXImporter:
         ikConst = self.__rig.create_ik_constraint(ik_bone, target_bone)
         ikConst.iterations = pmx_bone.loopCount
         ikConst.chain_count = len(pmx_bone.ik_links)
-        if pmx_bone.isRotatable and not pmx_bone.isMovable :
-            ikConst.use_location = pmx_bone.isMovable
-            ikConst.use_rotation = pmx_bone.isRotatable
         for i in pmx_bone.ik_links:
             if i.maximumAngle is not None:
                 bone = pose_bones[i.target]
@@ -342,7 +328,6 @@ class PMXImporter:
                 bone = None if rigid.bone == -1 or rigid.bone is None else self.__boneTable[rigid.bone].name,
                 )
             obj.hide = True
-            self.__rigidObjGroup.objects.link(obj)
             self.__rigidTable.append(obj)
 
         logging.debug('Finished importing rigid bodies in %f seconds.', time.time() - start_time)
@@ -363,13 +348,12 @@ class PMXImporter:
                 rigid_b = self.__rigidTable[joint.dest_rigid],
                 maximum_location = mathutils.Vector(joint.maximum_location) * self.TO_BLE_MATRIX * self.__scale,
                 minimum_location = mathutils.Vector(joint.minimum_location) * self.TO_BLE_MATRIX * self.__scale,
-                maximum_rotation = mathutils.Vector(joint.maximum_rotation) * self.TO_BLE_MATRIX * -1,
-                minimum_rotation = mathutils.Vector(joint.minimum_rotation) * self.TO_BLE_MATRIX * -1,
+                maximum_rotation = mathutils.Vector(joint.minimum_rotation) * self.TO_BLE_MATRIX * -1,
+                minimum_rotation = mathutils.Vector(joint.maximum_rotation) * self.TO_BLE_MATRIX * -1,
                 spring_linear = mathutils.Vector(joint.spring_constant) * self.TO_BLE_MATRIX,
                 spring_angular = mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX,
                 )
             obj.hide = True
-            self.__jointObjGroup.objects.link(obj)
 
 
     def __importMaterials(self):
@@ -596,7 +580,6 @@ class PMXImporter:
 
         start_time = time.time()
 
-        self.__createGroups()
         self.__createObjects()
 
         self.__importVertices()
@@ -618,10 +601,6 @@ class PMXImporter:
 
         self.__addArmatureModifier(self.__meshObj, self.__armObj)
         self.__meshObj.data.update()
-
-        for i in [self.__rigidObjGroup.objects, self.__jointObjGroup.objects, self.__tempObjGroup.objects]:
-            for j in i:
-                self.__allObjGroup.objects.link(j)
 
         #bpy.context.scene.gravity[2] = -9.81 * 10 * self.__scale
         self.__rig.applyAdditionalTransformConstraints()

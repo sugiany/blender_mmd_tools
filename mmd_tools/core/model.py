@@ -285,13 +285,13 @@ class Model:
         rbc.limit_lin_y_lower = min_loc[1]
         rbc.limit_lin_z_lower = min_loc[2]
 
-        rbc.limit_ang_x_upper = min_rot[0]
-        rbc.limit_ang_y_upper = min_rot[1]
-        rbc.limit_ang_z_upper = min_rot[2]
+        rbc.limit_ang_x_upper = max_rot[0]
+        rbc.limit_ang_y_upper = max_rot[1]
+        rbc.limit_ang_z_upper = max_rot[2]
 
-        rbc.limit_ang_x_lower = max_rot[0]
-        rbc.limit_ang_y_lower = max_rot[1]
-        rbc.limit_ang_z_lower = max_rot[2]
+        rbc.limit_ang_x_lower = min_rot[0]
+        rbc.limit_ang_y_lower = min_rot[1]
+        rbc.limit_ang_z_lower = min_rot[2]
 
         obj.mmd_joint.spring_linear = spring_linear
         obj.mmd_joint.spring_angular = spring_angular
