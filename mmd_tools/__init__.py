@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import logging
 import bpy
 from bpy.types import AddonPreferences
 from bpy.props import StringProperty
@@ -37,6 +38,7 @@ bl_info= {
 #     if "auto_scene_setup" in locals():
 #         imp.reload(auto_scene_setup)
 
+logging.basicConfig(format='%(message)s')
 
 def addon_preferences(attrname, default=None):
     addon = bpy.context.user_preferences.addons.get(__name__, None)

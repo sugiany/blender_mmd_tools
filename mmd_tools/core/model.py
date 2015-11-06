@@ -450,15 +450,21 @@ class Model:
         logging.info('****************************************')
         logging.info(' Build rig')
         logging.info('****************************************')
+        start_time = time.time()
         self.__preBuild()
         self.buildRigids()
         self.buildJoints()
         self.__postBuild()
+        logging.info(' Finished building in %f seconds.', time.time() - start_time)
         self.__root.mmd_root.is_built = True
         rigid_body.setRigidBodyWorldEnabled(rigidbody_world_enabled)
 
     def clean(self):
         rigidbody_world_enabled = rigid_body.setRigidBodyWorldEnabled(False)
+        logging.info('****************************************')
+        logging.info(' Clean rig')
+        logging.info('****************************************')
+        start_time = time.time()
 
         pose_bones = []
         arm = self.armature()
@@ -510,6 +516,7 @@ class Model:
         mmd_root = self.rootObject().mmd_root
         if mmd_root.show_temporary_objects:
             mmd_root.show_temporary_objects = False
+        logging.info(' Finished cleaning in %f seconds.', time.time() - start_time)
         mmd_root.is_built = False
         rigid_body.setRigidBodyWorldEnabled(rigidbody_world_enabled)
 
@@ -586,11 +593,17 @@ class Model:
             rigid_obj.rigid_body.kinematic = False
 
         if int(rigid.type) == rigid_body.MODE_STATIC:
-            if arm is not None and bone_name != '':
+            if target_bone:
                 relation.mute = False
                 relation.inverse_matrix = mathutils.Matrix(target_bone.bone.matrix_local).inverted()
+                fake_child = self.__fake_parent_map.get(rigid_obj, None)
+                if fake_child:
+                    m = target_bone.matrix * target_bone.bone.matrix_local.inverted()
+                    t, r, s = (m * fake_child.matrix_local).decompose()
+                    fake_child.location = t
+                    fake_child.rotation_euler = r.to_euler(fake_child.rotation_mode)
 
-        if int(rigid.type) in [rigid_body.MODE_DYNAMIC, rigid_body.MODE_DYNAMIC_BONE] and arm is not None and target_bone is not None:
+        if int(rigid.type) in [rigid_body.MODE_DYNAMIC, rigid_body.MODE_DYNAMIC_BONE] and target_bone:
             m = target_bone.matrix * target_bone.bone.matrix_local.inverted()
             t, r, s = (m * rigid_obj.matrix_local).decompose()
             rigid_obj.location = t

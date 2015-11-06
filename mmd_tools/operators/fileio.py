@@ -57,9 +57,7 @@ class ImportPmx(Operator, ImportHelper):
         logger.setLevel(self.log_level)
         if self.save_log:
             handler = log_handler(self.log_level, filepath=self.filepath + '.mmd_tools.import.log')
-        else:
-            handler = log_handler(self.log_level)
-        logger.addHandler(handler)
+            logger.addHandler(handler)
         try:
             if re.search('\.pmd', self.filepath, flags=re.I):
                 pmd_importer.import_pmd(
@@ -84,7 +82,8 @@ class ImportPmx(Operator, ImportHelper):
             logging.error(traceback.format_exc())
             self.report({'ERROR'}, str(e))
         finally:
-            logger.removeHandler(handler)
+            if self.save_log:
+                logger.removeHandler(handler)
 
         return {'FINISHED'}
 
@@ -214,9 +213,7 @@ class ExportPmx(Operator, ExportHelper):
         logger.setLevel(self.log_level)
         if self.save_log:
             handler = log_handler(self.log_level, filepath=self.filepath + '.mmd_tools.export.log')
-        else:
-            handler = log_handler(self.log_level)
-        logger.addHandler(handler)
+            logger.addHandler(handler)
 
         root = mmd_model.Model.findRoot(context.active_object)
         rig = mmd_model.Model(root)
@@ -233,7 +230,8 @@ class ExportPmx(Operator, ExportHelper):
                 copy_textures=self.copy_textures,
                 )
         finally:
-            logger.removeHandler(handler)
+            if self.save_log:
+                logger.removeHandler(handler)
 
         active_object.select = True
         context.scene.objects.active = active_object

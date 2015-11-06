@@ -551,6 +551,16 @@ class PMXImporter:
         armModifier.object = armObj
         armModifier.use_vertex_groups = True
 
+    def __assignCustomNormals(self):
+        mesh = self.__meshObj.data
+        if not hasattr(mesh, 'has_custom_normals'):
+            logging.info(' * No support for custom normals!!')
+            return
+        logging.info('Setting custom normals!!')
+        custom_normals = [(mathutils.Vector(v.normal).xzy).normalized() for v in self.__model.vertices]
+        mesh.normals_split_custom_set_from_vertices(custom_normals)
+        mesh.use_auto_smooth = True
+
     def __renameLRBones(self):
         pose_bones = self.__armObj.pose.bones
         for i in pose_bones:
@@ -601,6 +611,7 @@ class PMXImporter:
 
         self.__addArmatureModifier(self.__meshObj, self.__armObj)
         self.__meshObj.data.update()
+        self.__assignCustomNormals()
 
         #bpy.context.scene.gravity[2] = -9.81 * 10 * self.__scale
         self.__rig.applyAdditionalTransformConstraints()

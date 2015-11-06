@@ -33,6 +33,8 @@ def _toggleUseToonTexture(self, context):
     use_toon = self.use_toon_texture
     for i in rig.meshes():
         for m in i.data.materials:
+            if m is None:
+                continue
             toon_tex_slot = m.texture_slots[FnMaterial.TOON_TEX_SLOT]
             if toon_tex_slot:
                 toon_tex_slot.use = use_toon
