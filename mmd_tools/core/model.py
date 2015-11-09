@@ -477,6 +477,8 @@ class Model:
                 track_to_bone_map[const.target] = i
                 i.constraints.remove(const)
 
+        self.__removeChildrenOfTemporaryGroupObject() # for speeding up only
+
         for i in self.temporaryObjects():
             if i.mmd_type in ['NON_COLLISION_CONSTRAINT', 'SPRING_GOAL', 'SPRING_CONSTRAINT']:
                 bpy.context.scene.objects.unlink(i)
@@ -520,6 +522,27 @@ class Model:
         mmd_root.is_built = False
         rigid_body.setRigidBodyWorldEnabled(rigidbody_world_enabled)
 
+    def __removeChildrenOfTemporaryGroupObject(self):
+        try:
+            bpy.ops.object.mode_set(mode='OBJECT')
+        except Exception:
+            pass
+        for i in bpy.context.selected_objects:
+            i.select = False
+        layer_index = list(bpy.context.scene.layers).index(True)
+        tmp_grp_obj = self.temporaryGroupObject()
+        total_cnt = len(bpy.data.objects)
+        tmp_cnt = len(tmp_grp_obj.children)
+        logging.debug(' Removing %d children of temporary group object', tmp_cnt)
+        start_time = time.time()
+        for i in tmp_grp_obj.children:
+            i.hide_select = i.hide = False
+            i.select = i.layers[layer_index] = True
+        assert(len(bpy.context.selected_objects) == tmp_cnt)
+        bpy.ops.object.delete()
+        assert(len(bpy.data.objects) == total_cnt - tmp_cnt)
+        logging.debug('   - Done in %f seconds.', time.time() - start_time)
+
     def __restoreTransforms(self, obj):
         for attr in ('location', 'rotation_euler'):
             attr_name = '__backup_%s__'%attr
@@ -537,6 +560,7 @@ class Model:
         self.__fake_parent_map = {}
         self.__rigid_body_matrix_map = {}
 
+        no_parents = []
         for i in self.rigidBodies():
             self.__backupTransforms(i)
             self.__rigid_body_matrix_map[i] = i.matrix_local.copy()
@@ -552,18 +576,23 @@ class Model:
                         if c.type == 'IK':
                             c.mute = True
                 else:
-                    self.__fake_parent_map[i] = None
+                    no_parents.append(i)
 
+        parented = []
         for i in self.joints():
             self.__backupTransforms(i)
             rbc = i.rigid_body_constraint
-            if rbc.object2 in self.__fake_parent_map:
-                if rbc.object1 not in self.__fake_parent_map:
-                    self.__fake_parent_map[rbc.object2] = rbc.object1
+            obj1, obj2 = rbc.object1, rbc.object2
+            if obj2 in no_parents:
+                if obj1 not in no_parents and obj2 not in parented:
+                    self.__fake_parent_map.setdefault(obj1, []).append(obj2)
+                    parented.append(obj2)
+            elif obj1 in no_parents:
+                if obj1 not in parented:
+                    self.__fake_parent_map.setdefault(obj2, []).append(obj1)
+                    parented.append(obj1)
 
-        t = self.__fake_parent_map.values()
-        assert(None not in t and len(t) == len(frozenset(t)))
-        self.__fake_parent_map = {v:k for k,v in self.__fake_parent_map.items()}
+        #assert(len(no_parents) == len(parented))
 
     def __postBuild(self):
         self.__fake_parent_map = None
@@ -579,68 +608,73 @@ class Model:
         assert(rigid_obj.mmd_type == 'RIGID_BODY')
 
         rigid = rigid_obj.mmd_rigid
+        rigid_type = int(rigid.type)
         relation = rigid_obj.constraints['mmd_tools_rigid_parent']
         arm = relation.target
         bone_name = relation.subtarget
-        target_bone = None
-        if arm is not None and bone_name != '':
-            target_bone = arm.pose.bones[bone_name]
-            assert('mmd_tools_rigid_track' not in target_bone.constraints)
 
-        if int(rigid.type) == rigid_body.MODE_STATIC:
+        if rigid_type == rigid_body.MODE_STATIC:
             rigid_obj.rigid_body.kinematic = True
         else:
             rigid_obj.rigid_body.kinematic = False
 
-        if int(rigid.type) == rigid_body.MODE_STATIC:
-            if target_bone:
+        if arm is not None and bone_name != '':
+            target_bone = arm.pose.bones[bone_name]
+            assert('mmd_tools_rigid_track' not in target_bone.constraints)
+
+            if rigid_type == rigid_body.MODE_STATIC:
                 relation.mute = False
                 relation.inverse_matrix = mathutils.Matrix(target_bone.bone.matrix_local).inverted()
-                fake_child = self.__fake_parent_map.get(rigid_obj, None)
-                if fake_child:
+                fake_children = self.__fake_parent_map.get(rigid_obj, None)
+                if fake_children:
                     m = target_bone.matrix * target_bone.bone.matrix_local.inverted()
-                    t, r, s = (m * fake_child.matrix_local).decompose()
-                    fake_child.location = t
-                    fake_child.rotation_euler = r.to_euler(fake_child.rotation_mode)
+                    for fake_child in fake_children:
+                        logging.debug('  - fake_child: %s', fake_child.name)
+                        t, r, s = (m * fake_child.matrix_local).decompose()
+                        fake_child.location = t
+                        fake_child.rotation_euler = r.to_euler(fake_child.rotation_mode)
 
-        if int(rigid.type) in [rigid_body.MODE_DYNAMIC, rigid_body.MODE_DYNAMIC_BONE] and target_bone:
-            m = target_bone.matrix * target_bone.bone.matrix_local.inverted()
-            t, r, s = (m * rigid_obj.matrix_local).decompose()
-            rigid_obj.location = t
-            rigid_obj.rotation_euler = r.to_euler(rigid_obj.rotation_mode)
-            fake_child = self.__fake_parent_map.get(rigid_obj, None)
-            if fake_child:
-                t, r, s = (m * fake_child.matrix_local).decompose()
-                fake_child.location = t
-                fake_child.rotation_euler = r.to_euler(fake_child.rotation_mode)
+            elif rigid_type in [rigid_body.MODE_DYNAMIC, rigid_body.MODE_DYNAMIC_BONE]:
+                m = target_bone.matrix * target_bone.bone.matrix_local.inverted()
+                t, r, s = (m * rigid_obj.matrix_local).decompose()
+                rigid_obj.location = t
+                rigid_obj.rotation_euler = r.to_euler(rigid_obj.rotation_mode)
+                fake_children = self.__fake_parent_map.get(rigid_obj, None)
+                if fake_children:
+                    for fake_child in fake_children:
+                        logging.debug('  - fake_child: %s', fake_child.name)
+                        t, r, s = (m * fake_child.matrix_local).decompose()
+                        fake_child.location = t
+                        fake_child.rotation_euler = r.to_euler(fake_child.rotation_mode)
 
-            empty = bpy.data.objects.new(
-                'mmd_bonetrack',
-                None)
-            bpy.context.scene.objects.link(empty)
-            empty.location = target_bone.tail
-            empty.empty_draw_size = 0.1
-            empty.empty_draw_type = 'ARROWS'
-            empty.mmd_type = 'TRACK_TARGET'
-            empty.hide = True
-            #empty.parent = self.temporaryGroupObject()
+                empty = bpy.data.objects.new(
+                    'mmd_bonetrack',
+                    None)
+                bpy.context.scene.objects.link(empty)
+                empty.location = target_bone.tail
+                empty.empty_draw_size = 0.1
+                empty.empty_draw_type = 'ARROWS'
+                empty.mmd_type = 'TRACK_TARGET'
+                empty.hide = True
+                #empty.parent = self.temporaryGroupObject()
 
-            rigid_obj.mmd_rigid.bone = relation.subtarget
-            rigid_obj.constraints.remove(relation)
+                rigid_obj.mmd_rigid.bone = relation.subtarget
+                rigid_obj.constraints.remove(relation)
 
-            bpyutils.setParent(empty, rigid_obj)
-            empty.select = False
-            empty.hide = True
+                bpyutils.setParent(empty, rigid_obj)
+                empty.select = False
+                empty.hide = True
 
-            const = target_bone.constraints.new('DAMPED_TRACK')
-            const.mute = True
-            const.name='mmd_tools_rigid_track'
-            const.target = empty
+                const = target_bone.constraints.new('DAMPED_TRACK')
+                const.mute = True
+                const.name='mmd_tools_rigid_track'
+                const.target = empty
 
-        t=rigid_obj.hide
-        with bpyutils.select_object(rigid_obj):
-            bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-        rigid_obj.hide = t
+        if rigid_obj.scale != mathutils.Vector((1,1,1)):
+            t = rigid_obj.hide
+            with bpyutils.select_object(rigid_obj):
+                bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+            rigid_obj.hide = t
 
         rigid_obj.rigid_body.collision_shape = rigid.shape
 
