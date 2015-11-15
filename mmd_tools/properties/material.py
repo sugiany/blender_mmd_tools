@@ -10,6 +10,9 @@ from mmd_tools.core import material
 from mmd_tools.core.material import FnMaterial
 
 
+def _updateShininess(prop, context):
+    FnMaterial(prop.id_data).update_shininess()
+
 def _updateSphereMapType(prop, context):
     FnMaterial(prop.id_data).update_sphere_texture_type()
 
@@ -65,7 +68,8 @@ class MMDMaterial(PropertyGroup):
         min=0,
         max=500,
         step=100.0,
-        default=0.0,
+        default=50.0,
+        update=_updateShininess,
         )
 
     is_double_sided = BoolProperty(

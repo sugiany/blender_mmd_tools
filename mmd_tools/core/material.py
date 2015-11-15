@@ -175,6 +175,16 @@ class FnMaterial(object):
         self.remove_texture(self.TOON_TEX_SLOT)
 
 
+    def update_shininess(self):
+        mat = self.__material
+        mmd_mat = mat.mmd_material
+        shininess = mmd_mat.shininess
+        mat.specular_hardness = shininess
+        if shininess > 0:
+            mat.specular_intensity = 0.5
+        else:
+            mat.specular_intensity = 0
+
     def update_drop_shadow(self):
         pass
 

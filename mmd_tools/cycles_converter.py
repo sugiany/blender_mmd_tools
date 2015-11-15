@@ -140,6 +140,9 @@ def convertToCyclesShader(obj):
             if i.material.alpha < 1.0:
                 alpha_shader.inputs[1].default_value = i.material.alpha
 
+        if 'Material Output' not in i.material.node_tree.nodes:
+            o = i.material.node_tree.nodes.new('ShaderNodeOutputMaterial')
+            o.name = 'Material Output'
         i.material.node_tree.links.new(i.material.node_tree.nodes['Material Output'].inputs['Surface'], outplug)
         i.material.node_tree.nodes['Material Output'].location.x = shader.location.x + 500
         i.material.node_tree.nodes['Material Output'].location.y = shader.location.y - 150

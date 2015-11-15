@@ -620,7 +620,6 @@ class Model:
 
         if arm is not None and bone_name != '':
             target_bone = arm.pose.bones[bone_name]
-            assert('mmd_tools_rigid_track' not in target_bone.constraints)
 
             if rigid_type == rigid_body.MODE_STATIC:
                 relation.mute = False
@@ -647,6 +646,7 @@ class Model:
                         fake_child.location = t
                         fake_child.rotation_euler = r.to_euler(fake_child.rotation_mode)
 
+                assert('mmd_tools_rigid_track' not in target_bone.constraints)
                 empty = bpy.data.objects.new(
                     'mmd_bonetrack',
                     None)
@@ -702,7 +702,7 @@ class Model:
             bpy.ops.rigidbody.constraint_add(type='GENERIC')
         rb = ncc_obj.rigid_body_constraint
         rb.disable_collisions = True
-        
+        assert(ncc_obj.select and len(bpy.context.selected_objects) == 1)
         last_selected = ncc_objs = [ncc_obj]
         while len(ncc_objs) < total_len:
             bpy.ops.object.duplicate()

@@ -498,6 +498,7 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
         row = c.row(align=True)
         row.label('UV Offsets (%d)'%len(morph.data))
         row.prop(morph, 'uv_index')
+        return
         row = c.row()
         row.template_list(
             "UL_UVMorphOffsets", "",

@@ -463,7 +463,6 @@ class Model:
             logging.debug('  Movable: %s', str(b.isMovable))
             logging.debug('  Visible: %s', str(b.visible))
             logging.debug('  Controllable: %s', str(b.isControllable))
-            logging.debug('  Edge: %s', str(m.enabled_toon_edge))
             logging.debug('  Additional Location: %s', str(b.hasAdditionalRotate))
             logging.debug('  Additional Rotation: %s', str(b.hasAdditionalRotate))
             if b.additionalTransform is not None:

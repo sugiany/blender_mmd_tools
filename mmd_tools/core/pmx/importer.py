@@ -369,7 +369,6 @@ class PMXImporter:
             mat.diffuse_color = i.diffuse[0:3]
             mat.alpha = i.diffuse[3]
             mat.specular_color = i.specular
-            mat.specular_hardness = i.shininess
             if mat.alpha < 1.0 or mat.specular_alpha < 1.0 or i.texture != -1:
                 mat.use_transparency = True
                 mat.transparency_method = 'Z_TRANSPARENCY'
@@ -425,7 +424,7 @@ class PMXImporter:
             bf = mesh.tessfaces[i]
             bf.vertices_raw = list(f) + [0]
             bf.use_smooth = True
-            face_count = 0
+
             uv = uvLayer.data[i]
             uv.uv1 = self.flipUV_V(pmxModel.vertices[f[0]].uv)
             uv.uv2 = self.flipUV_V(pmxModel.vertices[f[1]].uv)
@@ -603,8 +602,8 @@ class PMXImporter:
         self.__importGroupMorphs()
         self.__importVertexMorphs()
         self.__importBoneMorphs()
-        self.__importUVMorphs()
         self.__importMaterialMorphs()
+        self.__importUVMorphs()
 
         if args.get('rename_LR_bones', False):
             self.__renameLRBones()
