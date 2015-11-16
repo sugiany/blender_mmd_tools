@@ -523,18 +523,20 @@ class Model:
         rigid_body.setRigidBodyWorldEnabled(rigidbody_world_enabled)
 
     def __removeChildrenOfTemporaryGroupObject(self):
+        tmp_grp_obj = self.temporaryGroupObject()
+        tmp_cnt = len(tmp_grp_obj.children)
+        if tmp_cnt == 0:
+            return
+        logging.debug(' Removing %d children of temporary group object', tmp_cnt)
+        start_time = time.time()
+        total_cnt = len(bpy.data.objects)
+        layer_index = list(bpy.context.scene.layers).index(True)
         try:
             bpy.ops.object.mode_set(mode='OBJECT')
         except Exception:
             pass
         for i in bpy.context.selected_objects:
             i.select = False
-        layer_index = list(bpy.context.scene.layers).index(True)
-        tmp_grp_obj = self.temporaryGroupObject()
-        total_cnt = len(bpy.data.objects)
-        tmp_cnt = len(tmp_grp_obj.children)
-        logging.debug(' Removing %d children of temporary group object', tmp_cnt)
-        start_time = time.time()
         for i in tmp_grp_obj.children:
             i.hide_select = i.hide = False
             i.select = i.layers[layer_index] = True

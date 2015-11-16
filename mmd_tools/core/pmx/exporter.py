@@ -17,21 +17,20 @@ import mmd_tools.core.model as mmd_model
 
 
 class _Vertex:
-    def __init__(self, co, groups, normal, offsets, old_index):
+    def __init__(self, co, groups, offsets, old_index):
         self.co = copy.deepcopy(co)
         self.groups = copy.copy(groups) # [(group_number, weight), ...]
-        self.normal = copy.deepcopy(normal)
         self.offsets = copy.deepcopy(offsets)
         self.old_index = old_index # used for exporting uv morphs
         self.index = None
         self.uv = None
+        self.normal = None
 
 class _Face:
-    def __init__(self, vertices, normal):
+    def __init__(self, vertices):
         ''' Temporary Face Class
         '''
         self.vertices = copy.copy(vertices)
-        self.normal = copy.deepcopy(normal)
 
 class _Mesh:
     def __init__(self, mesh_data, material_faces, shape_key_names, vertex_group_names, materials):
@@ -97,7 +96,7 @@ class __PmxExporter:
 
                     pv = pmx.Vertex()
                     pv.co = list(v.co)
-                    pv.normal = v.normal * -1
+                    pv.normal = v.normal
                     pv.uv = self.flipUV_V(v.uv)
 
                     t = len(v.groups)
@@ -713,26 +712,85 @@ class __PmxExporter:
 
 
     @staticmethod
-    def __convertFaceUVToVertexUV(vert_index, uv, vertices_map):
+    def __convertFaceUVToVertexUV(vert_index, uv, normal, vertices_map):
         vertices = vertices_map[vert_index]
         for i in vertices:
             if i.uv is None:
                 i.uv = uv
+                i.normal = normal
                 return i
-            elif (i.uv[0] - uv[0])**2 + (i.uv[1] - uv[1])**2 < 0.0001:
+            elif (i.uv[0] - uv[0])**2 + (i.uv[1] - uv[1])**2 < 0.0001 and (normal - i.normal).length < 0.01:
                 return i
         n = copy.deepcopy(i)
         n.uv = uv
+        n.normal = normal
         vertices.append(n)
         return n
 
     @staticmethod
-    def __triangulate(mesh):
+    def __triangulate(mesh, custom_normals):
         bm = bmesh.new()
         bm.from_mesh(mesh)
-        bmesh.ops.triangulate(bm, faces=bm.faces)
-        bm.to_mesh(mesh)
+
+        is_triangulated = True
+        face_verts_to_loop_id_map = {}
+
+        loop_id = 0
+        for f in bm.faces:
+            vert_to_loop_id = face_verts_to_loop_id_map.setdefault(f, {})
+            if is_triangulated and len(f.verts) != 3:
+                is_triangulated = False
+            for v in f.verts:
+                vert_to_loop_id[v] = loop_id
+                loop_id += 1
+
+        loop_normals = None
+        if is_triangulated:
+            loop_normals = custom_normals
+        else:
+            face_map = bmesh.ops.triangulate(bm, faces=bm.faces, quad_method=1, ngon_method=1)['face_map']
+            logging.debug(' - Remapping custom normals...')
+            loop_normals = []
+            for f in bm.faces:
+                vert_to_loop_id = face_verts_to_loop_id_map[face_map.get(f, f)]
+                for v in f.verts:
+                    loop_normals.append(custom_normals[vert_to_loop_id[v]])
+            logging.debug('   - Done (faces:%d)', len(bm.faces))
+            bm.to_mesh(mesh)
+            face_map.clear()
+        face_verts_to_loop_id_map.clear()
         bm.free()
+
+        assert(len(loop_normals) == len(mesh.loops))
+        return loop_normals
+
+    @staticmethod
+    def __get_normals(mesh, matrix):
+        custom_normals = None
+        if hasattr(mesh, 'has_custom_normals'):
+            logging.debug(' - Calculating normals split...')
+            mesh.calc_normals_split()
+            custom_normals = [(matrix * l.normal).normalized() for l in mesh.loops]
+            mesh.free_normals_split()
+        elif mesh.use_auto_smooth:
+            logging.debug(' - Calculating normals split (angle:%f)...', mesh.auto_smooth_angle)
+            mesh.calc_normals_split(mesh.auto_smooth_angle)
+            custom_normals = [(matrix * l.normal).normalized() for l in mesh.loops]
+            mesh.free_normals_split()
+        else:
+            logging.debug(' - Calculating normals...')
+            mesh.calc_normals()
+            #custom_normals = [(matrix * mesh.vertices[l.vertex_index].normal).normalized() for l in mesh.loops]
+            custom_normals = []
+            for f in mesh.polygons:
+                if f.use_smooth:
+                    for v in f.vertices:
+                        custom_normals.append((matrix * mesh.vertices[v].normal).normalized())
+                else:
+                    for v in f.vertices:
+                        custom_normals.append((matrix * f.normal).normalized())
+        logging.debug('   - Done (polygons:%d)', len(mesh.polygons))
+        return custom_normals
 
     def __loadMeshData(self, meshObj):
         shape_key_weights = []
@@ -742,10 +800,17 @@ class __PmxExporter:
 
         vertex_group_names = list(map(lambda x: x.name, meshObj.vertex_groups))
 
+        pmx_matrix = self.TO_PMX_MATRIX * meshObj.matrix_world * self.__scale
+        sx, sy, sz = meshObj.matrix_world.to_scale()
+        normal_matrix = pmx_matrix.to_3x3()
+        if not (sx == sy == sz):
+            invert_scale_matrix = mathutils.Matrix([[1.0/sx,0,0], [0,1.0/sy,0], [0,0,1.0/sz]])
+            normal_matrix *= invert_scale_matrix # reset the scale of meshObj.matrix_world
+            normal_matrix *= invert_scale_matrix # the scale transform of normals
+
         base_mesh = meshObj.to_mesh(bpy.context.scene, True, 'PREVIEW', False)
-        base_mesh.transform(meshObj.matrix_world)
-        base_mesh.transform(self.TO_PMX_MATRIX*self.__scale)
-        self.__triangulate(base_mesh)
+        loop_normals = self.__triangulate(base_mesh, self.__get_normals(base_mesh, normal_matrix))
+        base_mesh.transform(pmx_matrix)
         base_mesh.update(calc_tessface=True)
 
         has_uv_morphs = self.__vertex_index_map is None
@@ -757,7 +822,6 @@ class __PmxExporter:
             base_vertices[v.index] = [_Vertex(
                 v.co,
                 list([(x.group, x.weight) for x in v.groups if x.weight > 0]),
-                v.normal,
                 {},
                 v.index if has_uv_morphs else None)]
 
@@ -767,8 +831,7 @@ class __PmxExporter:
             shape_key_names.append(i.name)
             i.value = 1.0
             mesh = meshObj.to_mesh(bpy.context.scene, True, 'PREVIEW', False)
-            mesh.transform(meshObj.matrix_world)
-            mesh.transform(self.TO_PMX_MATRIX*self.__scale)
+            mesh.transform(pmx_matrix)
             mesh.update(calc_tessface=True)
             for key in base_vertices.keys():
                 base = base_vertices[key][0]
@@ -785,13 +848,13 @@ class __PmxExporter:
         for face, uv in zip(base_mesh.tessfaces, base_mesh.tessface_uv_textures.active.data):
             if len(face.vertices) != 3:
                 raise Exception
-            v1 = self.__convertFaceUVToVertexUV(face.vertices[0], uv.uv1, base_vertices)
-            v2 = self.__convertFaceUVToVertexUV(face.vertices[1], uv.uv2, base_vertices)
-            v3 = self.__convertFaceUVToVertexUV(face.vertices[2], uv.uv3, base_vertices)
+            idx = face.index * 3
+            n1, n2, n3 = loop_normals[idx:idx+3]
+            v1 = self.__convertFaceUVToVertexUV(face.vertices[0], uv.uv1, n1, base_vertices)
+            v2 = self.__convertFaceUVToVertexUV(face.vertices[1], uv.uv2, n2, base_vertices)
+            v3 = self.__convertFaceUVToVertexUV(face.vertices[2], uv.uv3, n3, base_vertices)
 
-            t = _Face(
-                [v1, v2, v3],
-                face.normal)
+            t = _Face([v1, v2, v3])
             if face.material_index not in materials:
                 materials[face.material_index] = []
             materials[face.material_index].append(t)

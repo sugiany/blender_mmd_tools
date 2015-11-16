@@ -114,7 +114,7 @@ class PMXImporter:
             bv = mesh.vertices[i]
 
             bv.co = mathutils.Vector(pv.co) * self.TO_BLE_MATRIX * self.__scale
-            bv.normal = pv.normal
+            #bv.normal = pv.normal # no effect
 
             if isinstance(pv.weight.weights, pmx.BoneWeightSDEF):
                 self.__vertexGroupTable[pv.weight.bones[0]].add(index=[i], weight=pv.weight.weights.weight, type='REPLACE')

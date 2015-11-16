@@ -621,11 +621,13 @@ class ViewUVMorph(Operator):
 
             if len(morph.data) > 0:
                 uv_id_map = dict([(i, []) for i in range(len(mesh.vertices))])
-                uv_id = 0
-                for f in mesh.polygons:
-                    for vertex_id in f.vertices:
-                        uv_id_map[vertex_id].append(uv_id)
-                        uv_id += 1
+                #uv_id = 0
+                #for f in mesh.polygons:
+                #    for vertex_id in f.vertices:
+                #        uv_id_map[vertex_id].append(uv_id)
+                #        uv_id += 1
+                for uv_id, l in enumerate(mesh.loops):
+                    uv_id_map[l.vertex_index].append(uv_id)
 
                 base_uv_data = mesh.uv_layers.active.data
                 temp_uv_data = mesh.uv_layers[uv_tex.name].data
@@ -792,9 +794,10 @@ class ApplyUVMorph(Operator):
             base_uv_data = base_uv_layers[morph.uv_index].data
             temp_uv_data = mesh.uv_layers.active.data
 
-            uv_vertices = []
-            for f in mesh.polygons:
-                uv_vertices.extend(f.vertices)
+            #uv_vertices = []
+            #for f in mesh.polygons:
+            #    uv_vertices.extend(f.vertices)
+            uv_vertices = [l.vertex_index for l in mesh.loops]
 
             for bv in mesh.vertices:
                 if not bv.select:
