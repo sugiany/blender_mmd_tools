@@ -53,7 +53,7 @@ class MMDMaterial(PropertyGroup):
         )
 
     ambient_color = FloatVectorProperty(
-        name='Ambient',
+        name='Ambient Color',
         subtype='COLOR',
         size=3,
         min=0,

@@ -362,13 +362,14 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
         data = morph.data[morph.active_material_data]
         c_mat = col.column(align=True)
         c_mat.prop_search(data, 'material', meshObj.data, 'materials')
-         
-        if "_temp" in data.material or data.material not in meshObj.data.materials:
+
+        base_mat_name = data.material
+        if "_temp" in base_mat_name or base_mat_name not in meshObj.data.materials:
             c = col.column(align=True)
             c.label('This is not a valid base material', icon='ERROR')
             return
-         
-        work_mat = meshObj.data.materials.get(data.material + "_temp", None) # Temporary material to edit this offset (and see a live preview)
+
+        work_mat = meshObj.data.materials.get(base_mat_name + "_temp", None) # Temporary material to edit this offset (and see a live preview)
         if work_mat is None:
             c = col.column(align=True)
             row = c.row(align=True)
@@ -380,23 +381,19 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             row = c.row()
             row.prop(data, 'offset_type')
             row = c.row()
-            row.prop(data, 'diffuse_color')
+            row.column(align=True).prop(data, 'diffuse_color', expand=True, slider=True)
+            c1 = row.column(align=True)
+            c1.prop(data, 'specular_color', expand=True, slider=True)
+            c1.prop(data, 'shininess', slider=True)
+            row.column(align=True).prop(data, 'ambient_color', expand=True, slider=True)
             row = c.row()
-            row.prop(data, 'specular_color')
+            row.column(align=True).prop(data, 'edge_color', expand=True, slider=True)
             row = c.row()
-            row.prop(data, 'shininess')
+            row.prop(data, 'edge_weight', slider=True)
             row = c.row()
-            row.prop(data, 'ambient_color')
-            row = c.row()
-            row.prop(data, 'edge_color')
-            row = c.row()
-            row.prop(data, 'edge_weight')
-            row = c.row()
-            row.prop(data, 'texture_factor')
-            row = c.row()
-            row.prop(data, 'sphere_texture_factor')
-            row = c.row()
-            row.prop(data, 'toon_texture_factor')
+            row.column(align=True).prop(data, 'texture_factor', expand=True, slider=True)
+            row.column(align=True).prop(data, 'sphere_texture_factor', expand=True, slider=True)
+            row.column(align=True).prop(data, 'toon_texture_factor', expand=True, slider=True)
         else:
             c_mat.enabled = False
             c = col.column(align=True)
@@ -409,27 +406,21 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             row.prop(data, 'offset_type')
             row = c.row()
             row.prop(work_mat, 'diffuse_color')
-            row = c.row()
-            row.label('Diffuse Alpha:')
-            row.prop(work_mat, 'alpha')
+            row.prop(work_mat, 'alpha', slider=True)
             row = c.row()
             row.prop(work_mat, 'specular_color') 
-            row = c.row()
-            row.label('Shininess:')
-            row.prop(work_mat.mmd_material, 'shininess')
+            row.prop(work_mat.mmd_material, 'shininess', slider=True)
             row = c.row()
             row.prop(work_mat.mmd_material, 'ambient_color')
+            row.label() # for alignment only
             row = c.row()
             row.prop(work_mat.mmd_material, 'edge_color')
+            row.prop(work_mat.mmd_material, 'edge_weight', slider=True)
             row = c.row()
-            row.prop(work_mat.mmd_material, 'edge_weight')
-            row = c.row()
-            row.prop(data, 'texture_factor')
-            row = c.row()
-            row.prop(data, 'sphere_texture_factor')
-            row = c.row()
-            row.prop(data, 'toon_texture_factor')
-            
+            row.column(align=True).prop(data, 'texture_factor', expand=True, slider=True)
+            row.column(align=True).prop(data, 'sphere_texture_factor', expand=True, slider=True)
+            row.column(align=True).prop(data, 'toon_texture_factor', expand=True, slider=True)
+
     def _draw_bone_data(self, context, rig, col, morph):
         armature = rig.armature()
         if armature is None:

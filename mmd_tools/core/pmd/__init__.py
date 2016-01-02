@@ -304,10 +304,10 @@ class Joint:
         self.location = fs.readVector(3)
         self.rotation = fs.readVector(3)
 
-        self.maximum_location = fs.readVector(3)
         self.minimum_location = fs.readVector(3)
-        self.maximum_rotation = fs.readVector(3)
+        self.maximum_location = fs.readVector(3)
         self.minimum_rotation = fs.readVector(3)
+        self.maximum_rotation = fs.readVector(3)
 
         self.spring_constant = fs.readVector(3)
         self.spring_rotation_constant = fs.readVector(3)

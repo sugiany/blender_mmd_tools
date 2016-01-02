@@ -37,16 +37,13 @@ class MMDMaterialPanel(Panel):
         c = col.column()
         r = c.row()
         r.prop(material, 'diffuse_color')
-        r = c.row()
-        r.label('Diffuse Alpha:')
-        r.prop(material, 'alpha')
-        r = c.row()
-        r.prop(mmd_material, 'ambient_color')
+        r.prop(material, 'alpha', slider=True)
         r = c.row()
         r.prop(material, 'specular_color')
+        r.prop(mmd_material, 'shininess', slider=True)
         r = c.row()
-        r.label('Shininess:')
-        r.prop(mmd_material, 'shininess')
+        r.prop(mmd_material, 'ambient_color')
+        r.label() # for alignment only
 
         col = layout.column(align=True)
         col.label('Shadow:')
@@ -63,9 +60,10 @@ class MMDMaterialPanel(Panel):
         c = col.column()
         r = c.row()
         r.prop(mmd_material, 'enabled_toon_edge')
-        r.prop(mmd_material, 'edge_weight')
         r = c.row()
+        r.active = mmd_material.enabled_toon_edge
         r.prop(mmd_material, 'edge_color')
+        r.prop(mmd_material, 'edge_weight', slider=True)
 
 
 class MMDTexturePanel(Panel):

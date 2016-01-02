@@ -321,10 +321,10 @@ def import_pmd(**kwargs):
         pmx_joint.location = joint.location
         pmx_joint.rotation = joint.rotation
 
-        pmx_joint.maximum_location = joint.minimum_location
-        pmx_joint.minimum_location = joint.maximum_location
-        pmx_joint.maximum_rotation = joint.minimum_rotation
-        pmx_joint.minimum_rotation = joint.maximum_rotation
+        pmx_joint.maximum_location = joint.maximum_location
+        pmx_joint.minimum_location = joint.minimum_location
+        pmx_joint.maximum_rotation = joint.maximum_rotation
+        pmx_joint.minimum_rotation = joint.minimum_rotation
 
         pmx_joint.spring_constant = joint.spring_constant
         pmx_joint.spring_rotation_constant = joint.spring_rotation_constant
