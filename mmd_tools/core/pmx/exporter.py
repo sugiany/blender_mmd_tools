@@ -184,13 +184,13 @@ class __PmxExporter:
         p_mat.comment = mmd_mat.comment
 
         p_mat.vertex_count = num_faces * 3
-        tex_slots = material.texture_slots.values()
-        if tex_slots[FnMaterial.BASE_TEX_SLOT]:
-            tex = tex_slots[FnMaterial.BASE_TEX_SLOT].texture
+        fnMat = FnMaterial(material)
+        tex = fnMat.get_texture()
+        if tex:
             index = self.__exportTexture(tex.image.filepath)
             p_mat.texture = index
-        if tex_slots[FnMaterial.SPHERE_TEX_SLOT]:
-            tex = tex_slots[FnMaterial.SPHERE_TEX_SLOT].texture
+        tex = fnMat.get_sphere_texture()
+        if tex:
             index = self.__exportTexture(tex.image.filepath)
             p_mat.sphere_texture = index
 

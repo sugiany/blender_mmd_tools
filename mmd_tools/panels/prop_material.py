@@ -84,14 +84,14 @@ class MMDTexturePanel(Panel):
 
         layout = self.layout
 
+        fnMat = FnMaterial(material)
 
-        tex_slots = material.texture_slots.values()
         col = layout.column(align=True)
         row = col.row(align=True)
         row.label('Texture:')
         r = row.column(align=True)
-        if tex_slots[FnMaterial.BASE_TEX_SLOT]:
-            tex = tex_slots[FnMaterial.BASE_TEX_SLOT].texture
+        tex = fnMat.get_texture()
+        if tex:
             if tex.type == 'IMAGE' and tex.image:
                 r2 = r.row(align=True)
                 r2.prop(tex.image, 'filepath', text='')
@@ -106,8 +106,8 @@ class MMDTexturePanel(Panel):
         row = col.row(align=True)
         row.label('Sphere Texture:')
         r = row.column(align=True)
-        if tex_slots[FnMaterial.SPHERE_TEX_SLOT]:
-            tex = tex_slots[FnMaterial.SPHERE_TEX_SLOT].texture
+        tex = fnMat.get_sphere_texture()
+        if tex:
             if tex.type == 'IMAGE' and tex.image:
                 r2 = r.row(align=True)
                 r2.prop(tex.image, 'filepath', text='')

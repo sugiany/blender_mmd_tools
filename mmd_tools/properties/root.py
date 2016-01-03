@@ -35,9 +35,17 @@ def _toggleUseToonTexture(self, context):
         for m in i.data.materials:
             if m is None:
                 continue
-            toon_tex_slot = m.texture_slots[FnMaterial.TOON_TEX_SLOT]
-            if toon_tex_slot:
-                toon_tex_slot.use = use_toon
+            FnMaterial(m).use_toon_texture(use_toon)
+
+def _toggleUseSphereTexture(self, context):
+    root = self.id_data
+    rig = mmd_model.Model(root)
+    use_sphere = self.use_sphere_texture
+    for i in rig.meshes():
+        for m in i.data.materials:
+            if m is None:
+                continue
+            FnMaterial(m).use_sphere_texture(use_sphere)
 
 def _toggleVisibilityOfRigidBodies(self, context):
     root = self.id_data
@@ -246,6 +254,12 @@ class MMDRoot(PropertyGroup):
     use_toon_texture = BoolProperty(
         name='Use Toon Texture',
         update=_toggleUseToonTexture,
+        default=True,
+        )
+
+    use_sphere_texture = BoolProperty(
+        name='Use Sphere Texture',
+        update=_toggleUseSphereTexture,
         default=True,
         )
 
