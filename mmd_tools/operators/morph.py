@@ -248,22 +248,24 @@ class ApplyMaterialOffset(Operator):
         work_mat = meshObj.data.materials[base_mat.name+"_temp"]
         base_idx = meshObj.data.materials.find(base_mat.name)
         copy_idx = meshObj.data.materials.find(work_mat.name)
-        
+        base_mmd_mat = base_mat.mmd_material
+        work_mmd_mat = work_mat.mmd_material
+
         for poly in meshObj.data.polygons:
             if poly.material_index == copy_idx:
                 poly.material_index = base_idx
         if mat_data.offset_type == "MULT":
                 
             try:
-                diffuse_offset = divide_vector_components(work_mat.diffuse_color, base_mat.diffuse_color) + [special_division(work_mat.alpha, base_mat.alpha)]
-                specular_offset = divide_vector_components(work_mat.specular_color, base_mat.specular_color)
-                edge_offset = divide_vector_components(work_mat.mmd_material.edge_color, base_mat.mmd_material.edge_color)
+                diffuse_offset = divide_vector_components(work_mmd_mat.diffuse_color, base_mmd_mat.diffuse_color) + [special_division(work_mmd_mat.alpha, base_mmd_mat.alpha)]
+                specular_offset = divide_vector_components(work_mmd_mat.specular_color, base_mmd_mat.specular_color)
+                edge_offset = divide_vector_components(work_mmd_mat.edge_color, base_mmd_mat.edge_color)
                 mat_data.diffuse_color = diffuse_offset
                 mat_data.specular_color = specular_offset
-                mat_data.shininess = special_division(work_mat.mmd_material.shininess, base_mat.mmd_material.shininess)
-                mat_data.ambient_color = divide_vector_components(work_mat.mmd_material.ambient_color, base_mat.mmd_material.ambient_color)
+                mat_data.shininess = special_division(work_mmd_mat.shininess, base_mmd_mat.shininess)
+                mat_data.ambient_color = divide_vector_components(work_mmd_mat.ambient_color, base_mmd_mat.ambient_color)
                 mat_data.edge_color = edge_offset
-                mat_data.edge_weight = special_division(work_mat.mmd_material.edge_weight, base_mat.mmd_material.edge_weight)  
+                mat_data.edge_weight = special_division(work_mmd_mat.edge_weight, base_mmd_mat.edge_weight)
             except ValueError as err:
                 if "Invalid Input:" in str(err):
                     mat_data.offset_type = "ADD" #If there is any 0 division we automatically switch it to type ADD
@@ -271,16 +273,16 @@ class ApplyMaterialOffset(Operator):
                     self.report({ 'ERROR' }, 'An unexpected error happened')                          
                     
         if mat_data.offset_type =="ADD":        
-            diffuse_offset = list(work_mat.diffuse_color - base_mat.diffuse_color) + [work_mat.alpha - base_mat.alpha]
-            specular_offset = list(work_mat.specular_color - base_mat.specular_color)
-            edge_offset = Vector(work_mat.mmd_material.edge_color) - Vector(base_mat.mmd_material.edge_color)
+            diffuse_offset = list(work_mmd_mat.diffuse_color - base_mmd_mat.diffuse_color) + [work_mmd_mat.alpha - base_mmd_mat.alpha]
+            specular_offset = list(work_mmd_mat.specular_color - base_mmd_mat.specular_color)
+            edge_offset = Vector(work_mmd_mat.edge_color) - Vector(base_mmd_mat.edge_color)
             mat_data.diffuse_color = diffuse_offset
             mat_data.specular_color = specular_offset
-            mat_data.shininess = work_mat.mmd_material.shininess - base_mat.mmd_material.shininess
-            mat_data.ambient_color = work_mat.mmd_material.ambient_color - base_mat.mmd_material.ambient_color
+            mat_data.shininess = work_mmd_mat.shininess - base_mmd_mat.shininess
+            mat_data.ambient_color = work_mmd_mat.ambient_color - base_mmd_mat.ambient_color
             mat_data.edge_color = list(edge_offset)
-            mat_data.edge_weight = work_mat.mmd_material.edge_weight - base_mat.mmd_material.edge_weight
-        
+            mat_data.edge_weight = work_mmd_mat.edge_weight - base_mmd_mat.edge_weight
+
         mat = meshObj.data.materials.pop(index=copy_idx)
         bpy.data.materials.remove(mat)
         return { 'FINISHED' }
@@ -312,33 +314,36 @@ class CreateWorkMaterial(Operator):
         for poly in meshObj.data.polygons:
             if poly.material_index == base_idx:
                 poly.material_index = copy_idx
-                
+
+        base_mmd_mat = base_mat.mmd_material
+        work_mmd_mat = work_mat.mmd_material
+
         # Apply the offsets
         if mat_data.offset_type == "MULT":
-            diffuse_offset = multiply_vector_components(base_mat.diffuse_color, mat_data.diffuse_color[0:3])
-            specular_offset = multiply_vector_components(base_mat.specular_color, mat_data.specular_color)
-            edge_offset = multiply_vector_components(base_mat.mmd_material.edge_color, mat_data.edge_color)
-            ambient_offset = multiply_vector_components(base_mat.mmd_material.ambient_color, mat_data.ambient_color)
-            work_mat.diffuse_color = diffuse_offset
-            work_mat.alpha *= mat_data.diffuse_color[3]
-            work_mat.specular_color = specular_offset
-            work_mat.mmd_material.shininess *= mat_data.shininess
-            work_mat.mmd_material.ambient_color = ambient_offset
-            work_mat.mmd_material.edge_color = edge_offset
-            work_mat.mmd_material.edge_weight *= mat_data.edge_weight
+            diffuse_offset = multiply_vector_components(base_mmd_mat.diffuse_color, mat_data.diffuse_color[0:3])
+            specular_offset = multiply_vector_components(base_mmd_mat.specular_color, mat_data.specular_color)
+            edge_offset = multiply_vector_components(base_mmd_mat.edge_color, mat_data.edge_color)
+            ambient_offset = multiply_vector_components(base_mmd_mat.ambient_color, mat_data.ambient_color)
+            work_mmd_mat.diffuse_color = diffuse_offset
+            work_mmd_mat.alpha *= mat_data.diffuse_color[3]
+            work_mmd_mat.specular_color = specular_offset
+            work_mmd_mat.shininess *= mat_data.shininess
+            work_mmd_mat.ambient_color = ambient_offset
+            work_mmd_mat.edge_color = edge_offset
+            work_mmd_mat.edge_weight *= mat_data.edge_weight
         elif mat_data.offset_type == "ADD":
-            diffuse_offset = Vector(base_mat.diffuse_color) + Vector(mat_data.diffuse_color[0:3])
-            specular_offset = Vector(base_mat.specular_color) + Vector(mat_data.specular_color)
-            edge_offset = Vector(base_mat.mmd_material.edge_color) + Vector(mat_data.edge_color)
-            ambient_offset = Vector(base_mat.mmd_material.ambient_color) + Vector(mat_data.ambient_color)
-            work_mat.diffuse_color = list(diffuse_offset)
-            work_mat.alpha += mat_data.diffuse_color[3]
-            work_mat.specular_color = list(specular_offset)
-            work_mat.mmd_material.shininess += mat_data.shininess
-            work_mat.mmd_material.ambient_color = list(ambient_offset)
-            work_mat.mmd_material.edge_color = list(edge_offset)
-            work_mat.mmd_material.edge_weight += mat_data.edge_weight
-        
+            diffuse_offset = Vector(base_mmd_mat.diffuse_color) + Vector(mat_data.diffuse_color[0:3])
+            specular_offset = Vector(base_mmd_mat.specular_color) + Vector(mat_data.specular_color)
+            edge_offset = Vector(base_mmd_mat.edge_color) + Vector(mat_data.edge_color)
+            ambient_offset = Vector(base_mmd_mat.ambient_color) + Vector(mat_data.ambient_color)
+            work_mmd_mat.diffuse_color = list(diffuse_offset)
+            work_mmd_mat.alpha += mat_data.diffuse_color[3]
+            work_mmd_mat.specular_color = list(specular_offset)
+            work_mmd_mat.shininess += mat_data.shininess
+            work_mmd_mat.ambient_color = list(ambient_offset)
+            work_mmd_mat.edge_color = list(edge_offset)
+            work_mmd_mat.edge_weight += mat_data.edge_weight
+
         return { 'FINISHED' }
 class ClearTempMaterials(Operator):
     bl_idname = 'mmd_tools.clear_temp_materials'

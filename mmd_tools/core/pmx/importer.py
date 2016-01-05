@@ -376,6 +376,9 @@ class PMXImporter:
             mmd_mat.name_j = i.name
             mmd_mat.name_e = i.name_e
             mmd_mat.ambient_color = i.ambient
+            mmd_mat.diffuse_color = i.diffuse[0:3]
+            mmd_mat.alpha = i.diffuse[3]
+            mmd_mat.specular_color = i.specular
             mmd_mat.shininess = i.shininess
             mmd_mat.is_double_sided = i.is_double_sided
             mmd_mat.enabled_drop_shadow = i.enabled_drop_shadow
@@ -559,6 +562,7 @@ class PMXImporter:
         custom_normals = [(mathutils.Vector(v.normal).xzy).normalized() for v in self.__model.vertices]
         mesh.normals_split_custom_set_from_vertices(custom_normals)
         mesh.use_auto_smooth = True
+        logging.info('   - Done!!')
 
     def __renameLRBones(self):
         pose_bones = self.__armObj.pose.bones

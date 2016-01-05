@@ -204,6 +204,29 @@ class FnMaterial(object):
         self.__remove_texture(self.__TOON_TEX_SLOT)
 
 
+    def _mixDiffuseAndAmbient(self, mmd_mat):
+        r, g, b = mmd_mat.diffuse_color
+        ar, ag, ab = mmd_mat.ambient_color
+        return [min(1.0,0.5*r+ar), min(1.0,0.5*g+ag), min(1.0,0.5*b+ab)]
+
+    def update_ambient_color(self):
+        self.update_diffuse_color()
+
+    def update_diffuse_color(self):
+        mat = self.__material
+        mmd_mat = mat.mmd_material
+        mat.diffuse_color = self._mixDiffuseAndAmbient(mmd_mat)
+
+    def update_alpha(self):
+        mat = self.__material
+        mmd_mat = mat.mmd_material
+        mat.alpha = mmd_mat.alpha
+
+    def update_specular_color(self):
+        mat = self.__material
+        mmd_mat = mat.mmd_material
+        mat.specular_color = mmd_mat.specular_color
+
     def update_shininess(self):
         mat = self.__material
         mmd_mat = mat.mmd_material
@@ -213,6 +236,11 @@ class FnMaterial(object):
             mat.specular_intensity = 0.5
         else:
             mat.specular_intensity = 0
+
+    def update_is_double_sided(self):
+        mat = self.__material
+        mmd_mat = mat.mmd_material
+        mat.game_settings.use_backface_culling = not mmd_mat.is_double_sided
 
     def update_drop_shadow(self):
         pass
@@ -231,4 +259,22 @@ class FnMaterial(object):
         mmd_mat = mat.mmd_material
         mat.use_shadows = mmd_mat.enabled_self_shadow
         mat.use_transparent_shadows = mmd_mat.enabled_self_shadow
+
+    def update_enabled_toon_edge(self):
+        mat = self.__material
+        if not hasattr(mat, 'line_color'): # freestyle line color
+            return
+        mmd_mat = mat.mmd_material
+        mat.line_color[3] = min(int(mmd_mat.enabled_toon_edge), mmd_mat.edge_color[3])
+
+    def update_edge_color(self):
+        mat = self.__material
+        if not hasattr(mat, 'line_color'): # freestyle line color
+            return
+        mmd_mat = mat.mmd_material
+        r, g, b, a = mmd_mat.edge_color
+        mat.line_color = [r, g, b, min(int(mmd_mat.enabled_toon_edge), a)]
+
+    def update_edge_weight(self):
+        pass
 

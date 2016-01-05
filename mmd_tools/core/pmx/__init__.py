@@ -834,7 +834,7 @@ class Material:
         self.enabled_drop_shadow = True
         self.enabled_self_shadow_map = True
         self.enabled_self_shadow = True
-        self.enabled_toon_edge = True
+        self.enabled_toon_edge = False
 
         self.edge_color = []
         self.edge_size = 1
