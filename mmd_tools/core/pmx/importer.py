@@ -134,7 +134,7 @@ class PMXImporter:
         self.__textureTable = []
         for i in pmxModel.textures:
             name = os.path.basename(i.path.replace('\\', os.path.sep)).split('.')[0]
-            self.__textureTable.append(bpy.path.resolve_ncase(path=i.path))
+            self.__textureTable.append(bpy.path.resolve_ncase(path=i.path.replace('\\', os.path.sep)))
 
     def __createEditBones(self, obj, pmx_bones):
         """ create EditBones from pmx file data.
@@ -244,24 +244,24 @@ class PMXImporter:
             b_bone.mmd_bone.is_visible = pmx_bone.visible
             b_bone.mmd_bone.is_controllable = pmx_bone.isControllable
 
-            if pmx_bone.displayConnection == -1 or pmx_bone.displayConnection == [0.0, 0.0, 0.0]:                
+            if pmx_bone.displayConnection == -1 or pmx_bone.displayConnection == [0.0, 0.0, 0.0]:
                 b_bone.mmd_bone.is_tip = True
                 logging.debug('bone %s is a tip bone', pmx_bone.name)
             elif not isinstance(pmx_bone.displayConnection, int):
                 b_bone.mmd_bone.use_tail_location = True
                 logging.debug('bone %s is using a vector tail', pmx_bone.name)
             else:
-                logging.debug('bone %s is not using a vector tail and is not a tip bone. DisplayConnection: %s', 
+                logging.debug('bone %s is not using a vector tail and is not a tip bone. DisplayConnection: %s',
                               pmx_bone.name, str(pmx_bone.displayConnection))
-                
+
             if pmx_bone.axis is not None and pmx_bone.parent != -1:
                 #The twist bones (type 8 in PMD) are special, without this the tail will not be displayed during export
                 pose_bones[pmx_bone.parent].mmd_bone.use_tail_location = True
-                                
+
             #Movable bones should have a tail too
             if pmx_bone.isMovable and pmx_bone.visible:
                 b_bone.mmd_bone.use_tail_location = True
-            
+
             #Some models don't have correct tail bones, let's try to fix it
             if re.search(u'先$', pmx_bone.name):
                 b_bone.mmd_bone.is_tip = True
@@ -513,8 +513,8 @@ class PMXImporter:
             bone_morph.name_e = morph.name_e
             bone_morph.category = categories.get(morph.category, 'OTHER')
             for morph_data in morph.offsets:
-                data = bone_morph.data.add()    
-                bl_bone = self.__boneTable[morph_data.index]            
+                data = bone_morph.data.add()
+                bl_bone = self.__boneTable[morph_data.index]
                 data.bone = bl_bone.name
                 mat = VMDImporter.makeVMDBoneLocationToBlenderMatrix(bl_bone)
                 data.location = mat * mathutils.Vector(morph_data.location_offset) * self.__scale
