@@ -115,7 +115,7 @@ class ImportVmd(Operator, ImportHelper):
         hidden_obj = []
         for i in context.selected_objects:
             root = mmd_model.Model.findRoot(i)
-            if root:
+            if root == i:
                 rig = mmd_model.Model(root)
                 arm = rig.armature()
                 if arm.hide:

@@ -190,7 +190,7 @@ class MaterialMorphData(PropertyGroup):
     edge_weight = FloatProperty(
         name='Edge Weight',
         soft_min=0,
-        soft_max=100,
+        soft_max=2,
         step=0.1,
         default=0,
         )

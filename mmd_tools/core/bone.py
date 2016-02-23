@@ -50,6 +50,121 @@ class FnBone(object):
     def apply_additional_transformation(self):
         """ create or update constaints to apply additional transformation
         """
+        p_bone = self.__bone
+        if p_bone.is_mmd_shadow_bone:
+            return
+
+        arm = p_bone.id_data
+        mmd_bone = p_bone.mmd_bone
+
+        influence = mmd_bone.additional_transform_influence
+        source_bone = mmd_bone.additional_transform_bone
+        mute_rotation = not mmd_bone.has_additional_rotation
+        mute_location = not mmd_bone.has_additional_location
+
+        mmd_bone.is_additional_transform_dirty = False
+
+        if not source_bone or (mute_rotation and mute_location) or influence == 0:
+            shadow_bones = {}
+            for name in [self.AT_ROTATION_CONSTRAINT_NAME, self.AT_LOCATION_CONSTRAINT_NAME]:
+                c = p_bone.constraints.get(name, None)
+                if c:
+                    p_bone.constraints.remove(c)
+                    shadow_bones['_dummy.' + p_bone.name] = True
+                    shadow_bones['_shadow.' + p_bone.name] = True
+
+            if len(shadow_bones) > 0:
+                with bpyutils.edit_object(arm) as data:
+                    for name in shadow_bones:
+                        b = data.edit_bones.get(name, None)
+                        if b:
+                            data.edit_bones.remove(b)
+            return
+
+        invert = influence < 0
+        influence = abs(influence)
+
+        shadow_bone = self.__get_at_shadow_bone_v2(arm, source_bone)
+
+        if mmd_bone.has_additional_rotation:
+            c = p_bone.constraints.get(self.AT_ROTATION_CONSTRAINT_NAME, None)
+            if c is None:
+                c = p_bone.constraints.new('COPY_ROTATION')
+                c.name = self.AT_ROTATION_CONSTRAINT_NAME
+            c.influence = influence
+            c.target = arm
+            c.subtarget = shadow_bone.name
+            c.target_space = 'LOCAL'
+            c.owner_space = 'LOCAL'
+            if invert:
+                c.invert_x = True
+                c.invert_y = True
+                c.invert_z = True
+
+        if mmd_bone.has_additional_location:
+            c = p_bone.constraints.get(self.AT_LOCATION_CONSTRAINT_NAME, None)
+            if c is None:
+                c = p_bone.constraints.new('COPY_LOCATION')
+                c.name = self.AT_LOCATION_CONSTRAINT_NAME
+            c.influence = influence
+            c.target = arm
+            c.subtarget = shadow_bone.name
+            c.target_space = 'LOCAL'
+            c.owner_space = 'LOCAL'
+            if invert:
+                c.invert_x = True
+                c.invert_y = True
+                c.invert_z = True
+
+    def __get_at_shadow_bone_v2(self, arm, source_bone_name):
+        bone_name = self.__bone.name
+
+        with bpyutils.edit_object(arm) as data:
+            src_bone = data.edit_bones[source_bone_name]
+            bone = data.edit_bones[bone_name]
+
+            dummy_bone_name = '_dummy.' + bone_name
+            dummy = data.edit_bones.get(dummy_bone_name, None)
+            if dummy is None:
+                dummy = data.edit_bones.new(name=dummy_bone_name)
+                dummy.layers = [x == 9 for x in range(len(dummy.layers))]
+            dummy.parent = src_bone
+            dummy.head = src_bone.head
+            dummy.tail = dummy.head + bone.tail - bone.head
+            dummy.roll = bone.roll
+
+            shadow_bone_name = '_shadow.' + bone_name
+            shadow = data.edit_bones.get(shadow_bone_name, None)
+            if shadow is None:
+                shadow = data.edit_bones.new(name=shadow_bone_name)
+                shadow.layers = [x == 8 for x in range(len(shadow.layers))]
+            shadow.parent = src_bone.parent
+            shadow.head = dummy.head
+            shadow.tail = dummy.tail
+            shadow.roll = dummy.roll
+
+        dummy_p_bone = arm.pose.bones[dummy_bone_name]
+        dummy_p_bone.is_mmd_shadow_bone = True
+        dummy_p_bone.mmd_shadow_bone_type = 'DUMMY'
+
+        shadow_p_bone = arm.pose.bones[shadow_bone_name]
+        shadow_p_bone.is_mmd_shadow_bone = True
+        shadow_p_bone.mmd_shadow_bone_type = 'SHADOW'
+
+        if self.AT_DUMMY_CONSTRAINT_NAME not in shadow_p_bone.constraints:
+            c = shadow_p_bone.constraints.new('COPY_TRANSFORMS')
+            c.name = self.AT_DUMMY_CONSTRAINT_NAME
+            c.target = arm
+            c.subtarget = dummy_bone_name
+            c.target_space = 'POSE'
+            c.owner_space = 'POSE'
+
+        return shadow_p_bone
+
+
+    def apply_additional_transformation_bak(self):
+        """ create or update constaints to apply additional transformation
+        """
         mmd_bone = self.__bone.mmd_bone
 
         influence = mmd_bone.additional_transform_influence

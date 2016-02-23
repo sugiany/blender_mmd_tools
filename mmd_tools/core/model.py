@@ -74,8 +74,8 @@ class Model:
         root.mmd_root.name = name
         root.mmd_root.name_e = name_e
         root.mmd_root.scale = scale
-        root.lock_location = [True, True, True]
-        root.lock_rotation = [True, True, True]
+        #root.lock_location = [True, True, True]
+        #root.lock_rotation = [True, True, True]
         root.lock_scale = [True, True, True]
 
         arm = bpy.data.armatures.new(name=name)
@@ -625,7 +625,7 @@ class Model:
 
             if rigid_type == rigid_body.MODE_STATIC:
                 relation.mute = False
-                relation.inverse_matrix = mathutils.Matrix(target_bone.bone.matrix_local).inverted()
+                relation.inverse_matrix = (arm.matrix_world * target_bone.bone.matrix_local).inverted()
                 fake_children = self.__fake_parent_map.get(rigid_obj, None)
                 if fake_children:
                     m = target_bone.matrix * target_bone.bone.matrix_local.inverted()
@@ -653,7 +653,7 @@ class Model:
                     'mmd_bonetrack',
                     None)
                 bpy.context.scene.objects.link(empty)
-                empty.location = target_bone.tail
+                empty.location = arm.matrix_world * target_bone.tail
                 empty.empty_draw_size = 0.1
                 empty.empty_draw_type = 'ARROWS'
                 empty.mmd_type = 'TRACK_TARGET'

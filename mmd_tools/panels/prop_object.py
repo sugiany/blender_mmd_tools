@@ -74,6 +74,10 @@ class MMDRigidPanel(_PanelBase, Panel):
         row = layout.row()
 
         c = row.column()
+        if obj.rigid_body is None:
+            c.operator(bpy.ops.rigidbody.object_add.idname(), icon='MESH_ICOSPHERE')
+            return
+
         c.prop(obj.rigid_body, 'mass')
         c.prop(obj.mmd_rigid, 'collision_group_number')
         c = row.column()

@@ -33,6 +33,7 @@ class MMDCamera:
         bpy.context.scene.objects.link(empty)
 
         cameraObj.parent = empty
+        cameraObj.data.dof_object = empty
         cameraObj.data.sensor_fit = 'VERTICAL'
         cameraObj.location = mathutils.Vector((0,0,0))
         cameraObj.rotation_mode = 'XYZ'

@@ -875,6 +875,9 @@ class __PmxExporter:
         self.__model = pmx.Model()
         self.__model.name = 'test'
         self.__model.name_e = 'test eng'
+        self.__model.comment = 'exported by mmd_tools'
+        self.__model.comment_e = 'exported by mmd_tools'
+
         if root is not None:
             self.__model.name = root.mmd_root.name
             self.__model.name_e = root.mmd_root.name_e
@@ -886,9 +889,6 @@ class __PmxExporter:
                 self.__model.comment_e = txt.as_string().replace('\n', '\r\n')
             if len(root.mmd_root.uv_morphs) == 0:
                 self.__vertex_index_map = {} # no need to create the map
-
-        self.__model.comment += '\r\nexported by mmd_tools'
-        self.__model.comment_e += '\r\nexported by mmd_tools'
 
         meshes = args.get('meshes', [])
         self.__armature = args.get('armature', None)

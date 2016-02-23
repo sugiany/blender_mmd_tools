@@ -125,7 +125,7 @@ class MMDMaterial(PropertyGroup):
     shininess = FloatProperty(
         name='Shininess',
         min=0,
-        max=500,
+        soft_max=512,
         step=100.0,
         default=50.0,
         update=_updateShininess,
@@ -182,6 +182,7 @@ class MMDMaterial(PropertyGroup):
         name='Edge Weight',
         min=0,
         max=100,
+        soft_max=2,
         step=1.0,
         default=0.5,
         update=_updateEdgeWeight,
