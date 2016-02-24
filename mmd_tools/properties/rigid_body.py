@@ -79,6 +79,7 @@ class MMDJoint(PropertyGroup):
 
     spring_linear = FloatVectorProperty(
         name='Spring(Linear)',
+        subtype='XYZ',
         size=3,
         min=0,
         step=0.1,
@@ -86,6 +87,7 @@ class MMDJoint(PropertyGroup):
 
     spring_angular = FloatVectorProperty(
         name='Spring(Angular)',
+        subtype='XYZ',
         size=3,
         min=0,
         step=0.1,

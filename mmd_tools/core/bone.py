@@ -69,9 +69,10 @@ class FnBone(object):
             for name in [self.AT_ROTATION_CONSTRAINT_NAME, self.AT_LOCATION_CONSTRAINT_NAME]:
                 c = p_bone.constraints.get(name, None)
                 if c:
+                    if c.subtarget.startswith('_shadow.'):
+                        shadow_bones[c.subtarget] = True
+                        shadow_bones[c.subtarget.replace('_shadow.', '_dummy.')] = True
                     p_bone.constraints.remove(c)
-                    shadow_bones['_dummy.' + p_bone.name] = True
-                    shadow_bones['_shadow.' + p_bone.name] = True
 
             if len(shadow_bones) > 0:
                 with bpyutils.edit_object(arm) as data:
@@ -86,8 +87,11 @@ class FnBone(object):
 
         shadow_bone = self.__get_at_shadow_bone_v2(arm, source_bone)
 
-        if mmd_bone.has_additional_rotation:
-            c = p_bone.constraints.get(self.AT_ROTATION_CONSTRAINT_NAME, None)
+        c = p_bone.constraints.get(self.AT_ROTATION_CONSTRAINT_NAME, None)
+        if mute_rotation:
+            if c:
+                p_bone.constraints.remove(c)
+        else:
             if c is None:
                 c = p_bone.constraints.new('COPY_ROTATION')
                 c.name = self.AT_ROTATION_CONSTRAINT_NAME
@@ -101,8 +105,11 @@ class FnBone(object):
                 c.invert_y = True
                 c.invert_z = True
 
-        if mmd_bone.has_additional_location:
-            c = p_bone.constraints.get(self.AT_LOCATION_CONSTRAINT_NAME, None)
+        c = p_bone.constraints.get(self.AT_LOCATION_CONSTRAINT_NAME, None)
+        if mute_location:
+            if c:
+                p_bone.constraints.remove(c)
+        else:
             if c is None:
                 c = p_bone.constraints.new('COPY_LOCATION')
                 c.name = self.AT_LOCATION_CONSTRAINT_NAME
@@ -128,6 +135,7 @@ class FnBone(object):
             if dummy is None:
                 dummy = data.edit_bones.new(name=dummy_bone_name)
                 dummy.layers = [x == 9 for x in range(len(dummy.layers))]
+            dummy.use_deform = False
             dummy.parent = src_bone
             dummy.head = src_bone.head
             dummy.tail = dummy.head + bone.tail - bone.head
@@ -138,6 +146,7 @@ class FnBone(object):
             if shadow is None:
                 shadow = data.edit_bones.new(name=shadow_bone_name)
                 shadow.layers = [x == 8 for x in range(len(shadow.layers))]
+            shadow.use_deform = False
             shadow.parent = src_bone.parent
             shadow.head = dummy.head
             shadow.tail = dummy.tail

@@ -23,6 +23,10 @@ class MMDBonePanel(Panel):
             pose_bone = context.active_pose_bone
 
         layout = self.layout
+        if pose_bone.is_mmd_shadow_bone:
+            layout.label('MMD Shadow Bone!', icon='INFO')
+            return
+
         c = layout.column(align=True)
 
         c.label('Information:')
@@ -77,6 +81,10 @@ class MMDBoneATPanel(Panel):
             pose_bone = context.active_pose_bone
 
         layout = self.layout
+        if pose_bone.is_mmd_shadow_bone:
+            layout.label('MMD Shadow Bone!', icon='INFO')
+            return
+
         c = layout.column(align=True)
 
         if pose_bone.mmd_bone.is_additional_transform_dirty:
