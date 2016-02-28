@@ -103,4 +103,4 @@ class MMDBoneATPanel(Panel):
         # else:
         #     c.operator('mmd_tools.bone_add_additional_transform')
 
-        c.prop(pose_bone.mmd_bone, 'additional_transform_influence', text='Influence')
+        c.prop(pose_bone.mmd_bone, 'additional_transform_influence', text='Influence', slider=True)

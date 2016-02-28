@@ -79,6 +79,7 @@ class MMDBone(PropertyGroup):
 
     fixed_axis = FloatVectorProperty(
         name='Fixed Axis',
+        subtype='XYZ',
         size=3,
         default=[0, 0, 0],
         )
@@ -90,12 +91,14 @@ class MMDBone(PropertyGroup):
 
     local_axis_x = FloatVectorProperty(
         name='Local X-Axis',
+        subtype='XYZ',
         size=3,
         default=[1, 0, 0],
         )
 
     local_axis_z = FloatVectorProperty(
         name='Local Z-Axis',
+        subtype='XYZ',
         size=3,
         default=[0, 0, 1],
         )
@@ -132,6 +135,8 @@ class MMDBone(PropertyGroup):
     additional_transform_influence = FloatProperty(
         name='Additional Transform Influence',
         default=1,
+        soft_min=-1,
+        soft_max=1,
         update=_updateMMDBoneAdditionalTransform,
         )
 

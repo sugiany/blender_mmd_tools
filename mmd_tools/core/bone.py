@@ -97,13 +97,12 @@ class FnBone(object):
                 c.name = self.AT_ROTATION_CONSTRAINT_NAME
             c.influence = influence
             c.target = arm
-            c.subtarget = shadow_bone.name
+            c.subtarget = shadow_bone
             c.target_space = 'LOCAL'
             c.owner_space = 'LOCAL'
-            if invert:
-                c.invert_x = True
-                c.invert_y = True
-                c.invert_z = True
+            c.invert_x = invert
+            c.invert_y = invert
+            c.invert_z = invert
 
         c = p_bone.constraints.get(self.AT_LOCATION_CONSTRAINT_NAME, None)
         if mute_location:
@@ -115,13 +114,12 @@ class FnBone(object):
                 c.name = self.AT_LOCATION_CONSTRAINT_NAME
             c.influence = influence
             c.target = arm
-            c.subtarget = shadow_bone.name
+            c.subtarget = shadow_bone
             c.target_space = 'LOCAL'
             c.owner_space = 'LOCAL'
-            if invert:
-                c.invert_x = True
-                c.invert_y = True
-                c.invert_z = True
+            c.invert_x = invert
+            c.invert_y = invert
+            c.invert_z = invert
 
     def __get_at_shadow_bone_v2(self, arm, source_bone_name):
         bone_name = self.__bone.name
@@ -135,22 +133,22 @@ class FnBone(object):
             if dummy is None:
                 dummy = data.edit_bones.new(name=dummy_bone_name)
                 dummy.layers = [x == 9 for x in range(len(dummy.layers))]
-            dummy.use_deform = False
+                dummy.use_deform = False
             dummy.parent = src_bone
             dummy.head = src_bone.head
             dummy.tail = dummy.head + bone.tail - bone.head
-            dummy.roll = bone.roll
+            dummy.align_roll(bone.z_axis)
 
             shadow_bone_name = '_shadow.' + bone_name
             shadow = data.edit_bones.get(shadow_bone_name, None)
             if shadow is None:
                 shadow = data.edit_bones.new(name=shadow_bone_name)
                 shadow.layers = [x == 8 for x in range(len(shadow.layers))]
-            shadow.use_deform = False
+                shadow.use_deform = False
             shadow.parent = src_bone.parent
             shadow.head = dummy.head
             shadow.tail = dummy.tail
-            shadow.roll = dummy.roll
+            shadow.align_roll(bone.z_axis)
 
         dummy_p_bone = arm.pose.bones[dummy_bone_name]
         dummy_p_bone.is_mmd_shadow_bone = True
@@ -168,7 +166,7 @@ class FnBone(object):
             c.target_space = 'POSE'
             c.owner_space = 'POSE'
 
-        return shadow_p_bone
+        return shadow_bone_name
 
 
     def apply_additional_transformation_bak(self):
