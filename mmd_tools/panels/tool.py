@@ -376,7 +376,7 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             row.operator(operators.morph.CreateWorkMaterial.bl_idname)
             row.operator(operators.morph.ClearTempMaterials.bl_idname, text='Clear')
 
-            c = col.column(align=True)
+            c = col.column()
             c.enabled = False # remove this line to allow user to edit directly
             row = c.row()
             row.prop(data, 'offset_type')
@@ -401,7 +401,7 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             row.operator(operators.morph.ApplyMaterialOffset.bl_idname, text='Apply')
             row.operator(operators.morph.ClearTempMaterials.bl_idname, text='Clear')
 
-            c = col.column(align=True)
+            c = col.column()
             row = c.row()
             row.prop(data, 'offset_type')
             row = c.row()

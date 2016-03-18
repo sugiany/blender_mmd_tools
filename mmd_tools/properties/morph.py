@@ -330,8 +330,8 @@ class GroupMorphOffset(PropertyGroup):
     factor = FloatProperty(
         name='Factor',
         description='Factor',
-        min=0,
-        max=1,
+        soft_min=0,
+        soft_max=1,
         precision=3,
         step=0.1,
         default=0

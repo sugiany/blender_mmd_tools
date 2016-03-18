@@ -630,7 +630,7 @@ class Model:
                 if fake_children:
                     m = target_bone.matrix * target_bone.bone.matrix_local.inverted()
                     for fake_child in fake_children:
-                        logging.debug('  - fake_child: %s', fake_child.name)
+                        logging.debug('          - fake_child: %s', fake_child.name)
                         t, r, s = (m * fake_child.matrix_local).decompose()
                         fake_child.location = t
                         fake_child.rotation_euler = r.to_euler(fake_child.rotation_mode)
@@ -643,34 +643,55 @@ class Model:
                 fake_children = self.__fake_parent_map.get(rigid_obj, None)
                 if fake_children:
                     for fake_child in fake_children:
-                        logging.debug('  - fake_child: %s', fake_child.name)
+                        logging.debug('          - fake_child: %s', fake_child.name)
                         t, r, s = (m * fake_child.matrix_local).decompose()
                         fake_child.location = t
                         fake_child.rotation_euler = r.to_euler(fake_child.rotation_mode)
 
-                assert('mmd_tools_rigid_track' not in target_bone.constraints)
-                empty = bpy.data.objects.new(
-                    'mmd_bonetrack',
-                    None)
-                bpy.context.scene.objects.link(empty)
-                empty.location = arm.matrix_world * target_bone.tail
-                empty.empty_draw_size = 0.1
-                empty.empty_draw_type = 'ARROWS'
-                empty.mmd_type = 'TRACK_TARGET'
-                empty.hide = True
-                #empty.parent = self.temporaryGroupObject()
+                if 'mmd_tools_rigid_track' not in target_bone.constraints:
+                    empty = bpy.data.objects.new(
+                        'mmd_bonetrack',
+                        None)
+                    bpy.context.scene.objects.link(empty)
+                    empty.location = arm.matrix_world * target_bone.tail
+                    empty.empty_draw_size = 0.1
+                    empty.empty_draw_type = 'ARROWS'
+                    empty.mmd_type = 'TRACK_TARGET'
+                    empty.hide = True
+                    #empty.parent = self.temporaryGroupObject()
 
-                rigid_obj.mmd_rigid.bone = relation.subtarget
-                rigid_obj.constraints.remove(relation)
+                    rigid_obj.mmd_rigid.bone = relation.subtarget
+                    rigid_obj.constraints.remove(relation)
 
-                bpyutils.setParent(empty, rigid_obj)
-                empty.select = False
-                empty.hide = True
+                    bpyutils.setParent(empty, rigid_obj)
+                    empty.select = False
+                    empty.hide = True
 
-                const = target_bone.constraints.new('DAMPED_TRACK')
-                const.mute = True
-                const.name='mmd_tools_rigid_track'
-                const.target = empty
+                    const = target_bone.constraints.new('DAMPED_TRACK')
+                    const.mute = True
+                    const.name='mmd_tools_rigid_track'
+                    const.target = empty
+                else:
+                    empty = target_bone.constraints['mmd_tools_rigid_track'].target
+                    ori_rigid_obj = empty.parent
+                    if rigid_obj.rigid_body.mass > ori_rigid_obj.rigid_body.mass:
+                        logging.info('        * Bone (%s): change target from [%s] to [%s]',
+                            target_bone.name, ori_rigid_obj.name, rigid_obj.name)
+                        # re-parenting
+                        rigid_obj.mmd_rigid.bone = relation.subtarget
+                        rigid_obj.constraints.remove(relation)
+                        bpyutils.setParent(empty, rigid_obj)
+                        empty.select = False
+                        empty.hide = True
+                        # revert change
+                        const = ori_rigid_obj.constraints.new('CHILD_OF')
+                        const.target = arm
+                        const.subtarget = bone_name
+                        const.name = 'mmd_tools_rigid_parent'
+                        const.mute = True
+                    else:
+                        logging.info('        * Bone (%s): track target [%s]',
+                            target_bone.name, ori_rigid_obj.name)
 
         if rigid_obj.scale != mathutils.Vector((1,1,1)):
             t = rigid_obj.hide
@@ -747,8 +768,7 @@ class Model:
         nonCollisionJointTable = []
         non_collision_pairs = set()
         rigid_object_cnt = len(rigid_objects)
-        for cnt, obj_a in enumerate(rigid_objects):
-            logging.info('%3d/%3d: %s', cnt+1, rigid_object_cnt, obj_a.name)
+        for obj_a in rigid_objects:
             for n, ignore in enumerate(obj_a.mmd_rigid.collision_group_mask):
                 if not ignore:
                     continue
@@ -766,8 +786,8 @@ class Model:
                         if distance < distance_of_ignore_collisions * (self.__getRigidRange(obj_a) + self.__getRigidRange(obj_b)) * 0.5:
                             nonCollisionJointTable.append((obj_a, obj_b))
                     non_collision_pairs.add(pair)
-        for i in rigid_objects:
-            logging.debug(' Updating rigid body %s', i.name)
+        for cnt, i in enumerate(rigid_objects):
+            logging.info('%3d/%3d: Updating rigid body %s', cnt+1, rigid_object_cnt, i.name)
             self.updateRigid(i)
         self.__createNonCollisionConstraint(nonCollisionJointTable)
         return rigid_objects

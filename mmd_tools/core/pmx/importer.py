@@ -237,6 +237,7 @@ class PMXImporter:
         for i, pmx_bone in sorted(enumerate(pmxModel.bones), key=lambda x: x[1].transform_order):
             # variable p_bone renamed to pmx_bone to avoid confusion with Pose Bones
             b_bone = pose_bones[i]
+            b_bone.mmd_bone.name_j = pmx_bone.name
             b_bone.mmd_bone.name_e = pmx_bone.name_e
             b_bone.mmd_bone.transform_order = pmx_bone.transform_order
             b_bone.mmd_bone.is_visible = pmx_bone.visible
@@ -569,7 +570,6 @@ class PMXImporter:
         for i in pose_bones:
             if i.is_mmd_shadow_bone:
                 continue
-            i.mmd_bone.name_j = i.name
             self.__rig.renameBone(i.name, utils.convertNameToLR(i.name))
             # self.__meshObj.vertex_groups[i.mmd_bone.name_j].name = i.name
 

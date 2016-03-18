@@ -232,9 +232,9 @@ class __PmxExporter:
 
         with bpyutils.edit_object(arm) as data:
             for p_bone in sorted_bones:
-                bone = data.edit_bones[p_bone.name]
                 if p_bone.is_mmd_shadow_bone:
                     continue
+                bone = data.edit_bones[p_bone.name]
                 pmx_bone = pmx.Bone()
                 if p_bone.mmd_bone.name_j != '':
                     pmx_bone.name = p_bone.mmd_bone.name_j

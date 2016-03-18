@@ -95,6 +95,7 @@ class FnBone(object):
             if c is None:
                 c = p_bone.constraints.new('COPY_ROTATION')
                 c.name = self.AT_ROTATION_CONSTRAINT_NAME
+            c.use_offset = True
             c.influence = influence
             c.target = arm
             c.subtarget = shadow_bone
@@ -112,6 +113,7 @@ class FnBone(object):
             if c is None:
                 c = p_bone.constraints.new('COPY_LOCATION')
                 c.name = self.AT_LOCATION_CONSTRAINT_NAME
+            c.use_offset = True
             c.influence = influence
             c.target = arm
             c.subtarget = shadow_bone
