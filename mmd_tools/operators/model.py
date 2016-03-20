@@ -57,10 +57,12 @@ class CreateMMDModelRoot(Operator):
     bl_description = ''
     bl_options = {'PRESET'}
 
+    name_j = bpy.props.StringProperty(name='Name', default='New MMD Model')
+    name_e = bpy.props.StringProperty(name='Name(Eng)', default='New MMD Model')
     scale = bpy.props.FloatProperty(name='Scale', default=0.2)
 
     def execute(self, context):
-        rig = mmd_model.Model.create('New MMD Model', 'New MMD Model', self.scale)
+        rig = mmd_model.Model.create(self.name_j, self.name_e, self.scale)
         arm = rig.armature()
         with bpyutils.edit_object(arm) as data:
             bone = data.edit_bones.new(name=u'全ての親')
@@ -68,18 +70,13 @@ class CreateMMDModelRoot(Operator):
             bone.tail = [0.0, 0.0, 1.0*self.scale]
         arm.pose.bones[u'全ての親'].mmd_bone.name_j = u'全ての親'
         arm.pose.bones[u'全ての親'].mmd_bone.name_e = 'Root'
+
+        rig.initialDisplayFrames()
         mmd_root = rig.rootObject().mmd_root
-        frame_root = mmd_root.display_item_frames.add()
-        frame_root.name = 'Root'
-        frame_root.name_e = 'Root'
-        frame_root.is_special = True
+        frame_root = mmd_root.display_item_frames['Root']
         item = frame_root.items.add()
         item.type = 'BONE'
         item.name = arm.data.bones[0].name
-        frame_facial = mmd_root.display_item_frames.add()
-        frame_facial.name = u'表情'
-        frame_facial.name_e = 'Exp'
-        frame_facial.is_special = True
 
         return {'FINISHED'}
 

@@ -97,6 +97,19 @@ class Model:
         else:
             return None
 
+    def initialDisplayFrames(self):
+        frames = self.__root.mmd_root.display_item_frames
+        if len(frames) > 0:
+            frames.clear()
+        frame_root = frames.add()
+        frame_root.name = 'Root'
+        frame_root.name_e = 'Root'
+        frame_root.is_special = True
+        frame_facial = frames.add()
+        frame_facial.name = u'表情'
+        frame_facial.name_e = 'Exp'
+        frame_facial.is_special = True
+
     def createRigidBody(self, **kwargs):
         ''' Create a object for MMD rigid body dynamics.
         ### Parameters ###

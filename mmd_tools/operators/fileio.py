@@ -35,6 +35,21 @@ def log_handler(log_level, filepath=None):
     return handler
 
 
+def _update_types(cls, prop):
+    types = cls.types.copy()
+
+    if 'PHYSICS' in types:
+        types.add('ARMATURE')
+    if 'DISPLAY' in types:
+        types.add('ARMATURE')
+    if 'MORPHS' in types:
+        types.add('ARMATURE')
+        types.add('MESH')
+
+    if types != cls.types:
+        cls.types = types # trigger update
+
+
 class ImportPmx(Operator, ImportHelper):
     bl_idname = 'mmd_tools.import_model'
     bl_label = 'Import Model file (.pmd, .pmx)'
@@ -44,6 +59,20 @@ class ImportPmx(Operator, ImportHelper):
     filename_ext = '.pmx'
     filter_glob = bpy.props.StringProperty(default='*.pmx;*.pmd', options={'HIDDEN'})
 
+    types = bpy.props.EnumProperty(
+        name='Types',
+        description='Select which parts will be imported',
+        options={'ENUM_FLAG'},
+        items = [
+            ('MESH', 'Mesh', '', 1),
+            ('ARMATURE', 'Armature', '', 2),
+            ('PHYSICS', 'Physics', 'Rigidbodies and joints (include Armature)', 4),
+            ('DISPLAY', 'Display', 'Display frames (include Armature)', 8),
+            ('MORPHS', 'Morphs', 'Morphs (include Armature and Mesh)', 16),
+            ],
+        default={'MESH', 'ARMATURE', 'PHYSICS', 'DISPLAY', 'MORPHS',},
+        update=_update_types,
+        )
     scale = bpy.props.FloatProperty(name='Scale', default=0.2)
     renameBones = bpy.props.BoolProperty(name='Rename bones', default=True)
     use_mipmap = bpy.props.BoolProperty(name='use MIP maps for UV textures', default=True)
@@ -62,6 +91,7 @@ class ImportPmx(Operator, ImportHelper):
             if re.search('\.pmd', self.filepath, flags=re.I):
                 pmd_importer.import_pmd(
                     filepath=self.filepath,
+                    types=self.types,
                     scale=self.scale,
                     rename_LR_bones=self.renameBones,
                     use_mipmap=self.use_mipmap,
@@ -72,6 +102,7 @@ class ImportPmx(Operator, ImportHelper):
                 importer = pmx_importer.PMXImporter()
                 importer.execute(
                     filepath=self.filepath,
+                    types=self.types,
                     scale=self.scale,
                     rename_LR_bones=self.renameBones,
                     use_mipmap=self.use_mipmap,

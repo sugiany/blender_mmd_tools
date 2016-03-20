@@ -84,7 +84,7 @@ class MMDMaterial(PropertyGroup):
         max=1,
         precision=3,
         step=0.1,
-        default=[0, 0, 0],
+        default=[0.4, 0.4, 0.4],
         update=_updateAmbientColor,
         )
 

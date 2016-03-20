@@ -49,8 +49,6 @@ class PMXImporter:
         self.__root = None
         self.__armObj = None
         self.__meshObj = None
-        self.__rigidsSetObj = None
-        self.__jointsSetObj = None
 
         self.__vertexGroupTable = None
         self.__textureTable = None
@@ -90,13 +88,14 @@ class PMXImporter:
         txt.current_line_index = 0
         mmd_root.comment_e_text = txt.name
 
-        mesh = bpy.data.meshes.new(name=pmxModel.name)
-        self.__meshObj = bpy.data.objects.new(name=pmxModel.name+'_mesh', object_data=mesh)
-        self.__targetScene.objects.link(self.__meshObj)
-
         self.__armObj = self.__rig.armature()
         self.__armObj.hide = True
+
+    def __createMeshObject(self):
+        model_name = self.__model.name
+        self.__meshObj = bpy.data.objects.new(name=model_name+'_mesh', object_data=bpy.data.meshes.new(name=model_name))
         self.__meshObj.parent = self.__armObj
+        self.__targetScene.objects.link(self.__meshObj)
 
     def __importVertexGroup(self):
         self.__vertexGroupTable = []
@@ -120,7 +119,9 @@ class PMXImporter:
                 self.__vertexGroupTable[pv.weight.bones[0]].add(index=[i], weight=pv.weight.weights.weight, type='REPLACE')
                 self.__vertexGroupTable[pv.weight.bones[1]].add(index=[i], weight=1.0-pv.weight.weights.weight, type='REPLACE')
             elif len(pv.weight.bones) == 1:
-                self.__vertexGroupTable[pv.weight.bones[0]].add(index=[i], weight=1.0, type='REPLACE')
+                bone_index = pv.weight.bones[0]
+                if bone_index >= 0:
+                    self.__vertexGroupTable[bone_index].add(index=[i], weight=1.0, type='REPLACE')
             elif len(pv.weight.bones) == 2:
                 self.__vertexGroupTable[pv.weight.bones[0]].add(index=[i], weight=pv.weight.weights[0], type='REPLACE')
                 self.__vertexGroupTable[pv.weight.bones[1]].add(index=[i], weight=1.0-pv.weight.weights[0], type='REPLACE')
@@ -547,7 +548,6 @@ class PMXImporter:
                     item.morph_type = morph_types[morph.type_index()]
                 else:
                     raise Exception('Unknown display item type.')
-        root.mmd_root.display_item_frames
 
     def __addArmatureModifier(self, meshObj, armObj):
         armModifier = meshObj.modifiers.new(name='Armature', type='ARMATURE')
@@ -579,6 +579,7 @@ class PMXImporter:
         else:
             self.__model = pmx.load(args['filepath'])
 
+        types = args.get('types', set())
         self.__scale = args.get('scale', 1.0)
         self.__use_mipmap = args.get('use_mipmap', True)
         self.__sph_blend_factor = args.get('sph_blend_factor', 1.0)
@@ -595,31 +596,45 @@ class PMXImporter:
 
         self.__createObjects()
 
-        self.__importVertices()
-        self.__importBones()
-        self.__importMaterials()
-        self.__importFaces()
-        self.__importRigids()
-        self.__importJoints()
-        self.__importDisplayFrames()
+        if 'MESH' in types:
+            self.__createMeshObject()
+            self.__importVertices()
+            self.__importMaterials()
+            self.__importFaces()
+            self.__meshObj.data.update()
+            self.__assignCustomNormals()
 
-        self.__importGroupMorphs()
-        self.__importVertexMorphs()
-        self.__importBoneMorphs()
-        self.__importMaterialMorphs()
-        self.__importUVMorphs()
+        if 'ARMATURE' in types:
+            self.__importBones()
+            if args.get('rename_LR_bones', False):
+                self.__renameLRBones()
+            self.__rig.applyAdditionalTransformConstraints()
 
-        if args.get('rename_LR_bones', False):
-            self.__renameLRBones()
+        if 'PHYSICS' in types:
+            self.__importRigids()
+            self.__importJoints()
 
-        self.__addArmatureModifier(self.__meshObj, self.__armObj)
-        self.__meshObj.data.update()
-        self.__assignCustomNormals()
+        if 'DISPLAY' in types:
+            self.__importDisplayFrames()
+        else:
+            self.__rig.initialDisplayFrames()
+
+        if 'MORPHS' in types:
+            self.__importGroupMorphs()
+            self.__importVertexMorphs()
+            self.__importBoneMorphs()
+            self.__importMaterialMorphs()
+            self.__importUVMorphs()
+
+        if self.__meshObj:
+            self.__addArmatureModifier(self.__meshObj, self.__armObj)
 
         #bpy.context.scene.gravity[2] = -9.81 * 10 * self.__scale
-        self.__rig.applyAdditionalTransformConstraints()
         root = self.__rig.rootObject()
-        root.mmd_root.show_meshes = True
+        if 'MESH' not in types:
+            root.mmd_root.show_armature = True
+        else:
+            root.mmd_root.show_meshes = True
         bpy.context.scene.objects.active = root
         root.select = True
 

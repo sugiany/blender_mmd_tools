@@ -62,7 +62,7 @@ class __PmxExporter:
         self.__model = None
         self.__bone_name_table = []
         self.__material_name_table = []
-        self.__vertex_index_map = None # used for exporting uv morphs
+        self.__vertex_index_map = {} # used for exporting uv morphs
 
     @staticmethod
     def flipUV_V(uv):
@@ -792,13 +792,13 @@ class __PmxExporter:
         logging.debug('   - Done (polygons:%d)', len(mesh.polygons))
         return custom_normals
 
-    def __loadMeshData(self, meshObj):
+    def __loadMeshData(self, meshObj, bone_map):
         shape_key_weights = []
         for i in meshObj.data.shape_keys.key_blocks:
             shape_key_weights.append(i.value)
             i.value = 0.0
 
-        vertex_group_names = list(map(lambda x: x.name, meshObj.vertex_groups))
+        vertex_group_names = {i:x.name for i, x in enumerate(meshObj.vertex_groups) if x.name in bone_map}
 
         pmx_matrix = self.TO_PMX_MATRIX * meshObj.matrix_world * self.__scale
         sx, sy, sz = meshObj.matrix_world.to_scale()
@@ -813,7 +813,7 @@ class __PmxExporter:
         base_mesh.transform(pmx_matrix)
         base_mesh.update(calc_tessface=True)
 
-        has_uv_morphs = self.__vertex_index_map is None
+        has_uv_morphs = self.__vertex_index_map is None # currently support for first mesh only
         if has_uv_morphs:
             self.__vertex_index_map = dict([(v.index, []) for v in base_mesh.vertices])
 
@@ -821,7 +821,7 @@ class __PmxExporter:
         for v in base_mesh.vertices:
             base_vertices[v.index] = [_Vertex(
                 v.co,
-                list([(x.group, x.weight) for x in v.groups if x.weight > 0]),
+                [(x.group, x.weight) for x in v.groups if x.weight > 0 and x.group in vertex_group_names],
                 {},
                 v.index if has_uv_morphs else None)]
 
@@ -887,8 +887,8 @@ class __PmxExporter:
             txt = bpy.data.texts.get(root.mmd_root.comment_e_text, None)
             if txt:
                 self.__model.comment_e = txt.as_string().replace('\n', '\r\n')
-            if len(root.mmd_root.uv_morphs) == 0:
-                self.__vertex_index_map = {} # no need to create the map
+            if len(root.mmd_root.uv_morphs) > 0:
+                self.__vertex_index_map = None # has_uv_morphs = True
 
         meshes = args.get('meshes', [])
         self.__armature = args.get('armature', None)
@@ -905,7 +905,7 @@ class __PmxExporter:
 
         mesh_data = []
         for i in meshes:
-            mesh_data.append(self.__loadMeshData(i))
+            mesh_data.append(self.__loadMeshData(i, nameMap))
 
         self.__exportMeshes(mesh_data, nameMap)
         self.__exportVertexMorphs(mesh_data, root)
