@@ -347,6 +347,8 @@ class __PmxExporter:
         arm = self.__armature
         pose_bones = arm.pose.bones
         for bone in pose_bones:
+            if bone.is_mmd_shadow_bone:
+                continue
             for c in bone.constraints:
                 if c.type == 'IK':
                     logging.debug('  Found IK constraint.')
@@ -378,6 +380,8 @@ class __PmxExporter:
         r = None
         min_length = None
         for c in target_bone.children:
+            if c.is_mmd_shadow_bone:
+                continue
             length = (c.head - target_bone.tail).length
             if not min_length or length < min_length:
                 min_length = length
