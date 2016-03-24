@@ -137,8 +137,9 @@ class PMXImporter:
 
         self.__textureTable = []
         for i in pmxModel.textures:
-            name = os.path.basename(i.path.replace('\\', os.path.sep)).split('.')[0]
-            self.__textureTable.append(bpy.path.resolve_ncase(path=i.path))
+            pathFixed = i.path.replace('\\', os.path.sep)
+            name = os.path.basename(pathFixed).split('.')[0]
+            self.__textureTable.append(bpy.path.resolve_ncase(path=pathFixed))
 
     def __createEditBones(self, obj, pmx_bones):
         """ create EditBones from pmx file data.

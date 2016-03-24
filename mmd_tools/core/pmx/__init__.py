@@ -808,7 +808,10 @@ class Texture:
             self.path = os.path.normpath(os.path.join(os.path.dirname(fs.path()), self.path))
 
     def save(self, fs):
-        fs.writeStr(os.path.relpath(self.path, os.path.dirname(fs.path())))
+        relPath = os.path.relpath(self.path, os.path.dirname(fs.path()))
+        relPath = relPath.replace(os.path.sep, '\\') # always save using windows path conventions      
+        logging.info('writing to pmx file the relative texture path: %s', relPath)
+        fs.writeStr(relPath)
 
 class SharedTexture(Texture):
     def __init__(self):

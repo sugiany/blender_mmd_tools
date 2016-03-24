@@ -159,8 +159,11 @@ class __PmxExporter:
         for texture in self.__model.textures:
             path = texture.path
             dest_path = os.path.join(tex_dir, os.path.basename(path))
-            shutil.copyfile(path, dest_path)
-            logging.info('Copy file %s --> %s', path, dest_path)
+            if not os.path.isfile(path):
+                logging.warning('*** skipping texture file which does not exist: %s', path)
+            else:                        
+                shutil.copyfile(path, dest_path)
+                logging.info('Copy file %s --> %s', path, dest_path)
             texture.path = dest_path
 
     def __exportMaterial(self, material, num_faces):
