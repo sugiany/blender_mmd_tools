@@ -129,3 +129,13 @@ def makePmxBoneMap(armObj):
         boneMap[name] = i
     return boneMap
 
+def uniqueName(name, used_names):
+    if name not in used_names:
+        return name
+    count = 1
+    new_name = orig_name = re.sub(r'\.\d{1,}$', '', name)
+    while new_name in used_names:
+        new_name = '%s.%03d'%(orig_name, count)
+        count += 1
+    return new_name
+

@@ -13,6 +13,10 @@ import mmd_tools.core.pmd as pmd
 import mmd_tools.core.pmx as pmx
 
 
+class PMDImporter:
+    def execute(self, **args):
+        import_pmd(**args)
+
 def import_pmd(**kwargs):
     """ Import pmd file
     """

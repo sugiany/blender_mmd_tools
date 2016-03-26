@@ -88,27 +88,19 @@ class ImportPmx(Operator, ImportHelper):
             handler = log_handler(self.log_level, filepath=self.filepath + '.mmd_tools.import.log')
             logger.addHandler(handler)
         try:
-            if re.search('\.pmd', self.filepath, flags=re.I):
-                pmd_importer.import_pmd(
-                    filepath=self.filepath,
-                    types=self.types,
-                    scale=self.scale,
-                    rename_LR_bones=self.renameBones,
-                    use_mipmap=self.use_mipmap,
-                    sph_blend_factor=self.sph_blend_factor,
-                    spa_blend_factor=self.spa_blend_factor
-                    )
-            else:
-                importer = pmx_importer.PMXImporter()
-                importer.execute(
-                    filepath=self.filepath,
-                    types=self.types,
-                    scale=self.scale,
-                    rename_LR_bones=self.renameBones,
-                    use_mipmap=self.use_mipmap,
-                    sph_blend_factor=self.sph_blend_factor,
-                    spa_blend_factor=self.spa_blend_factor
-                    )
+            importer_cls = pmx_importer.PMXImporter
+            if re.search('\.pmd$', self.filepath, flags=re.I):
+                importer_cls = pmd_importer.PMDImporter
+
+            importer_cls().execute(
+                filepath=self.filepath,
+                types=self.types,
+                scale=self.scale,
+                rename_LR_bones=self.renameBones,
+                use_mipmap=self.use_mipmap,
+                sph_blend_factor=self.sph_blend_factor,
+                spa_blend_factor=self.spa_blend_factor,
+                )
         except Exception as e:
             logging.error(traceback.format_exc())
             self.report({'ERROR'}, str(e))

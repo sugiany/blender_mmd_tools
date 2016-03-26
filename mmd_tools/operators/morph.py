@@ -56,18 +56,27 @@ class _AddMorphBase(object):
         )
 
     def _addMorph(self, mmd_root):
-        morphs = getattr(mmd_root, mmd_root.active_morph_type)
+        #morph_type = mmd_root.active_morph_type
+        morph_type = '%ss'%self.bl_rna.identifier[17:]
+        #assert(self.bl_rna.identifier.startswith('MMD_TOOLS_OT_add_'))
+        #print('_addMorph:', self.bl_rna.identifier, morph_type)
+
+        morphs = getattr(mmd_root, morph_type)
         m = morphs.add()
         m.name = self.name_j
         m.name_e = self.name_e
         m.category = self.category
-        mmd_root.active_morph = len(morphs)-1
+        if morph_type == mmd_root.active_morph_type:
+            mmd_root.active_morph = len(morphs)-1
+        self.name_j = m.name # remember current name
 
-        items = mmd_root.display_item_frames[u'表情'].items
+        frame = mmd_root.display_item_frames[u'表情']
+        items = frame.items
         i = items.add()
         i.type = 'MORPH'
         i.name = m.name
-        i.morph_type = mmd_root.active_morph_type
+        i.morph_type = morph_type
+        frame.active_item = len(items)-1
         return m
 
     def invoke(self, context, event):
@@ -133,7 +142,9 @@ class AddVertexMorph(Operator, _AddMorphBase):
             data.shape_key_add(self.name_j)
         idx = len(meshObj.data.shape_keys.key_blocks)-1
         meshObj.active_shape_key_index = idx
+        self.name_j = meshObj.active_shape_key.name
         self._addMorph(mmd_root)
+        meshObj.active_shape_key.name = self.name_j
         return { 'FINISHED' }
 
 class AddMaterialMorph(Operator, _AddMorphBase):

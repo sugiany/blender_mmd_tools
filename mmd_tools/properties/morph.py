@@ -12,6 +12,44 @@ from bpy.props import EnumProperty
 from mmd_tools.core.model import Model as FnModel
 from mmd_tools.core.bone import FnBone
 from mmd_tools.core.material import FnMaterial
+from mmd_tools import utils
+
+
+def _get_name(prop):
+    return prop.get('name', '')
+
+def _set_name(prop, value):
+    mmd_root = prop.id_data.mmd_root
+    #morph_type = mmd_root.active_morph_type
+    morph_type = '%s_morphs'%prop.bl_rna.identifier[:-5].lower()
+    #assert(prop.bl_rna.identifier.endswith('Morph'))
+    #print('_set_name:', prop, value, morph_type)
+    value = utils.uniqueName(value, getattr(mmd_root, morph_type))
+    prop_name = prop.get('name', None)
+    if prop_name and prop_name != value:
+        if morph_type == 'vertex_morphs':
+            for mesh in FnModel(prop.id_data).meshes():
+                shape_keys = mesh.data.shape_keys
+                if shape_keys is None:
+                    continue
+                shape_key = shape_keys.key_blocks.get(prop_name, None)
+                if shape_key:
+                    shape_key.name = value
+                    value = shape_key.name
+
+        for item in mmd_root.display_item_frames[u'表情'].items:
+            if item.name == prop_name and item.morph_type == morph_type:
+                item.name = value
+                break
+
+    prop['name'] = value
+
+class _MorphBase:
+    name = StringProperty(
+        name='Name',
+        set=_set_name,
+        get=_get_name,
+        )
 
 
 def _get_bone(prop):
@@ -64,7 +102,7 @@ class BoneMorphData(PropertyGroup):
         default=[1, 0, 0, 0],
         )
 
-class BoneMorph(PropertyGroup):
+class BoneMorph(_MorphBase, PropertyGroup):
     """Bone Morph
     """
     name_e = StringProperty(
@@ -228,7 +266,7 @@ class MaterialMorphData(PropertyGroup):
         default=[0, 0, 0, 1],
         )
 
-class MaterialMorph(PropertyGroup):
+class MaterialMorph(_MorphBase, PropertyGroup):
     """ Material Morph
     """
     name_e = StringProperty(
@@ -277,7 +315,7 @@ class UVMorphOffset(PropertyGroup):
         default=[0, 0, 0, 0],
         )
 
-class UVMorph(PropertyGroup):
+class UVMorph(_MorphBase, PropertyGroup):
     """UV Morph
     """
     name_e = StringProperty(
@@ -337,7 +375,7 @@ class GroupMorphOffset(PropertyGroup):
         default=0
         )
 
-class GroupMorph(PropertyGroup):
+class GroupMorph(_MorphBase, PropertyGroup):
     """Group Morph
     """
     name_e = StringProperty(
@@ -366,7 +404,7 @@ class GroupMorph(PropertyGroup):
         default=0,
         )
 
-class VertexMorph(PropertyGroup):
+class VertexMorph(_MorphBase, PropertyGroup):
     """Vertex Morph
     """
     name_e = StringProperty(

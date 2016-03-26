@@ -574,11 +574,20 @@ class PMXImporter:
             self.__rig.renameBone(i.name, utils.convertNameToLR(i.name))
             # self.__meshObj.vertex_groups[i.mmd_bone.name_j].name = i.name
 
+    def __fixRepeatedMorphName(self):
+        used_names_map = {}
+        for m in self.__model.morphs:
+            #used_names = used_names_map.setdefault('all', set())
+            used_names = used_names_map.setdefault(type(m), set())
+            m.name = utils.uniqueName(m.name, used_names)
+            used_names.add(m.name)
+
     def execute(self, **args):
         if 'pmx' in args:
             self.__model = args['pmx']
         else:
             self.__model = pmx.load(args['filepath'])
+        self.__fixRepeatedMorphName()
 
         types = args.get('types', set())
         self.__scale = args.get('scale', 1.0)
