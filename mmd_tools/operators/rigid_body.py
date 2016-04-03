@@ -42,10 +42,10 @@ class AddRigidBody(Operator):
         root = mmd_model.Model.findRoot(obj)
         rig = mmd_model.Model(root) 
         mmd_root = rig.rootObject().mmd_root
-        rigid_shape_list = ['SPHERE', 'BOX', 'CAPSULE']
         arm = rig.armature()
         loc = (0.0, 0.0, 0.0)
         rot = (0.0, 0.0, 0.0)
+        size = mathutils.Vector([1, 1, 1])
         bone = None
         bpy.ops.object.mode_set(mode='OBJECT')
         target_bone = context.active_bone
@@ -59,16 +59,25 @@ class AddRigidBody(Operator):
             loc = (target_bone.head_local+target_bone.tail_local)/2
             rot = target_bone.matrix_local.to_euler('YXZ')
             rot.rotate_axis('X', math.pi/2)
+            size *= target_bone.length
+            if self.rigid_shape == 'SPHERE':
+                size.x *= 0.8
+            elif self.rigid_shape == 'BOX':
+                size.x /= 3
+                size.y = size.x
+                size.z *= 0.8
+            elif self.rigid_shape == 'CAPSULE':
+                size.x /= 3
             bone = target_bone.name
 
         rigid = rig.createRigidBody(
                 name = self.name_j,
                 name_e = self.name_e,
-                shape_type = rigid_shape_list.index(self.rigid_shape),
+                shape_type = rigid_body.shapeType(self.rigid_shape),
                 dynamics_type = int(self.rigid_type),
                 location = loc,
                 rotation = rot,
-                size = mathutils.Vector([2, 2, 2]) * mmd_root.scale,
+                size = size,
                 collision_group_number = 0,
                 collision_group_mask = [False for i in range(16)],
                 arm_obj = arm,

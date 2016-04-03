@@ -12,6 +12,13 @@ MODE_DYNAMIC      = 1
 MODE_DYNAMIC_BONE = 2
 
 
+def shapeType(collision_shape):
+    return ('SPHERE', 'BOX', 'CAPSULE').index(collision_shape)
+
+def collisionShape(shape_type):
+    return ('SPHERE', 'BOX', 'CAPSULE')[shape_type]
+
+
 def setRigidBodyWorldEnabled(enable):
     rigidbody_world = bpy.context.scene.rigidbody_world
     if rigidbody_world is None:

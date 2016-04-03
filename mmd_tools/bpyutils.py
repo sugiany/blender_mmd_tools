@@ -91,7 +91,7 @@ def select_object(obj, objects=[]):
     """
     return __SelectObjects(obj, objects)
 
-def makeCapsule(segment=16, ring_count=8, radius=1.0, height=1.0, target_scene=None):
+def makeCapsuleBak(segment=16, ring_count=8, radius=1.0, height=1.0, target_scene=None):
     import math
     if target_scene is None:
         target_scene = bpy.context.scene
@@ -142,3 +142,111 @@ def makeCapsule(segment=16, ring_count=8, radius=1.0, height=1.0, target_scene=N
     mesh.from_pydata(vertices, [], faces)
     target_scene.objects.link(meshObj)
     return meshObj
+
+def createObject(name='Object', target_scene=None):
+    if target_scene is None:
+        target_scene = bpy.context.scene
+    obj = bpy.data.objects.new(name=name, object_data=bpy.data.meshes.new(name=name))
+    target_scene.objects.link(obj)
+    target_scene.objects.active = obj
+    obj.select = True
+    return obj
+
+def makeSphere(segment=8, ring_count=5, radius=1.0, target_object=None):
+    import bmesh
+    if target_object is None:
+        target_object = createObject(name='Sphere')
+
+    mesh = target_object.data
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(
+        bm,
+        u_segments=segment,
+        v_segments=ring_count,
+        diameter=radius,
+        )
+    for f in bm.faces:
+        f.smooth = True
+    bm.to_mesh(mesh)
+    bm.free()
+    return target_object
+
+def makeBox(size=(1,1,1), target_object=None):
+    import bmesh
+    from mathutils import Matrix
+    if target_object is None:
+        target_object = createObject(name='Box')
+
+    mesh = target_object.data
+    bm = bmesh.new()
+    bmesh.ops.create_cube(
+        bm,
+        size=2,
+        matrix=Matrix([[size[0],0,0,0], [0,size[1],0,0], [0,0,size[2],0], [0,0,0,1]]),
+        )
+    for f in bm.faces:
+        f.smooth = True
+    bm.to_mesh(mesh)
+    bm.free()
+    return target_object
+
+def makeCapsule(segment=8, ring_count=2, radius=1.0, height=1.0, target_object=None):
+    import bmesh
+    import math
+    if target_object is None:
+        target_object = createObject(name='Capsule')
+
+    mesh = target_object.data
+    bm = bmesh.new()
+    verts = bm.verts
+    top = (0, 0, height/2+radius)
+    verts.new(top)
+
+    #f = lambda i: radius*i/ring_count
+    f = lambda i: radius*math.sin(0.5*math.pi*i/ring_count)
+    for i in range(ring_count, 0, -1):
+        z = f(i-1)
+        t = math.sqrt(radius**2 - z**2)
+        for j in range(segment):
+            theta = 2*math.pi/segment*j
+            x = t * math.sin(-theta)
+            y = t * math.cos(-theta)
+            verts.new((x,y,z+height/2))
+
+    for i in range(ring_count):
+        z = -f(i)
+        t = math.sqrt(radius**2 - z**2)
+        for j in range(segment):
+            theta = 2*math.pi/segment*j
+            x = t * math.sin(-theta)
+            y = t * math.cos(-theta)
+            verts.new((x,y,z-height/2))
+
+    bottom = (0, 0, -(height/2+radius))
+    verts.new(bottom)
+    if hasattr(verts, 'ensure_lookup_table'):
+        verts.ensure_lookup_table()
+
+    faces = bm.faces
+    for i in range(1, segment):
+        faces.new([verts[x] for x in (0, i, i+1)])
+    faces.new([verts[x] for x in (0, segment, 1)])
+    offset = segment + 1
+    for i in range(ring_count*2-1):
+        for j in range(segment-1):
+            t = offset + j
+            faces.new([verts[x] for x in (t-segment, t, t+1, t-segment+1)])
+        faces.new([verts[x] for x in (offset-1, offset+segment-1, offset, offset-segment)])
+        offset += segment
+    for i in range(segment-1):
+        t = offset + i
+        faces.new([verts[x] for x in (t-segment, offset, t-segment+1)])
+    faces.new([verts[x] for x in (offset-1, offset, offset-segment)])
+
+    for f in bm.faces:
+        f.smooth = True
+    bm.normal_update()
+    bm.to_mesh(mesh)
+    bm.free()
+    return target_object
+

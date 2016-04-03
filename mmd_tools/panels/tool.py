@@ -520,6 +520,15 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
 
 
 class UL_ObjectsMixIn(object):
+    morph_filter = bpy.props.EnumProperty(
+        name="Morph Filter",
+        items = [
+            ('ACTIVE', 'Active Model', '', 0),
+            ('ALL', 'All Models', '', 1),
+            ],
+        default='ACTIVE',
+        )
+
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
             layout.prop(item, 'name', text='', emboss=False, icon=self.icon)
@@ -528,16 +537,23 @@ class UL_ObjectsMixIn(object):
             layout.label(text='', icon=self.icon)
 
     def draw_filter(self, context, layout):
-        pass
+        row = layout.row()
+        row.prop(self, 'morph_filter', expand=True)
 
     def filter_items(self, context, data, propname):
         objects = getattr(data, propname)
         flt_flags = [~self.bitflag_filter_item] * len(objects)
         flt_neworder = []
 
-        for i, obj in enumerate(objects):
-            if obj.mmd_type == self.mmd_type:
-                flt_flags[i] = self.bitflag_filter_item
+        if self.morph_filter == 'ACTIVE':
+            active_root = mmd_model.Model.findRoot(context.active_object)
+            for i, obj in enumerate(objects):
+                if obj.mmd_type == self.mmd_type and mmd_model.Model.findRoot(obj) == active_root:
+                    flt_flags[i] = self.bitflag_filter_item
+        else:
+            for i, obj in enumerate(objects):
+                if obj.mmd_type == self.mmd_type:
+                    flt_flags[i] = self.bitflag_filter_item
 
         return flt_flags, flt_neworder
 
@@ -577,6 +593,13 @@ class MMDRigidbodySelectorPanel(_PanelBase, Panel):
         tb1 = tb.column(align=True)
         tb1.operator(operators.rigid_body.AddRigidBody.bl_idname, text='', icon='ZOOMIN')
         tb1.operator(operators.rigid_body.RemoveRigidBody.bl_idname, text='', icon='ZOOMOUT')
+
+        if mmd_model.isRigidBodyObject(active_obj):
+            c = col.column(align=True)
+            c.enabled = active_obj.mode == 'OBJECT'
+            c.row(align=True).label(active_obj.name, icon='MESH_ICOSPHERE')
+            c.row(align=True).prop(active_obj.mmd_rigid, 'shape', expand=True)
+            c.column(align=True).prop(active_obj.mmd_rigid, 'size', text='')
 
 
 class UL_joints(UL_ObjectsMixIn, UIList):

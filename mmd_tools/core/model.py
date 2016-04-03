@@ -23,31 +23,23 @@ def isTemporaryObject(obj):
 
 
 def getRigidBodySize(obj):
-    if not isRigidBodyObject(obj):
-        raise ValueError
+    assert(obj.mmd_type == 'RIGID_BODY')
 
-    if obj.mmd_rigid.shape == 'SPHERE':
-        max_z = 0
-        for v in obj.data.vertices:
-            vc = v.co
-            if vc.z > max_z:
-                max_z = vc.z
-        return (max_z, 0.0, 0.0)
-    elif obj.mmd_rigid.shape == 'BOX':
-        v = obj.data.vertices[0].co
-        x, y, z = map(abs, v)
+    x0, y0, z0 = obj.bound_box[0]
+    x1, y1, z1 = obj.bound_box[6]
+    assert(x1 >= x0 and y1 >= y0 and z1 >= z0)
+
+    shape = obj.mmd_rigid.shape
+    if shape == 'SPHERE':
+        radius = (z1 - z0)/2
+        return (radius, 0.0, 0.0)
+    elif shape == 'BOX':
+        x, y, z = (x1 - x0)/2, (y1 - y0)/2, (z1 - z0)/2
         return (x, y, z)
-    elif obj.mmd_rigid.shape == 'CAPSULE':
-        max_z = 0
-        max_x = 0
-        for v in obj.data.vertices:
-            vc = v.co
-            if vc.z > max_z:
-                max_z = vc.z
-            if vc.x > max_x:
-                max_x = vc.x
-        radius = max_x
-        height = (max_z - radius) * 2
+    elif shape == 'CAPSULE':
+        diameter = (x1 - x0)
+        radius = diameter/2
+        height = abs((z1 - z0) - diameter)
         return (radius, height, 0.0)
     else:
         raise Exception('Invalid shape type.')
@@ -142,49 +134,18 @@ class Model:
         linear_damping = kwargs.get('linear_damping')
         bounce = kwargs.get('bounce')
 
-        if shape_type == rigid_body.SHAPE_SPHERE:
-            bpy.ops.mesh.primitive_uv_sphere_add(
-                segments=16,
-                ring_count=8,
-                size=1,
-                view_align=False,
-                enter_editmode=False
-                )
-            size = mathutils.Vector([1,1,1]) * size[0]
-            rigid_type = 'SPHERE'
-            bpy.ops.object.shade_smooth()
-        elif shape_type == rigid_body.SHAPE_BOX:
-            bpy.ops.mesh.primitive_cube_add(
-                view_align=False,
-                enter_editmode=False
-                )
-            size = mathutils.Vector(size)
-            rigid_type = 'BOX'
-        elif shape_type == rigid_body.SHAPE_CAPSULE:
-            obj = bpyutils.makeCapsule(radius=size[0], height=size[1])
-            size = mathutils.Vector([1,1,1])
-            rigid_type = 'CAPSULE'
-            with bpyutils.select_object(obj):
-                bpy.ops.object.shade_smooth()
-        else:
-            raise ValueError('Unknown shape type: %s'%(str(shape_type)))
-
-        obj = bpy.context.active_object
-        bpy.ops.rigidbody.object_add(type='ACTIVE')
+        obj = bpyutils.createObject(name='Rigidbody')
         obj.location = location
         obj.rotation_mode = 'YXZ'
         obj.rotation_euler = rotation
-        obj.scale = size
         obj.hide_render = True
         obj.mmd_type = 'RIGID_BODY'
 
-        obj.mmd_rigid.shape = rigid_type
+        obj.mmd_rigid.shape = rigid_body.collisionShape(shape_type)
+        obj.mmd_rigid.size = size
         obj.mmd_rigid.type = str(dynamics_type)
         obj.draw_type = 'WIRE'
         obj.show_wire = True
-
-        with bpyutils.select_object(obj):
-            bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
 
         if collision_group_number is not None:
             obj.mmd_rigid.collision_group_number = collision_group_number
@@ -198,7 +159,6 @@ class Model:
         if name_e is not None:
             obj.mmd_rigid.name_e = name_e
 
-        obj.rigid_body.collision_shape = rigid_type
         rb = obj.rigid_body
         if friction is not None:
             rb.friction = friction

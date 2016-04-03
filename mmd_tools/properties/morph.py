@@ -50,6 +50,22 @@ class _MorphBase:
         set=_set_name,
         get=_get_name,
         )
+    name_e = StringProperty(
+        name='Name(Eng)',
+        description='English Name',
+        default='',
+        )
+    category = EnumProperty(
+        name='Category',
+        items = [
+            ('SYSTEM', 'System', '', 0),
+            ('EYEBROW', 'Eye Brow', '', 1),
+            ('EYE', 'Eye', '', 2),
+            ('MOUTH', 'Mouth', '', 3),
+            ('OTHER', 'Other', '', 4),
+            ],
+        default='OTHER',
+        )
 
 
 def _get_bone(prop):
@@ -105,24 +121,6 @@ class BoneMorphData(PropertyGroup):
 class BoneMorph(_MorphBase, PropertyGroup):
     """Bone Morph
     """
-    name_e = StringProperty(
-        name='Name(Eng)',
-        description='English Name',
-        default='',
-        )
-
-    category = EnumProperty(
-        name='Category',
-        items = [
-            ('SYSTEM', 'System', '', 0),
-            ('EYEBROW', 'Eye Brow', '', 1),
-            ('EYE', 'Eye', '', 2),
-            ('MOUTH', 'Mouth', '', 3),
-            ('OTHER', 'Other', '', 4),
-            ],
-        default='OTHER',
-        )
-
     data = CollectionProperty(
         name='Morph Data',
         type=BoneMorphData,
@@ -269,24 +267,6 @@ class MaterialMorphData(PropertyGroup):
 class MaterialMorph(_MorphBase, PropertyGroup):
     """ Material Morph
     """
-    name_e = StringProperty(
-        name='Name(Eng)',
-        description='English Name',
-        default='',
-        )
-
-    category = EnumProperty(
-        name='Category',
-        items = [
-            ('SYSTEM', 'System', '', 0),
-            ('EYEBROW', 'Eye Brow', '', 1),
-            ('EYE', 'Eye', '', 2),
-            ('MOUTH', 'Mouth', '', 3),
-            ('OTHER', 'Other', '', 4),
-            ],
-        default='OTHER',
-        )
-
     data = CollectionProperty(
         name='Morph Data',
         type=MaterialMorphData,
@@ -318,22 +298,6 @@ class UVMorphOffset(PropertyGroup):
 class UVMorph(_MorphBase, PropertyGroup):
     """UV Morph
     """
-    name_e = StringProperty(
-        name='Name(Eng)',
-        description='English Name',
-        default=''
-        )
-    category = EnumProperty(
-        name='Category',
-        items = [
-            ('SYSTEM', 'System', '', 0),
-            ('EYEBROW', 'Eye Brow', '', 1),
-            ('EYE', 'Eye', '', 2),
-            ('MOUTH', 'Mouth', '', 3),
-            ('OTHER', 'Other', '', 4),
-            ],
-        default='OTHER',
-        )
     uv_index = IntProperty(
         name='UV Index',
         min=0,
@@ -378,22 +342,6 @@ class GroupMorphOffset(PropertyGroup):
 class GroupMorph(_MorphBase, PropertyGroup):
     """Group Morph
     """
-    name_e = StringProperty(
-        name='Name(Eng)',
-        description='English Name',
-        default=''
-        )
-    category = EnumProperty(
-        name='Category',
-        items = [
-            ('SYSTEM', 'System', '', 0),
-            ('EYEBROW', 'Eye Brow', '', 1),
-            ('EYE', 'Eye', '', 2),
-            ('MOUTH', 'Mouth', '', 3),
-            ('OTHER', 'Other', '', 4),
-            ],
-        default='OTHER',
-        )
     data = CollectionProperty(
         name='Morph Data',
         type=GroupMorphOffset,
@@ -407,19 +355,4 @@ class GroupMorph(_MorphBase, PropertyGroup):
 class VertexMorph(_MorphBase, PropertyGroup):
     """Vertex Morph
     """
-    name_e = StringProperty(
-        name='Name(Eng)',
-        description='English Name',
-        default=''        
-        )
-    category = EnumProperty(
-        name='Category',
-        items = [
-            ('SYSTEM', 'System', '', 0),
-            ('EYEBROW', 'Eye Brow', '', 1),
-            ('EYE', 'Eye', '', 2),
-            ('MOUTH', 'Mouth', '', 3),
-            ('OTHER', 'Other', '', 4),
-            ],
-        default='OTHER',
-        )
+

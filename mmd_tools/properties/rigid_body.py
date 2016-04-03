@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
 
+import bpy
 from bpy.types import PropertyGroup
 from bpy.props import StringProperty, IntProperty, BoolVectorProperty, EnumProperty, FloatVectorProperty
 
+from mmd_tools import bpyutils
 from mmd_tools.core import rigid_body
+from mmd_tools.core.model import getRigidBodySize
+
 
 def _updateCollisionGroup(prop, context):
     obj = prop.id_data
@@ -12,6 +16,83 @@ def _updateCollisionGroup(prop, context):
         materials.append(rigid_body.RigidBodyMaterial.getMaterial(prop.collision_group_number))
     else:
         obj.material_slots[0].material = rigid_body.RigidBodyMaterial.getMaterial(prop.collision_group_number)
+
+def _updateShape(prop, context):
+    obj = prop.id_data
+
+    if len(obj.data.vertices) > 0:
+        size = prop.size
+        prop.size = size # update mesh
+
+    rb = obj.rigid_body
+    if rb:
+        rb.collision_shape = prop.shape
+
+
+def _get_size(prop):
+    return getRigidBodySize(prop.id_data)
+
+def _set_size(prop, value):
+    obj = prop.id_data
+    assert(obj.mode == 'OBJECT') # not support other mode yet
+    shape = prop.shape
+
+    mesh = obj.data
+    rb = obj.rigid_body
+
+    if len(mesh.vertices) == 0 or rb is None or rb.collision_shape != shape:
+        if shape == 'SPHERE':
+            bpyutils.makeSphere(
+                radius=value[0],
+                target_object=obj,
+                )
+        elif shape == 'BOX':
+            bpyutils.makeBox(
+                size=value,
+                target_object=obj,
+                )
+        elif shape == 'CAPSULE':
+            bpyutils.makeCapsule(
+                radius=value[0],
+                height=value[1],
+                target_object=obj,
+                )
+        if rb is None:
+            bpy.ops.rigidbody.object_add(type='ACTIVE')
+            obj.rigid_body.collision_shape = shape
+    else:
+        if shape == 'SPHERE':
+            radius = max(value[0], 1e-3)
+            for v in mesh.vertices:
+                vec = v.co.normalized()
+                v.co = vec * radius
+        elif shape == 'BOX':
+            x = max(value[0], 1e-3)
+            y = max(value[1], 1e-3)
+            z = max(value[2], 1e-3)
+            for v in mesh.vertices:
+                x0, y0, z0 = v.co
+                x0 = -x if x0 < 0 else x
+                y0 = -y if y0 < 0 else y
+                z0 = -z if z0 < 0 else z
+                v.co = [x0, y0, z0]
+        elif shape == 'CAPSULE':
+            r0, h0, xx = getRigidBodySize(prop.id_data)
+            h0 *= 0.5
+            radius = max(value[0], 1e-3)
+            height = max(value[1], 1e-3)*0.5
+            scale = radius/max(r0, 1e-3)
+            for v in mesh.vertices:
+                x0, y0, z0 = v.co
+                x0 *= scale
+                y0 *= scale
+                if z0 < 0:
+                    z0 = (z0 + h0)*scale - height
+                else:
+                    z0 = (z0 - h0)*scale + height
+                v.co = [x0, y0, z0]
+        mesh.update()
+
 
 class MMDRigidBody(PropertyGroup):
     name_j = StringProperty(
@@ -56,12 +137,24 @@ class MMDRigidBody(PropertyGroup):
             ('BOX', 'Box', '', 2),
             ('CAPSULE', 'Capsule', '', 3),
             ],
+        update=_updateShape,
         )
 
     bone = StringProperty(
         name='Bone',
         description='',
         default='',
+        )
+
+    size = FloatVectorProperty(
+        name='Size',
+        subtype='XYZ',
+        size=3,
+        min=0,
+        step=0.1,
+        get=_get_size,
+        set=_set_size,
+        options={'SKIP_SAVE'},
         )
 
 class MMDJoint(PropertyGroup):
