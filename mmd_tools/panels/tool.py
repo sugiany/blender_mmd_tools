@@ -520,8 +520,8 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
 
 
 class UL_ObjectsMixIn(object):
-    morph_filter = bpy.props.EnumProperty(
-        name="Morph Filter",
+    model_filter = bpy.props.EnumProperty(
+        name="Model Filter",
         items = [
             ('ACTIVE', 'Active Model', '', 0),
             ('ALL', 'All Models', '', 1),
@@ -538,14 +538,14 @@ class UL_ObjectsMixIn(object):
 
     def draw_filter(self, context, layout):
         row = layout.row()
-        row.prop(self, 'morph_filter', expand=True)
+        row.prop(self, 'model_filter', expand=True)
 
     def filter_items(self, context, data, propname):
         objects = getattr(data, propname)
         flt_flags = [~self.bitflag_filter_item] * len(objects)
         flt_neworder = []
 
-        if self.morph_filter == 'ACTIVE':
+        if self.model_filter == 'ACTIVE':
             active_root = mmd_model.Model.findRoot(context.active_object)
             for i, obj in enumerate(objects):
                 if obj.mmd_type == self.mmd_type and mmd_model.Model.findRoot(obj) == active_root:

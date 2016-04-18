@@ -16,10 +16,20 @@ class AddRigidBody(Operator):
     bl_label = 'Add Rigid Body'
     bl_description = 'Adds a Rigid Body'
     bl_options = {'PRESET'}
-    
-    name_j = bpy.props.StringProperty(name='Name', default='Rigid')
-    name_e = bpy.props.StringProperty(name='Name(Eng)', default='Rigid_e')
-    
+
+    name_j = bpy.props.StringProperty(name='Name', default='$name_j')
+    name_e = bpy.props.StringProperty(name='Name(Eng)', default='$name_e')
+
+    collision_group_number = bpy.props.IntProperty(
+        name='Collision Group',
+        min=0,
+        max=15,
+        )
+    collision_group_mask = bpy.props.BoolVectorProperty(
+        name='Collision Group Mask',
+        size=16,
+        subtype='LAYER',
+        )
     rigid_type = bpy.props.EnumProperty(
         name='Rigid Type',
         items = [
@@ -36,87 +46,95 @@ class AddRigidBody(Operator):
             ('CAPSULE', 'Capsule', '', 3),
             ],
         )
-    
-    def execute(self, context):
-        obj = context.active_object
-        root = mmd_model.Model.findRoot(obj)
-        rig = mmd_model.Model(root) 
-        mmd_root = rig.rootObject().mmd_root
-        arm = rig.armature()
+
+    def __add_rigid_body(self, rig, arm_obj=None, pose_bone=None):
+        name_j = self.name_j
+        name_e = self.name_e
         loc = (0.0, 0.0, 0.0)
         rot = (0.0, 0.0, 0.0)
-        size = mathutils.Vector([1, 1, 1])
-        bone = None
-        bpy.ops.object.mode_set(mode='OBJECT')
-        target_bone = context.active_bone
-        if target_bone:
-            if type(target_bone) is not bpy.types.Bone:
-                target_bone = obj.data.bones[target_bone.name]
-        elif arm is not None and len(arm.data.bones) > 0:
-            target_bone = arm.data.bones[0]
+        size = mathutils.Vector([0.6, 0.6, 0.6])
+        bone_name = None
 
-        if target_bone: # bpy.types.Bone
-            loc = (target_bone.head_local+target_bone.tail_local)/2
+        if pose_bone:
+            bone_name = pose_bone.name
+            name_j = name_j.replace('$name_j', pose_bone.mmd_bone.name_j or bone_name)
+            name_e = name_e.replace('$name_e', pose_bone.mmd_bone.name_e or bone_name)
+
+            target_bone = pose_bone.bone
+            loc = (target_bone.head_local + target_bone.tail_local)/2
             rot = target_bone.matrix_local.to_euler('YXZ')
             rot.rotate_axis('X', math.pi/2)
+
             size *= target_bone.length
             if self.rigid_shape == 'SPHERE':
                 size.x *= 0.8
             elif self.rigid_shape == 'BOX':
                 size.x /= 3
-                size.y = size.x
+                size.y /= 3
                 size.z *= 0.8
             elif self.rigid_shape == 'CAPSULE':
                 size.x /= 3
-            bone = target_bone.name
 
-        rigid = rig.createRigidBody(
-                name = self.name_j,
-                name_e = self.name_e,
+        return rig.createRigidBody(
+                name = name_j,
+                name_e = name_e,
                 shape_type = rigid_body.shapeType(self.rigid_shape),
                 dynamics_type = int(self.rigid_type),
                 location = loc,
                 rotation = rot,
                 size = size,
-                collision_group_number = 0,
-                collision_group_mask = [False for i in range(16)],
-                arm_obj = arm,
+                collision_group_number = self.collision_group_number,
+                collision_group_mask = self.collision_group_mask,
                 mass=1,
                 friction = 0.0,
                 angular_damping = 0.5,
                 linear_damping = 0.5,
                 bounce = 0.5,
-                bone = bone,
+                bone = bone_name,
                 )
-        if not mmd_root.show_rigid_bodies:
-            mmd_root.show_rigid_bodies = True
-        utils.selectAObject(rigid)
 
+    def execute(self, context):
+        obj = context.active_object
+        root = mmd_model.Model.findRoot(obj)
+        rig = mmd_model.Model(root)
+        arm = rig.armature()
+        if obj != arm:
+            utils.selectAObject(root)
+            root.select = False
+        elif arm.mode != 'POSE':
+            bpy.ops.object.mode_set(mode='POSE')
+
+        selected_pose_bones = []
+        if context.selected_pose_bones:
+            selected_pose_bones = context.selected_pose_bones
+
+        arm.select = False
+        if len(selected_pose_bones) > 0:
+            for pose_bone in selected_pose_bones:
+                rigid = self.__add_rigid_body(rig, arm, pose_bone)
+                rigid.select = True
+        else:
+            rigid = self.__add_rigid_body(rig)
+            rigid.select = True
         return { 'FINISHED' }
-        
+
     def invoke(self, context, event):
-        bone = context.active_pose_bone or context.active_bone
-        if type(bone) is not bpy.types.PoseBone:
-            root = mmd_model.Model.findRoot(context.active_object)
-            arm = mmd_model.Model(root).armature()
-            if arm is not None and len(arm.pose.bones) > 0:
-                if bone is None:
-                    bone = arm.pose.bones[0]
-                elif bone.name in arm.pose.bones:
-                    bone = arm.pose.bones[bone.name]
-            else:
-                self.name_j = 'Rigid'
-                self.name_e = 'Rigid_e'
-        if bone:
-            self.name_j = bone.name
-            if type(bone) is bpy.types.PoseBone:
-                mmd_bone = bone.mmd_bone
-                if len(mmd_bone.name_j) > 0:
-                    self.name_j = mmd_bone.name_j
-                if len(mmd_bone.name_e) > 0:
-                    self.name_e = mmd_bone.name_e
+        no_bone = True
+        if context.selected_bones and len(context.selected_bones) > 0:
+            no_bone = False
+        elif context.selected_pose_bones and len(context.selected_pose_bones) > 0:
+            no_bone = False
+
+        if no_bone:
+            self.name_j = 'Rigid'
+            self.name_e = 'Rigid_e'
+        else:
+            if self.name_j == 'Rigid':
+                self.name_j = '$name_j'
+            if self.name_e == 'Rigid_e':
+                self.name_e = '$name_e'
         vm = context.window_manager
-        return vm.invoke_props_dialog(self) 
+        return vm.invoke_props_dialog(self)
 
 class RemoveRigidBody(Operator):
     bl_idname = 'mmd_tools.remove_rigid_body'
@@ -140,42 +158,59 @@ class AddJoint(Operator):
     bl_idname = 'mmd_tools.add_joint'
     bl_label = 'Add Joint'
     bl_options = {'PRESET'} 
-    
-    def execute(self, context):
-        obj = context.active_object
-        root = mmd_model.Model.findRoot(obj)
-        rig = mmd_model.Model(root) 
-        mmd_root = rig.rootObject().mmd_root
-        name = 'Joint'
-        name_e = 'Joint_e'
-        loc = (0.0, 0.0, 0.0)
-        rigid_a = None
-        rigid_b = None
-        if mmd_model.isRigidBodyObject(obj):
-            if len(context.selected_objects) == 2:
-                if obj == context.selected_objects[0]:
-                    rigid_a = context.selected_objects[1]
-                else:
-                    rigid_a = context.selected_objects[0]
-            name = obj.name
-            name_e = obj.mmd_rigid.name_e
-            rigid_b = obj
-            relation = rigid_b.constraints['mmd_tools_rigid_parent']
+
+    use_bone_rotation = bpy.props.BoolProperty(
+        name='Use Bone Rotation',
+        description='',
+        default=True,
+        )
+
+    def __get_target_bone(self, rigid):
+        relation = rigid.constraints.get('mmd_tools_rigid_parent', None)
+        if relation:
             arm = relation.target
             bone_name = relation.subtarget
             if arm is not None and bone_name in arm.data.bones:
-                loc = arm.data.bones[bone_name].head_local
+                return arm.data.bones[bone_name]
+        return None
+
+    def __enumerate_rigid_pair(self, bone_map):
+        obj_seq = tuple(bone_map.keys())
+        for rigid_a, bone_a in bone_map.items():
+            for rigid_b, bone_b in bone_map.items():
+                if bone_a and bone_b and bone_b.parent == bone_a:
+                    obj_seq = ()
+                    yield (rigid_a, rigid_b)
+        if len(obj_seq) == 2:
+            if obj_seq[1].mmd_rigid.type == str(rigid_body.MODE_STATIC):
+                yield (obj_seq[1], obj_seq[0])
             else:
-                loc = rigid_b.location if rigid_a is None else (rigid_a.location+rigid_b.location)/2
+                yield obj_seq
 
-        if context.scene.rigidbody_world is None:
-            bpy.ops.rigidbody.world_add()
+    def __add_joint(self, rig, mmd_root, rigid_pair, bone_map):
+        loc, rot = None, [0, 0, 0]
+        rigid_a, rigid_b = rigid_pair
+        bone_a = bone_map[rigid_a]
+        bone_b = bone_map[rigid_b]
+        if bone_a and bone_b:
+            if bone_a.parent == bone_b:
+                rigid_b, rigid_a = rigid_a, rigid_b
+                bone_b, bone_a = bone_a, bone_b
+            if bone_b.parent == bone_a:
+                loc = bone_b.head_local
+                if self.use_bone_rotation:
+                    rot = bone_b.matrix_local.to_euler('YXZ')
+                    rot.rotate_axis('X', math.pi/2)
+        if loc is None:
+            loc = (rigid_a.location + rigid_b.location)/2
 
+        name_j = rigid_b.mmd_rigid.name_j or rigid_b.name
+        name_e = rigid_b.mmd_rigid.name_e or rigid_b.name
         joint = rig.createJoint(
-                name = name,
+                name = name_j,
                 name_e = name_e,
                 location = loc,
-                rotation = [0, 0, 0],
+                rotation = rot,
                 size = 0.5 * mmd_root.scale,
                 rigid_a = rigid_a,
                 rigid_b = rigid_b,
@@ -186,12 +221,35 @@ class AddJoint(Operator):
                 spring_linear = [0, 0, 0],
                 spring_angular = [0, 0, 0],
                 )
-        if not mmd_root.show_joints:
-            mmd_root.show_joints = True
-        utils.selectAObject(joint)
+        joint.select = True
+
+    def execute(self, context):
+        obj = context.active_object
+        root = mmd_model.Model.findRoot(obj)
+        rig = mmd_model.Model(root)
+        mmd_root = rig.rootObject().mmd_root
+
+        bone_map = {}
+        for i in context.selected_objects:
+            if i.mmd_type == 'RIGID_BODY':
+                bone_map[i] = self.__get_target_bone(i)
+
+        if len(bone_map) < 2:
+            self.report({ 'ERROR' }, "Please select two or more mmd rigid objects")
+            return { 'CANCELLED' }
+
+        if context.scene.rigidbody_world is None:
+            bpy.ops.rigidbody.world_add()
+
+        for pair in self.__enumerate_rigid_pair(bone_map):
+            self.__add_joint(rig, mmd_root, pair, bone_map)
 
         return { 'FINISHED' }
-    
+
+    def invoke(self, context, event):
+        vm = context.window_manager
+        return vm.invoke_props_dialog(self)
+
 class RemoveJoint(Operator):
     bl_idname = 'mmd_tools.remove_joint'
     bl_label = 'Remove Joint'

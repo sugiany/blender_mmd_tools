@@ -60,19 +60,21 @@ class MMDRigidPanel(_PanelBase, Panel):
         c.prop(obj, 'name')
         c.prop(obj.mmd_rigid, 'name_e')
 
-        row = layout.row(align=True)
-        row.prop(obj.mmd_rigid, 'type')
+        c = layout.column(align=True)
+        row = c.row(align=True)
+        row.prop(obj.mmd_rigid, 'type', expand=True)
 
         root = mmd_model.Model.findRoot(obj)
         relation = obj.constraints.get('mmd_tools_rigid_parent')
         if root is None:
-            row = row.row(align=True)
+            row = c.row(align=True)
             row.enabled = False
             if relation is not None:
                 row.prop(relation, 'subtarget', text='', icon='BONE_DATA')
             else:
                 row.prop(obj.mmd_rigid, 'bone', text='', icon='BONE_DATA')
         else:
+            row = c.row(align=True)
             armature = mmd_model.Model(root).armature()
             if relation is not None:
                 row.prop_search(relation, 'subtarget', text='', search_data=armature.pose, search_property='bones', icon='BONE_DATA')

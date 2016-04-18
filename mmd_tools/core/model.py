@@ -147,6 +147,10 @@ class Model:
         obj.draw_type = 'WIRE'
         obj.show_wire = True
 
+        for attr_name in ('camera', 'diffuse', 'glossy', 'scatter', 'shadow', 'transmission'):
+            if hasattr(obj.cycles_visibility, attr_name):
+                setattr(obj.cycles_visibility, attr_name, False)
+
         if collision_group_number is not None:
             obj.mmd_rigid.collision_group_number = collision_group_number
             obj.draw_type = 'SOLID'
