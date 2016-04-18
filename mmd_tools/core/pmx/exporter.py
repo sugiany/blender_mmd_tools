@@ -173,13 +173,17 @@ class __PmxExporter:
         p_mat.vertex_count = num_faces * 3
         tex_slots = material.texture_slots.values()
         if tex_slots[0]:
-            tex = tex_slots[0].texture
-            index = self.__exportTexture(tex.image.filepath)
-            p_mat.texture = index
+            # Ensure the texture is valid
+            tex = tex_slots[0].texture            
+            if tex.type == 'IMAGE':
+                index = self.__exportTexture(tex.image.filepath)
+                p_mat.texture = index
         if tex_slots[1]:
+            # Ensure the texture is valid
             tex = tex_slots[1].texture
-            index = self.__exportTexture(tex.image.filepath)
-            p_mat.sphere_texture = index
+            if tex.type == 'IMAGE':
+                index = self.__exportTexture(tex.image.filepath)
+                p_mat.sphere_texture = index
 
         if mmd_mat.is_shared_toon_texture:
             p_mat.toon_texture = mmd_mat.shared_toon_texture
@@ -641,6 +645,13 @@ class __PmxExporter:
         bm.free()
 
     def __loadMeshData(self, meshObj):
+        # Prepare the mesh object
+        with bpyutils.select_object(meshObj):
+            if meshObj.data.shape_keys is None:
+                bpy.ops.object.shape_key_add()
+            if meshObj.data.tessface_uv_textures.active is None:
+                bpy.ops.mesh.uv_texture_add()
+
         shape_key_weights = []
         for i in meshObj.data.shape_keys.key_blocks:
             shape_key_weights.append(i.value)
@@ -682,7 +693,7 @@ class __PmxExporter:
         materials = {}
         for face, uv in zip(base_mesh.tessfaces, base_mesh.tessface_uv_textures.active.data):
             if len(face.vertices) != 3:
-                raise Exception
+                raise Exception()
             v1 = self.__convertFaceUVToVertexUV(face.vertices[0], uv.uv1, base_vertices)
             v2 = self.__convertFaceUVToVertexUV(face.vertices[1], uv.uv2, base_vertices)
             v3 = self.__convertFaceUVToVertexUV(face.vertices[2], uv.uv3, base_vertices)
@@ -715,17 +726,17 @@ class __PmxExporter:
             self.__model.name_e = root.mmd_root.name_e
 
         self.__model.comment = 'exported by mmd_tools'
-        #We retrieve the comment from the Blender internal texts if present
+        # We retrieve the comment from the Blender internal texts if present
         if 'text_'+self.__model.name in bpy.data.texts.keys():
             self.__model.comment = bpy.data.texts['text_'+self.__model.name].as_string().replace('\n', '\r\n')
-            
+
         if 'text_'+self.__model.name+'_e' in bpy.data.texts.keys():
             self.__model.comment_e = bpy.data.texts['text_'+self.__model.name+'_e'].as_string().replace('\n', '\r\n')
 
         meshes = args.get('meshes', [])
         self.__armature = args.get('armature', None)
         rigid_bodeis = args.get('rigid_bodies', [])
-        joints = args.get('joints', [])        
+        joints = args.get('joints', [])
         self.__copyTextures = args.get('copy_textures', False)
         self.__filepath = filepath
 
