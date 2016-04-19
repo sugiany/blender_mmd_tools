@@ -189,11 +189,11 @@ class __PmxExporter:
         p_mat.vertex_count = num_faces * 3
         fnMat = FnMaterial(material)
         tex = fnMat.get_texture()
-        if tex:
+        if tex and tex.type == 'IMAGE':  # Ensure the texture is an image
             index = self.__exportTexture(tex.image.filepath)
             p_mat.texture = index
         tex = fnMat.get_sphere_texture()
-        if tex:
+        if tex and tex.type == 'IMAGE':  # Ensure the texture is an image
             index = self.__exportTexture(tex.image.filepath)
             p_mat.sphere_texture = index
 
@@ -800,6 +800,13 @@ class __PmxExporter:
         return custom_normals
 
     def __loadMeshData(self, meshObj, bone_map):
+        # Prepare the mesh object
+        with bpyutils.select_object(meshObj):
+            if meshObj.data.shape_keys is None:
+                bpy.ops.object.shape_key_add()
+            if meshObj.data.tessface_uv_textures.active is None:
+                bpy.ops.mesh.uv_texture_add()
+
         shape_key_weights = []
         for i in meshObj.data.shape_keys.key_blocks:
             shape_key_weights.append(i.value)
