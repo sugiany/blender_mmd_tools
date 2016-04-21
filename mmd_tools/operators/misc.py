@@ -19,7 +19,15 @@ class SeparateByMaterials(Operator):
         return obj and obj.type == 'MESH'
 
     def execute(self, context):
-        utils.separateByMaterials(context.active_object)
+        obj = context.active_object
+        root = mmd_model.Model.findRoot(obj)
+        if root and root.mmd_root.editing_morph:            
+            self.report({ 'ERROR' }, "You are editing a morph, apply or clear it before proceed")
+            return { 'CANCELLED' }
+        utils.separateByMaterials(obj)
+        if root and len(root.mmd_root.material_morphs) > 0:
+            pass  # TODO: we need to update the references to the mesh object on the material morph offsets
+        utils.clearUnusedMeshes()
         return {'FINISHED'}
 
 class JoinMeshes(Operator):
@@ -39,6 +47,10 @@ class JoinMeshes(Operator):
         if root is None:
             self.report({ 'ERROR' }, 'Select a MMD model') 
             return { 'CANCELLED' } 
+
+        if root.mmd_root.editing_morph:            
+            self.report({ 'ERROR' }, "You are editing a morph, apply or clear it before proceed")
+            return { 'CANCELLED' }
         # Find all the meshes in mmd_root and join them          
         rig = mmd_model.Model(root)
         bpy.ops.object.select_all(action='DESELECT')
@@ -46,5 +58,9 @@ class JoinMeshes(Operator):
             mesh.select = True
         bpy.context.scene.objects.active = rig.firstMesh()        
         bpy.ops.object.join()
+        if len(root.mmd_root.material_morphs) > 0:
+            pass  # TODO: update the mesh references
+
+        utils.clearUnusedMeshes()
         return { 'FINISHED' }
         

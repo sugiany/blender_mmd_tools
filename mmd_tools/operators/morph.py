@@ -126,8 +126,6 @@ class AddVertexMorph(Operator, _AddMorphBase):
     name_j = _AddMorphBase.name_j
     name_e = _AddMorphBase.name_e
     category = _AddMorphBase.category
-    on_active_mesh = bpy.props.BoolProperty(name='On Active Mesh', default=False,
-                                            description='This is an experimental feature.') 
 
     def execute(self, context):
         obj = context.active_object
@@ -135,7 +133,7 @@ class AddVertexMorph(Operator, _AddMorphBase):
         rig = mmd_model.Model(root)
         mmd_root = root.mmd_root
         meshObj = None
-        if self.on_active_mesh:
+        if mmd_root.advanced_mode:
             if obj.type == 'MESH' and obj.mmd_type == 'NONE':
                 meshObj = obj
             else:
@@ -187,6 +185,13 @@ class AddMaterialOffset(Operator):
         rig = mmd_model.Model(root)
         mmd_root = root.mmd_root
         meshObj = rig.firstMesh()
+        if mmd_root.advanced_mode:
+            if obj.type == 'MESH' and obj.mmd_type == 'NONE':
+                meshObj = obj
+            else:
+                self.report({ 'ERROR' }, "The active object is not a valid mesh")
+                return { 'CANCELLED' }
+
         if meshObj is None:
             self.report({ 'ERROR' }, "The model mesh can't be found")
             return { 'CANCELLED' }
@@ -210,8 +215,10 @@ class AddMaterialOffset(Operator):
             
         morph = mmd_root.material_morphs[mmd_root.active_morph]
         mat_data = morph.data.add()
+        mat_data.related_mesh = meshObj.data.name
         mat_data.material = orig_mat.name
         morph.active_material_data = len(morph.data)-1
+        mmd_root.editing_morph = True
         return { 'FINISHED' }
     
 class RemoveMaterialOffset(Operator):
@@ -226,13 +233,23 @@ class RemoveMaterialOffset(Operator):
         rig = mmd_model.Model(root)
         mmd_root = root.mmd_root
         meshObj = rig.firstMesh()
-        if meshObj is None:
-            self.report({ 'ERROR' }, "The model mesh can't be found")
-            return { 'CANCELLED' }
+
         morph = mmd_root.material_morphs[mmd_root.active_morph]
         if len(morph.data) == 0:
             return { 'FINISHED' }
         mat_data = morph.data[morph.active_material_data]
+
+        if mmd_root.advanced_mode:
+            relMesh = rig.findMesh(mat_data.related_mesh)
+            if relMesh is not None:
+                meshObj = relMesh
+            else:
+                self.report({ 'ERROR' }, "The related mesh can't be found")
+                return { 'CANCELLED' }
+        
+        if meshObj is None:
+            self.report({ 'ERROR' }, "The model mesh can't be found")
+            return { 'CANCELLED' }        
         work_mat_name = mat_data.material+"_temp"
         if work_mat_name in meshObj.data.materials.keys():
             base_idx = meshObj.data.materials.find(mat_data.material)
@@ -246,6 +263,7 @@ class RemoveMaterialOffset(Operator):
             bpy.data.materials.remove(mat)
         morph.data.remove(morph.active_material_data)
         morph.active_material_data = max(0, morph.active_material_data-1)
+        mmd_root.editing_morph = False
         return { 'FINISHED' }
         
 class ApplyMaterialOffset(Operator):
@@ -260,11 +278,19 @@ class ApplyMaterialOffset(Operator):
         rig = mmd_model.Model(root)
         mmd_root = root.mmd_root
         meshObj = rig.firstMesh()
+        morph = mmd_root.material_morphs[mmd_root.active_morph]
+        mat_data = morph.data[morph.active_material_data]
+        if mmd_root.advanced_mode:
+            relMesh = rig.findMesh(mat_data.related_mesh)
+            if relMesh is not None:
+                meshObj = relMesh
+            else:
+                self.report({ 'ERROR' }, "The related mesh can't be found")
+                return { 'CANCELLED' }
+
         if meshObj is None:
             self.report({ 'ERROR' }, "The model mesh can't be found")
             return { 'CANCELLED' }
-        morph = mmd_root.material_morphs[mmd_root.active_morph]
-        mat_data = morph.data[morph.active_material_data]
         base_mat = meshObj.data.materials[mat_data.material]
         work_mat = meshObj.data.materials[base_mat.name+"_temp"]
         base_idx = meshObj.data.materials.find(base_mat.name)
@@ -306,6 +332,7 @@ class ApplyMaterialOffset(Operator):
 
         mat = meshObj.data.materials.pop(index=copy_idx)
         bpy.data.materials.remove(mat)
+        mmd_root.editing_morph = False
         return { 'FINISHED' }
     
 class CreateWorkMaterial(Operator):
@@ -320,11 +347,20 @@ class CreateWorkMaterial(Operator):
         rig = mmd_model.Model(root)
         mmd_root = root.mmd_root
         meshObj = rig.firstMesh()
+        morph = mmd_root.material_morphs[mmd_root.active_morph]
+        mat_data = morph.data[morph.active_material_data]
+
+        if mmd_root.advanced_mode:
+            relMesh = rig.findMesh(mat_data.related_mesh)
+            if relMesh is not None:
+                meshObj = relMesh
+            else:
+                self.report({ 'ERROR' }, "The related mesh can't be found")
+                return { 'CANCELLED' }
+
         if meshObj is None:
             self.report({ 'ERROR' }, "The model mesh can't be found")
             return { 'CANCELLED' }
-        morph = mmd_root.material_morphs[mmd_root.active_morph]
-        mat_data = morph.data[morph.active_material_data]
         base_mat = meshObj.data.materials[mat_data.material]
         work_mat = base_mat.copy()
         work_mat.name = base_mat.name+"_temp"     
@@ -365,6 +401,7 @@ class CreateWorkMaterial(Operator):
             work_mmd_mat.edge_color = list(edge_offset)
             work_mmd_mat.edge_weight += mat_data.edge_weight
 
+        mmd_root.editing_morph = True
         return { 'FINISHED' }
 class ClearTempMaterials(Operator):
     bl_idname = 'mmd_tools.clear_temp_materials'
@@ -393,7 +430,8 @@ class ClearTempMaterials(Operator):
                             poly.material_index = base_idx
                     mat = meshObj.data.materials.pop(index=temp_idx)
                     bpy.data.materials.remove(mat)
-                
+
+        root.mmd_root.editing_morph = False
         return { 'FINISHED' }
     
 class AddBoneMorph(Operator, _AddMorphBase):

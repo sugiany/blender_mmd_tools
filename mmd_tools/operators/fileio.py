@@ -239,6 +239,12 @@ class ExportPmx(Operator, ExportHelper):
             logger.addHandler(handler)
 
         root = mmd_model.Model.findRoot(context.active_object)
+        if root.mmd_root.editing_morph:
+            # We have two options here: 
+            # 1- report it to the user
+            # 2- clear the active morphs (user will loose any changes to temp materials and UV) 
+            self.report({ 'ERROR' }, "You are editing a morph, apply or clear it before proceed")
+            return { 'CANCELLED' }
         rig = mmd_model.Model(root)
         rig.clean()
         try:

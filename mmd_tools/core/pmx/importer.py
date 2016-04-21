@@ -466,6 +466,7 @@ class PMXImporter:
             mat_morph.category = categories.get(morph.category, 'OTHER')
             for morph_data in morph.offsets:
                 data = mat_morph.data.add()
+                data.related_mesh = self.__meshObj.data.name
                 data.material = self.__materialTable[morph_data.index].name
                 data.offset_type = ['MULT', 'ADD'][morph_data.offset_type]
                 data.diffuse_color = morph_data.diffuse_offset

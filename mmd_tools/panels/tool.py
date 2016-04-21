@@ -39,6 +39,9 @@ class MMDToolsObjectPanel(_PanelBase, Panel):
         root = mmd_model.Model.findRoot(active_obj)
         if root:
             col = self.layout.column(align=True)
+            col.label('Options:')
+            col.prop(root.mmd_root, 'advanced_mode')
+            col = self.layout.column(align=True)            
             col.label('Rigidbody:')
             row = col.row(align=True)
             row.operator('mmd_tools.build_rig')
@@ -338,6 +341,8 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
 
     def _draw_material_data(self, context, rig, col, morph):
         meshObj = rig.firstMesh()
+        mmd_root = rig.rootObject().mmd_root
+
         if meshObj is None:
             c = col.column(align=True)
             c.label("The model mesh can't be found", icon='ERROR')
@@ -362,6 +367,12 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             return # If the list is empty we should stop drawing the panel here
         data = morph.data[morph.active_material_data]
         c_mat = col.column(align=True)
+        if mmd_root.advanced_mode:
+            c_mat.prop_search(data, 'related_mesh', bpy.data, 'meshes')
+            # Switch to the related mesh here if found
+            relMesh = rig.findMesh(data.related_mesh)
+            meshObj = relMesh or meshObj
+        
         c_mat.prop_search(data, 'material', meshObj.data, 'materials')
 
         base_mat_name = data.material
