@@ -126,13 +126,23 @@ class AddVertexMorph(Operator, _AddMorphBase):
     name_j = _AddMorphBase.name_j
     name_e = _AddMorphBase.name_e
     category = _AddMorphBase.category
+    on_active_mesh = bpy.props.BoolProperty(name='On Active Mesh', default=False,
+                                            description='This is an experimental feature.') 
 
     def execute(self, context):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
         rig = mmd_model.Model(root)
         mmd_root = root.mmd_root
-        meshObj = rig.firstMesh()
+        meshObj = None
+        if self.on_active_mesh:
+            if obj.type == 'MESH' and obj.mmd_type == 'NONE':
+                meshObj = obj
+            else:
+                self.report({ 'ERROR' }, "The active object is not a valid mesh")
+                return { 'CANCELLED' }
+
+        meshObj = meshObj or rig.firstMesh()        
         if meshObj is None:
             self.report({ 'ERROR' }, "The model mesh can't be found")
             return { 'CANCELLED' }
