@@ -6,7 +6,7 @@ from bpy.props import StringProperty, IntProperty, BoolVectorProperty, EnumPrope
 
 from mmd_tools import bpyutils
 from mmd_tools.core import rigid_body
-from mmd_tools.core.model import getRigidBodySize
+from mmd_tools.core.model import getRigidBodySize, Model
 
 
 def _updateCollisionGroup(prop, context):
@@ -27,6 +27,39 @@ def _updateShape(prop, context):
     rb = obj.rigid_body
     if rb:
         rb.collision_shape = prop.shape
+
+
+def _get_bone(prop):
+    obj = prop.id_data
+    relation = obj.constraints.get('mmd_tools_rigid_parent', None)
+    if relation:
+        arm = relation.target
+        bone_name = relation.subtarget
+        if arm is not None and bone_name in arm.data.bones:
+            return bone_name
+    return prop.get('bone', '')
+
+def _set_bone(prop, value):
+    bone_name = value
+    obj = prop.id_data
+    relation = obj.constraints.get('mmd_tools_rigid_parent', None)
+    if relation is None:
+        relation = obj.constraints.new('CHILD_OF')
+        relation.name = 'mmd_tools_rigid_parent'
+        relation.mute = True
+
+    arm = relation.target
+    if arm is None:
+        root = Model.findRoot(obj)
+        if root:
+            arm = relation.target = Model(root).armature()
+
+    if arm is not None and bone_name in arm.data.bones:
+        relation.subtarget = bone_name
+    else:
+        relation.subtarget = bone_name = ''
+
+    prop['bone'] = bone_name
 
 
 def _get_size(prop):
@@ -144,6 +177,8 @@ class MMDRigidBody(PropertyGroup):
         name='Bone',
         description='',
         default='',
+        get=_get_bone,
+        set=_set_bone,
         )
 
     size = FloatVectorProperty(

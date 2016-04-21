@@ -65,29 +65,26 @@ class MMDRigidPanel(_PanelBase, Panel):
         row.prop(obj.mmd_rigid, 'type', expand=True)
 
         root = mmd_model.Model.findRoot(obj)
-        relation = obj.constraints.get('mmd_tools_rigid_parent')
         if root is None:
             row = c.row(align=True)
             row.enabled = False
-            if relation is not None:
-                row.prop(relation, 'subtarget', text='', icon='BONE_DATA')
-            else:
-                row.prop(obj.mmd_rigid, 'bone', text='', icon='BONE_DATA')
+            row.prop(obj.mmd_rigid, 'bone', text='', icon='BONE_DATA')
         else:
             row = c.row(align=True)
             armature = mmd_model.Model(root).armature()
-            if relation is not None:
-                row.prop_search(relation, 'subtarget', text='', search_data=armature.pose, search_property='bones', icon='BONE_DATA')
-            else:
-                row.prop_search(obj.mmd_rigid, 'bone', text='', search_data=armature.pose, search_property='bones', icon='BONE_DATA')
+            row.prop_search(obj.mmd_rigid, 'bone', text='', search_data=armature.pose, search_property='bones', icon='BONE_DATA')
+
+        c = layout.column(align=True)
+        c.enabled = obj.mode == 'OBJECT'
+        c.row(align=True).prop(obj.mmd_rigid, 'shape', expand=True)
+        c.column(align=True).prop(obj.mmd_rigid, 'size', text='')
 
         row = layout.row()
-
-        c = row.column()
         if obj.rigid_body is None:
-            c.operator(bpy.ops.rigidbody.object_add.idname(), icon='MESH_ICOSPHERE')
+            row.operator(bpy.ops.rigidbody.object_add.idname(), icon='MESH_ICOSPHERE')
             return
 
+        c = row.column()
         c.prop(obj.rigid_body, 'mass')
         c.prop(obj.mmd_rigid, 'collision_group_number')
         c = row.column()

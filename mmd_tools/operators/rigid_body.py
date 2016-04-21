@@ -11,6 +11,59 @@ import mmd_tools.core.model as mmd_model
 from mmd_tools.core import rigid_body
 from mmd_tools import utils
 
+class SelectRigidBody(Operator):
+    bl_idname = 'mmd_tools.select_rigid_body'
+    bl_label = 'Select Rigid Body'
+    bl_description = ''
+    bl_options = {'PRESET'}
+
+    properties = bpy.props.EnumProperty(
+        name='Properties',
+        description='',
+        options={'ENUM_FLAG'},
+        items = [
+            ('collision_group_number', 'Collision Group', '', 1),
+            ('collision_group_mask', 'Collision Group Mask', '', 2),
+            ('type', 'Rigid Type', '', 4),
+            ('shape', 'Shape', '', 8),
+            ('bone', 'Bone', '', 16),
+            ],
+        default=set(),
+        )
+
+    @classmethod
+    def poll(cls, context):
+        return mmd_model.isRigidBodyObject(context.active_object)
+
+    def execute(self, context):
+        obj = context.active_object
+        root = mmd_model.Model.findRoot(obj)
+        if root is None:
+            self.report({ 'ERROR' }, "The model root can't be found")
+            return { 'CANCELLED' }
+
+        rig = mmd_model.Model(root)
+        rigidbodies = [i for i in rig.rigidBodies()]
+
+        selection = set(rigidbodies)
+        for prop_name in self.properties:
+            prop_value = getattr(obj.mmd_rigid, prop_name)
+            if prop_name == 'collision_group_mask':
+                prop_value = tuple(prop_value)
+                for i in rigidbodies:
+                    if tuple(i.mmd_rigid.collision_group_mask) != prop_value:
+                        selection.remove(i)
+            else:
+                for i in rigidbodies:
+                    if getattr(i.mmd_rigid, prop_name) != prop_value:
+                        selection.remove(i)
+
+        for i in selection:
+            i.hide = False
+            i.select = True
+
+        return { 'FINISHED' }
+
 class AddRigidBody(Operator):
     bl_idname = 'mmd_tools.add_rigid_body'
     bl_label = 'Add Rigid Body'
@@ -142,11 +195,12 @@ class RemoveRigidBody(Operator):
     bl_description = 'Deletes the currently selected Rigid Body'
     bl_options = {'PRESET'}
 
+    @classmethod
+    def poll(cls, context):
+        return mmd_model.isRigidBodyObject(context.active_object)
+
     def execute(self, context):
         obj = context.active_object
-        if obj.mmd_type != 'RIGID_BODY':
-            self.report({ 'ERROR' }, "Select the Rigid Body to be deleted")
-            return { 'CANCELLED' }
         root = mmd_model.Model.findRoot(obj)
         utils.selectAObject(obj) #ensure this is the only one object select
         bpy.ops.object.delete(use_global=True)
@@ -164,15 +218,6 @@ class AddJoint(Operator):
         description='',
         default=True,
         )
-
-    def __get_target_bone(self, rigid):
-        relation = rigid.constraints.get('mmd_tools_rigid_parent', None)
-        if relation:
-            arm = relation.target
-            bone_name = relation.subtarget
-            if arm is not None and bone_name in arm.data.bones:
-                return arm.data.bones[bone_name]
-        return None
 
     def __enumerate_rigid_pair(self, bone_map):
         obj_seq = tuple(bone_map.keys())
@@ -206,7 +251,7 @@ class AddJoint(Operator):
 
         name_j = rigid_b.mmd_rigid.name_j or rigid_b.name
         name_e = rigid_b.mmd_rigid.name_e or rigid_b.name
-        joint = rig.createJoint(
+        return rig.createJoint(
                 name = name_j,
                 name_e = name_e,
                 location = loc,
@@ -221,7 +266,6 @@ class AddJoint(Operator):
                 spring_linear = [0, 0, 0],
                 spring_angular = [0, 0, 0],
                 )
-        joint.select = True
 
     def execute(self, context):
         obj = context.active_object
@@ -229,20 +273,24 @@ class AddJoint(Operator):
         rig = mmd_model.Model(root)
         mmd_root = rig.rootObject().mmd_root
 
+        arm = rig.armature()
         bone_map = {}
         for i in context.selected_objects:
-            if i.mmd_type == 'RIGID_BODY':
-                bone_map[i] = self.__get_target_bone(i)
+            if mmd_model.isRigidBodyObject(i):
+                bone_map[i] = arm.data.bones.get(i.mmd_rigid.bone, None)
 
         if len(bone_map) < 2:
             self.report({ 'ERROR' }, "Please select two or more mmd rigid objects")
             return { 'CANCELLED' }
 
+        utils.selectAObject(root)
+        root.select = False
         if context.scene.rigidbody_world is None:
             bpy.ops.rigidbody.world_add()
 
         for pair in self.__enumerate_rigid_pair(bone_map):
-            self.__add_joint(rig, mmd_root, pair, bone_map)
+            joint = self.__add_joint(rig, mmd_root, pair, bone_map)
+            joint.select = True
 
         return { 'FINISHED' }
 
@@ -255,12 +303,13 @@ class RemoveJoint(Operator):
     bl_label = 'Remove Joint'
     bl_description = 'Deletes the currently selected Joint'
     bl_options = {'PRESET'}  
-    
+
+    @classmethod
+    def poll(cls, context):
+        return mmd_model.isJointObject(context.active_object)
+
     def execute(self, context):
         obj = context.active_object
-        if obj.mmd_type != 'JOINT':
-            self.report({ 'ERROR' }, "Select the Joint to be deleted")
-            return { 'CANCELLED' }
         root = mmd_model.Model.findRoot(obj)
         utils.selectAObject(obj) #ensure this is the only one object select
         bpy.ops.object.delete(use_global=True)

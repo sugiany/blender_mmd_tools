@@ -658,6 +658,7 @@ class __PmxExporter:
             else:
                 raise Exception('Invalid rigid body type: %s %s', obj.name, rigid_shape)
 
+            p_rigid.bone = bone_map.get(obj.mmd_rigid.bone, -1)
             p_rigid.collision_group_number = obj.mmd_rigid.collision_group_number
             mask = 0
             for i, v in enumerate(obj.mmd_rigid.collision_group_mask):
@@ -672,10 +673,6 @@ class __PmxExporter:
             p_rigid.velocity_attenuation = rb.linear_damping
             p_rigid.rotation_attenuation = rb.angular_damping
 
-            if 'mmd_tools_rigid_parent' in obj.constraints:
-                constraint = obj.constraints['mmd_tools_rigid_parent']
-                bone = constraint.subtarget
-                p_rigid.bone = bone_map.get(bone, -1)
             self.__model.rigids.append(p_rigid)
             rigid_map[obj] = rigid_cnt
             rigid_cnt += 1

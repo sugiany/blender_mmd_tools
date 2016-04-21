@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import bpy
-from bpy.types import Panel, UIList
+from bpy.types import Panel, Menu, UIList
 
 from mmd_tools import operators
 import mmd_tools.core.model as mmd_model
@@ -528,6 +528,11 @@ class UL_ObjectsMixIn(object):
             ],
         default='ACTIVE',
         )
+    visible_only = bpy.props.BoolProperty(
+        name='Visible Only',
+        default=False,
+        )
+
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
@@ -537,8 +542,9 @@ class UL_ObjectsMixIn(object):
             layout.label(text='', icon=self.icon)
 
     def draw_filter(self, context, layout):
-        row = layout.row()
+        row = layout.row(align=True)
         row.prop(self, 'model_filter', expand=True)
+        row.prop(self, 'visible_only', text='', toggle=True, icon='RESTRICT_VIEW_OFF')
 
     def filter_items(self, context, data, propname):
         objects = getattr(data, propname)
@@ -555,12 +561,24 @@ class UL_ObjectsMixIn(object):
                 if obj.mmd_type == self.mmd_type:
                     flt_flags[i] = self.bitflag_filter_item
 
+        if self.visible_only:
+            for i, obj in enumerate(objects):
+                if obj.hide and flt_flags[i] == self.bitflag_filter_item:
+                    flt_flags[i] = ~self.bitflag_filter_item
+
         return flt_flags, flt_neworder
 
 class UL_rigidbodies(UL_ObjectsMixIn, UIList):
     mmd_type = 'RIGID_BODY'
     icon = 'MESH_ICOSPHERE'
 
+class MMDRigidbodyMenu(Menu):
+    bl_idname = 'OBJECT_MT_mmd_tools_rigidbody_menu'
+    bl_label = 'Rigidbody Menu'
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator_menu_enum('mmd_tools.select_rigid_body', 'properties', text='Select Similar...')
 
 class MMDRigidbodySelectorPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_rigidbody_list'
@@ -593,13 +611,7 @@ class MMDRigidbodySelectorPanel(_PanelBase, Panel):
         tb1 = tb.column(align=True)
         tb1.operator(operators.rigid_body.AddRigidBody.bl_idname, text='', icon='ZOOMIN')
         tb1.operator(operators.rigid_body.RemoveRigidBody.bl_idname, text='', icon='ZOOMOUT')
-
-        if mmd_model.isRigidBodyObject(active_obj):
-            c = col.column(align=True)
-            c.enabled = active_obj.mode == 'OBJECT'
-            c.row(align=True).label(active_obj.name, icon='MESH_ICOSPHERE')
-            c.row(align=True).prop(active_obj.mmd_rigid, 'shape', expand=True)
-            c.column(align=True).prop(active_obj.mmd_rigid, 'size', text='')
+        tb1.menu('OBJECT_MT_mmd_tools_rigidbody_menu', text='', icon='DOWNARROW_HLT')
 
 
 class UL_joints(UL_ObjectsMixIn, UIList):

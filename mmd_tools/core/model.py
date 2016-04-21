@@ -140,6 +140,7 @@ class Model:
         obj.rotation_euler = rotation
         obj.hide_render = True
         obj.mmd_type = 'RIGID_BODY'
+        obj.parent = self.rigidGroupObject()
 
         obj.mmd_rigid.shape = rigid_body.collisionShape(shape_type)
         obj.mmd_rigid.size = size
@@ -163,6 +164,8 @@ class Model:
         if name_e is not None:
             obj.mmd_rigid.name_e = name_e
 
+        obj.mmd_rigid.bone = bone if bone else ''
+
         rb = obj.rigid_body
         if friction is not None:
             rb.friction = friction
@@ -175,14 +178,6 @@ class Model:
         if bounce:
             rb.restitution = bounce
 
-        constraint = obj.constraints.new('CHILD_OF')
-        constraint.target = self.armature()
-        if bone is not None and bone != '':
-            constraint.subtarget = bone
-        constraint.name = 'mmd_tools_rigid_parent'
-        constraint.mute = True
-
-        obj.parent = self.rigidGroupObject()
         obj.select = False
         self.__root.mmd_root.is_built = False
         return obj
@@ -223,6 +218,7 @@ class Model:
             'J.'+name,
             None)
         bpy.context.scene.objects.link(obj)
+        bpy.context.scene.objects.active = obj
         obj.mmd_type = 'JOINT'
         obj.mmd_joint.name_j = name
         if name_e is not None:
@@ -234,10 +230,8 @@ class Model:
         obj.empty_draw_size = size
         obj.empty_draw_type = 'ARROWS'
         obj.hide_render = True
-        obj.parent = self.armature()
 
-        with bpyutils.select_object(obj):
-            bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
+        bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
         rbc = obj.rigid_body_constraint
 
         rbc.object1 = rigid_a
@@ -464,12 +458,7 @@ class Model:
                 rigid = i.parent
                 bone = track_to_bone_map.get(i)
                 logging.info('Create a "CHILD_OF" constraint for %s', rigid.name)
-                constraint = rigid.constraints.new('CHILD_OF')
-                constraint.target = arm
-                if bone is not None:
-                    constraint.subtarget = bone.name
-                constraint.name = 'mmd_tools_rigid_parent'
-                constraint.mute = True
+                rigid.mmd_rigid.bone = bone.name
                 bpy.context.scene.objects.unlink(i)
                 bpy.data.objects.remove(i)
 
@@ -661,11 +650,7 @@ class Model:
                         empty.select = False
                         empty.hide = True
                         # revert change
-                        const = ori_rigid_obj.constraints.new('CHILD_OF')
-                        const.target = arm
-                        const.subtarget = bone_name
-                        const.name = 'mmd_tools_rigid_parent'
-                        const.mute = True
+                        ori_rigid_obj.mmd_rigid.bone = bone_name
                     else:
                         logging.info('        * Bone (%s): track target [%s]',
                             target_bone.name, ori_rigid_obj.name)
