@@ -30,10 +30,19 @@ class SelectRigidBody(Operator):
             ],
         default=set(),
         )
+    hide_others = bpy.props.BoolProperty(
+        name='Hide Others',
+        description='',
+        default=False,
+        )
 
     @classmethod
     def poll(cls, context):
         return mmd_model.isRigidBodyObject(context.active_object)
+
+    def invoke(self, context, event):
+        vm = context.window_manager
+        return vm.invoke_props_dialog(self)
 
     def execute(self, context):
         obj = context.active_object
@@ -43,20 +52,25 @@ class SelectRigidBody(Operator):
             return { 'CANCELLED' }
 
         rig = mmd_model.Model(root)
-        rigidbodies = [i for i in rig.rigidBodies()]
+        selection = {i for i in rig.rigidBodies()}
 
-        selection = set(rigidbodies)
         for prop_name in self.properties:
             prop_value = getattr(obj.mmd_rigid, prop_name)
             if prop_name == 'collision_group_mask':
                 prop_value = tuple(prop_value)
-                for i in rigidbodies:
+                for i in selection.copy():
                     if tuple(i.mmd_rigid.collision_group_mask) != prop_value:
                         selection.remove(i)
+                        if self.hide_others:
+                            i.select = False
+                            i.hide = True
             else:
-                for i in rigidbodies:
+                for i in selection.copy():
                     if getattr(i.mmd_rigid, prop_name) != prop_value:
                         selection.remove(i)
+                        if self.hide_others:
+                            i.select = False
+                            i.hide = True
 
         for i in selection:
             i.hide = False

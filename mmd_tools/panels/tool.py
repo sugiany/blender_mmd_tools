@@ -533,10 +533,10 @@ class UL_ObjectsMixIn(object):
         default=False,
         )
 
-
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
             layout.prop(item, 'name', text='', emboss=False, icon=self.icon)
+            self.draw_item_special(context, layout, item)
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'
             layout.label(text='', icon=self.icon)
@@ -572,13 +572,29 @@ class UL_rigidbodies(UL_ObjectsMixIn, UIList):
     mmd_type = 'RIGID_BODY'
     icon = 'MESH_ICOSPHERE'
 
+    def draw_item_special(self, context, layout, item):
+        if not item.mmd_rigid.bone:
+            layout.label(icon='BONE_DATA')
+
+class MMDRigidbodySelectMenu(Menu):
+    bl_idname = 'OBJECT_MT_mmd_tools_rigidbody_select_menu'
+    bl_label = 'Rigidbody Select Menu'
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator_context = 'INVOKE_DEFAULT'
+        layout.operator('mmd_tools.select_rigid_body', text='Select Similar...')
+        layout.separator()
+        layout.operator_context = 'EXEC_DEFAULT'
+        layout.operator_enum('mmd_tools.select_rigid_body', 'properties')
+
 class MMDRigidbodyMenu(Menu):
     bl_idname = 'OBJECT_MT_mmd_tools_rigidbody_menu'
     bl_label = 'Rigidbody Menu'
 
     def draw(self, context):
         layout = self.layout
-        layout.operator_menu_enum('mmd_tools.select_rigid_body', 'properties', text='Select Similar...')
+        layout.menu('OBJECT_MT_mmd_tools_rigidbody_select_menu', text='Select Similar')
 
 class MMDRigidbodySelectorPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_rigidbody_list'
@@ -617,6 +633,15 @@ class MMDRigidbodySelectorPanel(_PanelBase, Panel):
 class UL_joints(UL_ObjectsMixIn, UIList):
     mmd_type = 'JOINT'
     icon = 'CONSTRAINT'
+
+    def draw_item_special(self, context, layout, item):
+        rbc = item.rigid_body_constraint
+        if rbc is None:
+            layout.label(icon='ERROR')
+        elif rbc.object1 is None or rbc.object2 is None:
+            layout.label(icon='OBJECT_DATA')
+        elif rbc.object1 == rbc.object2:
+            layout.label(icon='MESH_CUBE')
 
 class MMDJointSelectorPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_joint_list'
