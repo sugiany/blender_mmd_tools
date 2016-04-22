@@ -5,6 +5,7 @@ from bpy.types import Operator
 
 from mmd_tools import utils
 from mmd_tools.core import model as mmd_model
+from mmd_tools.core.morph import FnMorph
 
 
 class SeparateByMaterials(Operator):
@@ -21,12 +22,16 @@ class SeparateByMaterials(Operator):
     def execute(self, context):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
-        if root and root.mmd_root.editing_morph:            
-            self.report({ 'ERROR' }, "You are editing a morph, apply or clear it before proceed")
-            return { 'CANCELLED' }
+        if root and root.mmd_root.editing_morphs > 0:    
+            bpy.ops.mmd_tools.clear_temp_materials()
+            bpy.ops.mmd_tools.clear_uv_morph_view()        
+            self.report({ 'WARNING' }, "Active editing morphs were cleared")
+            # return { 'CANCELLED' }
         utils.separateByMaterials(obj)
         if root and len(root.mmd_root.material_morphs) > 0:
-            pass  # TODO: we need to update the references to the mesh object on the material morph offsets
+            for morph in root.mmd_root.material_morphs:
+                mo = FnMorph(morph, mmd_model.Model(root))
+                mo.update_mat_related_mesh()
         utils.clearUnusedMeshes()
         return {'FINISHED'}
 
@@ -48,18 +53,24 @@ class JoinMeshes(Operator):
             self.report({ 'ERROR' }, 'Select a MMD model') 
             return { 'CANCELLED' } 
 
-        if root.mmd_root.editing_morph:            
-            self.report({ 'ERROR' }, "You are editing a morph, apply or clear it before proceed")
-            return { 'CANCELLED' }
+        if root.mmd_root.editing_morphs > 0:            
+            bpy.ops.mmd_tools.clear_temp_materials()
+            bpy.ops.mmd_tools.clear_uv_morph_view()        
+            self.report({ 'WARNING' }, "Active editing morphs were cleared")
+            # return { 'CANCELLED' }
         # Find all the meshes in mmd_root and join them          
         rig = mmd_model.Model(root)
         bpy.ops.object.select_all(action='DESELECT')
         for mesh in rig.meshes():
+            mesh.hide = False
             mesh.select = True
         bpy.context.scene.objects.active = rig.firstMesh()        
         bpy.ops.object.join()
         if len(root.mmd_root.material_morphs) > 0:
-            pass  # TODO: update the mesh references
+            for morph in root.mmd_root.material_morphs:
+                mo = FnMorph(morph, rig)
+                mo.update_mat_related_mesh(rig.firstMesh())
+                
 
         utils.clearUnusedMeshes()
         return { 'FINISHED' }

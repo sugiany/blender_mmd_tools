@@ -209,11 +209,11 @@ class MMDRoot(PropertyGroup):
         default='',
         )
 
-    advanced_mode = BoolProperty(
-        name='Advanced Mode',
-        description='This option enables advanced and experimental features',
-        default=False,
-        )
+#     advanced_mode = BoolProperty(
+#         name='Advanced Mode',
+#         description='This option enables advanced and experimental features',
+#         default=False,
+#         )
 
     show_meshes = BoolProperty(
         name='Show Meshes',
@@ -342,9 +342,10 @@ class MMDRoot(PropertyGroup):
         min=0,
         default=0
         )
-    editing_morph = BoolProperty(
+    editing_morphs = IntProperty(
         name='Editing Morph',
         description=('Internal property used to indicate that a morph is being viewed or edited. ' +
                      'This is used as safety check to prevent some operations.'),
-        default=False,
+        default=0, 
+        min=0,
         )

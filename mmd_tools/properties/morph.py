@@ -161,7 +161,7 @@ class MaterialMorphData(PropertyGroup):
     """
     related_mesh = StringProperty(
         name='Related Mesh',
-        description='Stores a reference to the mesh where this morph belongs to',
+        description='Stores a reference to the mesh where this morph data belongs to',
         set=_set_related_mesh,
         get=_get_related_mesh,
         )
