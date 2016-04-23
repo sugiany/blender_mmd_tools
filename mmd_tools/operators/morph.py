@@ -431,8 +431,8 @@ class ClearTempMaterials(Operator):
                             poly.material_index = base_idx
                     mat = meshObj.data.materials.pop(index=temp_idx)
                     bpy.data.materials.remove(mat)
+                    root.mmd_root.editing_morphs -= 1
 
-        root.mmd_root.editing_morphs = 0
         return { 'FINISHED' }
     
 class AddBoneMorph(Operator, _AddMorphBase):
@@ -726,12 +726,13 @@ class ViewUVMorph(Operator):
                     for data in morph.data:
                         offset = Vector(data.offset[:2]) # only use dx, dy
                         for i in uv_id_map.get(data.index, []):
-                             temp_uv_data[i].uv = base_uv_data[i].uv + offset
+                            temp_uv_data[i].uv = base_uv_data[i].uv + offset
 
             uv_textures.active = uv_tex
             uv_tex.active_render = True
         meshObj.hide = False
         meshObj.select = selected
+        root.mmd_root.editing_morphs += 1
         return { 'FINISHED' }
 
 class ClearUVMorphView(Operator):
@@ -768,6 +769,7 @@ class ClearUVMorphView(Operator):
             if act.name.startswith('__uv.') and act.users < 1:
                 bpy.data.actions.remove(act)
         bpy.ops.screen.frame_jump(end=False)
+        root.mmd_root.editing_morphs -= 1
         return { 'FINISHED' }
 
 class EditUVMorph(Operator):
@@ -867,15 +869,22 @@ class ApplyUVMorph(Operator):
             for bv in mesh.vertices:
                 if not bv.select:
                     continue
-                uv_idx = uv_vertices.index(bv.index) #XXX only get the first one
-                dx, dy = temp_uv_data[uv_idx].uv - base_uv_data[uv_idx].uv
-                if abs(dx) > 0.0001 or abs(dy) > 0.0001:
-                    data = morph.data.add()
-                    data.index = bv.index
-                    data.offset = (dx, dy, 0, 0)
+                # uv_idx = uv_vertices.index(bv.index) #XXX only get the first one
+                # uv_indexes = [i for i, v in enumerate(uv_vertices) if v == bv.index]
+                for uv_idx, v in enumerate(uv_vertices):
+                    # Find the first valid offset
+                    if v == bv.index:
+                        dx, dy = temp_uv_data[uv_idx].uv - base_uv_data[uv_idx].uv
+                        if abs(dx) > 0.0001 or abs(dy) > 0.0001:
+                            data = morph.data.add()
+                            data.index = bv.index
+                            data.offset = (dx, dy, 0, 0)
+                            break
 
         meshObj.select = selected
-        bpy.ops.mmd_tools.view_uv_morph(with_animation=self.with_animation)
+        # Can't call view_uv_morph here if we want to track the number of editing morphs
+        # bpy.ops.mmd_tools.view_uv_morph(with_animation=self.with_animation)
+        mmd_root.editing_morphs -= 1
         return { 'FINISHED' }
 
 class AddGroupMorph(Operator, _AddMorphBase):

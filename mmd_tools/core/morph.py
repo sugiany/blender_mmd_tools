@@ -17,7 +17,7 @@ class FnMorph(object):
             if meshObj is None:
                 # Given this point we need to loop through all the meshes
                 for mesh in self.__rig.meshes():
-                    if mesh.data.materials.find(offset.material) <= 0:
+                    if mesh.data.materials.find(offset.material) >= 0:
                         meshObj = mesh
                         break
 
