@@ -116,6 +116,17 @@ def separateByMaterials(meshObj):
             i.name = mat.name
             i.parent = prev_parent
 
+def clearUnusedMeshes():
+    import bpy
+    meshes_to_delete = []
+    for mesh in bpy.data.meshes:
+        if mesh.users == 0:
+            meshes_to_delete.append(mesh)
+
+    for mesh in meshes_to_delete:
+        bpy.data.meshes.remove(mesh)
+    
+
 
 ## Boneのカスタムプロパティにname_jが存在する場合、name_jの値を
 # それ以外の場合は通常のbone名をキーとしたpose_boneへの辞書を作成

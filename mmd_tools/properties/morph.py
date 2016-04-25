@@ -147,11 +147,24 @@ def _set_material(prop, value):
     mat = bpy.data.materials[value]
     fnMat = FnMaterial(mat)
     prop['material_id'] = fnMat.material_id
-
+    
+def _set_related_mesh(prop, value):
+    rig = FnModel(prop.id_data)
+    if rig.findMesh(value):
+        prop['related_mesh'] = value
+        
+def _get_related_mesh(prop):
+    return prop.get('related_mesh', '')
     
 class MaterialMorphData(PropertyGroup):
     """
     """
+    related_mesh = StringProperty(
+        name='Related Mesh',
+        description='Stores a reference to the mesh where this morph data belongs to',
+        set=_set_related_mesh,
+        get=_get_related_mesh,
+        )
     offset_type = EnumProperty(
         name='Offset Type',
         items=[

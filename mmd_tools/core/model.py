@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import bpy
-from bpy.types import Operator
 import mathutils
 
 from mmd_tools import bpyutils
@@ -388,6 +387,15 @@ class Model:
     def firstMesh(self):
         for i in self.meshes():
             return i
+        return None
+
+    def findMesh(self, mesh_name):
+        """
+        Helper method to find a mesh by name
+        """
+        for mesh in self.meshes():
+            if mesh.name == mesh_name or mesh.data.name == mesh_name:
+                return mesh
         return None
 
     def rigidBodies(self):

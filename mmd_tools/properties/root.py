@@ -209,6 +209,12 @@ class MMDRoot(PropertyGroup):
         default='',
         )
 
+#     advanced_mode = BoolProperty(
+#         name='Advanced Mode',
+#         description='This option enables advanced and experimental features',
+#         default=False,
+#         )
+
     show_meshes = BoolProperty(
         name='Show Meshes',
         update=_toggleVisibilityOfMeshes,
@@ -322,11 +328,11 @@ class MMDRoot(PropertyGroup):
         name='Active Morph Type',
         description='Active Morph Type',
         items = [
-            ('material_morphs', 'Material', '', 0),
-            ('uv_morphs', 'UV', '', 1),
-            ('bone_morphs', 'Bone', '', 2),
-            ('vertex_morphs', 'Vertex', '', 3),
-            ('group_morphs', 'Group', '', 4),
+            ('material_morphs', 'MAT', 'Material Morphs', 0),
+            ('uv_morphs', 'UV', 'UV Morphs', 1),
+            ('bone_morphs', 'BONE', 'Bone Morphs', 2),
+            ('vertex_morphs', 'VTX', 'Vertex Morphs', 3),
+            ('group_morphs', 'GRP', 'Group Morphs', 4),
             ],
         default='vertex_morphs',
         update=_activeMorphReset
@@ -335,4 +341,11 @@ class MMDRoot(PropertyGroup):
         name='Active Morph',
         min=0,
         default=0
+        )
+    editing_morphs = IntProperty(
+        name='Editing Morph',
+        description=('Internal property used to indicate that a morph is being viewed or edited. ' +
+                     'This is used as safety check to prevent some operations.'),
+        default=0, 
+        min=0,
         )
