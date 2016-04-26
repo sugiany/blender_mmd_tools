@@ -4,7 +4,7 @@ import logging
 import os
 
 import bpy
-import mmd_tools
+from mmd_tools.bpyutils import addon_preferences
 
 SPHERE_MODE_OFF    = 0
 SPHERE_MODE_MULT   = 1
@@ -114,7 +114,7 @@ class FnMaterial(object):
             tex = texture_slot.texture
             self.__material.texture_slots.clear(index)
             #print('clear texture: %s  users: %d'%(tex.name, tex.users))
-            if tex and tex.users < 1:
+            if tex and tex.users < 1 and tex.type == 'IMAGE':
                 #print(' - remove texture: '+tex.name)
                 img = tex.image
                 tex.image = None
@@ -192,7 +192,7 @@ class FnMaterial(object):
     def update_toon_texture(self):
         mmd_mat = self.__material.mmd_material
         if mmd_mat.is_shared_toon_texture:
-            shared_toon_folder = mmd_tools.addon_preferences('shared_toon_folder', '')
+            shared_toon_folder = addon_preferences('shared_toon_folder', '')
             toon_path = os.path.join(shared_toon_folder, 'toon%02d.bmp'%(mmd_mat.shared_toon_texture+1))
             self.create_toon_texture(bpy.path.resolve_ncase(path=toon_path))
         elif mmd_mat.toon_texture != '':
