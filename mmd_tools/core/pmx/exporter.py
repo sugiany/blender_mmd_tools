@@ -164,6 +164,8 @@ class __PmxExporter:
                     # Fall back to basename and textures folder
                     dst_name = os.path.basename(path)
                     tex_dir = tex_dir_fallback
+            else:
+                tex_dir = tex_dir_fallback
             dest_path = os.path.join(tex_dir, dst_name)
             os.makedirs(os.path.dirname(dest_path), exist_ok=True)
             if not os.path.isfile(path):
@@ -939,8 +941,6 @@ class __PmxExporter:
 
         if self.__copyTextures:
             tex_dir = os.path.dirname(filepath)
-            if not bpyutils.addon_preferences('base_texture_folder', ''):
-                tex_dir = os.path.join(tex_dir, 'textures') 
             self.__copy_textures(tex_dir)
 
         pmx.save(filepath, self.__model)

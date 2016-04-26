@@ -260,9 +260,6 @@ class ExportPmx(Operator, ExportHelper):
             bpy.ops.pose.transforms_clear()
             bpy.ops.object.mode_set(mode='OBJECT')
             root.mmd_root.show_armature = prev_show
-        # Add extension if needed
-        if not self.filepath.endswith(self.filename_ext):
-            self.filepath += self.filename_ext 
         try:
             pmx_exporter.export(
                 filepath=self.filepath,
