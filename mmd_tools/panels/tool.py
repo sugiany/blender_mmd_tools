@@ -32,6 +32,7 @@ class MMDToolsObjectPanel(_PanelBase, Panel):
         col.operator(operators.material.ConvertMaterialsForCycles.bl_idname, text='Convert Materials For Cycles')
         col.operator('mmd_tools.separate_by_materials', text='Separate By Materials')
         col.operator(operators.misc.JoinMeshes.bl_idname)
+        col.operator(operators.misc.AttachMeshesToMMD.bl_idname)
 
         if active_obj is None:
             return
