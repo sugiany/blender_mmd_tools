@@ -245,11 +245,13 @@ class __PmxExporter:
                     pmx_bone.name = bone.name
 
                 mmd_bone = p_bone.mmd_bone
-                if mmd_bone.additional_transform_bone_id != -1:
-                    fnBone = FnBone.from_bone_id(arm, mmd_bone.additional_transform_bone_id)
-                    pmx_bone.additionalTransform = (fnBone.pose_bone, mmd_bone.additional_transform_influence)
                 pmx_bone.hasAdditionalRotate = mmd_bone.has_additional_rotation
                 pmx_bone.hasAdditionalLocation = mmd_bone.has_additional_location
+                pmx_bone.additionalTransform = [None, mmd_bone.additional_transform_influence]
+                if mmd_bone.additional_transform_bone_id != -1:
+                    fnBone = FnBone.from_bone_id(arm, mmd_bone.additional_transform_bone_id)
+                    if fnBone:
+                        pmx_bone.additionalTransform[0] = fnBone.pose_bone
 
                 pmx_bone.name_e = p_bone.mmd_bone.name_e or ''
                 pmx_bone.location = world_mat * mathutils.Vector(bone.head) * self.__scale * self.TO_PMX_MATRIX
@@ -293,9 +295,8 @@ class __PmxExporter:
                 elif isinstance(i.displayConnection, bpy.types.EditBone):
                     i.displayConnection = pmx_bones.index(boneMap[i.displayConnection])
 
-                if i.additionalTransform is not None:
-                    b, influ = i.additionalTransform
-                    i.additionalTransform = (r[b.name], influ)
+                pose_bone = i.additionalTransform[0]
+                i.additionalTransform[0] = r.get(pose_bone.name, -1) if pose_bone else -1
 
             self.__model.bones = pmx_bones
         return r

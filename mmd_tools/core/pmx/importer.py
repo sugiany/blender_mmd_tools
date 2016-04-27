@@ -285,7 +285,8 @@ class PMXImporter:
                 mmd_bone.has_additional_rotation = pmx_bone.hasAdditionalRotate
                 mmd_bone.has_additional_location = pmx_bone.hasAdditionalLocation
                 mmd_bone.additional_transform_influence = influ
-                mmd_bone.additional_transform_bone =  pose_bones[bone_index].name
+                if 0 <= bone_index < len(pose_bones):
+                    mmd_bone.additional_transform_bone = pose_bones[bone_index].name
 
             if pmx_bone.localCoordinate is not None:
                 b_bone.mmd_bone.enabled_local_axes = True
