@@ -47,6 +47,10 @@ class __SelectObjects:
         for i, j in zip(self.__selected_objects, self.__hides):
             i.hide = j
 
+def addon_preferences(attrname, default=None):
+    addon = bpy.context.user_preferences.addons.get(__package__, None)
+    return getattr(addon.preferences, attrname, default) if addon else default
+
 def setParent(obj, parent):
     ho = obj.hide
     hp = parent.hide

@@ -152,16 +152,25 @@ class __PmxExporter:
         return len(self.__model.textures) - 1
 
     def __copy_textures(self, tex_dir):
-        if not os.path.isdir(tex_dir):
-            os.mkdir(tex_dir)
-            logging.info('Create a texture directory: %s', tex_dir)
-
+        tex_dir_fallback = os.path.join(tex_dir, 'textures')
         for texture in self.__model.textures:
             path = texture.path
-            dest_path = os.path.join(tex_dir, os.path.basename(path))
+            base_folder = bpyutils.addon_preferences('base_texture_folder', '')
+            dst_name = os.path.basename(path)
+            if base_folder != '':
+                dst_name = os.path.relpath(path, base_folder)
+                if dst_name.startswith('..'):
+                    logging.warning('The texture %s is not inside the base texture folder', path)
+                    # Fall back to basename and textures folder
+                    dst_name = os.path.basename(path)
+                    tex_dir = tex_dir_fallback
+            else:
+                tex_dir = tex_dir_fallback
+            dest_path = os.path.join(tex_dir, dst_name)
+            os.makedirs(os.path.dirname(dest_path), exist_ok=True)
             if not os.path.isfile(path):
                 logging.warning('*** skipping texture file which does not exist: %s', path)
-            else:                        
+            elif path != dest_path:  # Only copy if the paths are different                        
                 shutil.copyfile(path, dest_path)
                 logging.info('Copy file %s --> %s', path, dest_path)
             texture.path = dest_path
@@ -932,7 +941,7 @@ class __PmxExporter:
             self.__exportDisplayItems(root, nameMap)
 
         if self.__copyTextures:
-            tex_dir = os.path.join(os.path.dirname(filepath), 'textures')
+            tex_dir = os.path.dirname(filepath)
             self.__copy_textures(tex_dir)
 
         pmx.save(filepath, self.__model)

@@ -40,9 +40,6 @@ bl_info= {
 
 logging.basicConfig(format='%(message)s')
 
-def addon_preferences(attrname, default=None):
-    addon = bpy.context.user_preferences.addons.get(__name__, None)
-    return getattr(addon.preferences, attrname, default) if addon else default
 
 class MMDToolsAddonPreferences(AddonPreferences):
     # this must match the addon name, use '__package__'
@@ -51,12 +48,21 @@ class MMDToolsAddonPreferences(AddonPreferences):
 
     shared_toon_folder = StringProperty(
             name="Shared Toon Texture Folder",
+            description=('Directory path to toon textures. This is normally the ' +
+                         '"Data" directory within of your MikuMikuDance directory'),
+            subtype='DIR_PATH',
+            )
+    base_texture_folder = StringProperty(
+            name='Base Texture Folder',
+            description=('This directory path will be used to determine the relative ' +
+                         'path of the textures you use'),
             subtype='DIR_PATH',
             )
 
     def draw(self, context):
         layout = self.layout
         layout.prop(self, "shared_toon_folder")
+        layout.prop(self, "base_texture_folder")
 
 
 def menu_func_import(self, context):
