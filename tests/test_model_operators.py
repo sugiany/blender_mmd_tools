@@ -1,5 +1,4 @@
 import unittest
-from base64 import b64decode
 
 import bpy
 
@@ -12,11 +11,11 @@ from mmd_tools.core.model import Model
 # http://stackoverflow.com/questions/3284827
 # https://developer.blender.org/T35176
 
-# A workaround is to use Base64 encoded bytestrings
+# A workaround is to use unicode literals
 # Root bone
-ROOT_BONE = b64decode(b'5YWo44Gm44Gu6Kaq').decode('utf8')
+ROOT_BONE = '\u5168\u3066\u306e\u89aa'
 # Facial Frame
-EXP_FRAME = b64decode(b'6KGo5oOF').decode('utf8')
+EXP_FRAME = '\u8868\u60c5'
 
 class ModelOperatorsTest(unittest.TestCase):
     
