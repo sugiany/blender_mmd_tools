@@ -504,7 +504,7 @@ class Model:
         logging.debug(' Removing %d children of temporary group object', tmp_cnt)
         start_time = time.time()
         total_cnt = len(bpy.data.objects)
-        layer_index = list(bpy.context.scene.layers).index(True)
+        layer_index = bpy.context.scene.active_layer
         try:
             bpy.ops.object.mode_set(mode='OBJECT')
         except Exception:

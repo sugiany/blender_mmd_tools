@@ -106,6 +106,10 @@ def _setActiveRigidbodyObject(prop, v):
     prop['active_rigidbody_object_index'] = v
 
 def _getActiveRigidbodyObject(prop):
+    objects = bpy.context.scene.objects
+    active_obj = objects.active
+    if active_obj and mmd_model.isRigidBodyObject(active_obj):
+        prop['active_rigidbody_object_index'] = objects.find(active_obj.name)
     return prop.get('active_rigidbody_object_index', 0)
 
 def _setActiveJointObject(prop, v):
@@ -116,6 +120,10 @@ def _setActiveJointObject(prop, v):
     prop['active_joint_object_index'] = v
 
 def _getActiveJointObject(prop):
+    objects = bpy.context.scene.objects
+    active_obj = objects.active
+    if active_obj and mmd_model.isJointObject(active_obj):
+        prop['active_joint_object_index'] = objects.find(active_obj.name)
     return prop.get('active_joint_object_index', 0)
 
 def _activeMorphReset(self, context):

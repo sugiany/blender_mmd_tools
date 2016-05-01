@@ -43,7 +43,7 @@ def selectSingleBone(context, armature, bone_name, reset_pose=False):
         i.select = False
     armature.hide = False
     armature.select = True
-    armature.layers[list(context.scene.layers).index(True)] = True
+    armature.layers[context.scene.active_layer] = True
     context.scene.objects.active = armature
     if reset_pose:
         def_loc = Vector((0,0,0))

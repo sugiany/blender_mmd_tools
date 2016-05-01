@@ -52,7 +52,7 @@ class SelectRigidBody(Operator):
             return { 'CANCELLED' }
 
         rig = mmd_model.Model(root)
-        selection = {i for i in rig.rigidBodies()}
+        selection = set(rig.rigidBodies())
 
         for prop_name in self.properties:
             prop_value = getattr(obj.mmd_rigid, prop_name)

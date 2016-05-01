@@ -87,7 +87,7 @@ class AttachMeshesToMMD(Operator):
     @classmethod
     def poll(cls, context):
         obj = context.active_object
-        return mmd_model.Model.findRoot(obj) is not None
+        return obj and mmd_model.Model.findRoot(obj)
 
     def execute(self, context):
         root = mmd_model.Model.findRoot(context.active_object)
