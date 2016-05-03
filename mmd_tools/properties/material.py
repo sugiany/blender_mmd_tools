@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
-import os
-
 import bpy
 from bpy.types import PropertyGroup
 from bpy.props import BoolProperty, EnumProperty, FloatProperty, FloatVectorProperty, IntProperty, StringProperty
 
 from mmd_tools.core import material
 from mmd_tools.core.material import FnMaterial
+from mmd_tools.core.model import Model
+from mmd_tools import utils
 
 
 def _updateAmbientColor(prop, context):
@@ -52,6 +52,21 @@ def _updateEdgeColor(prop, context):
 def _updateEdgeWeight(prop, context):
     FnMaterial(prop.id_data).update_edge_weight()
 
+def _getNameJ(prop):
+    return prop.get('name_j', '')
+
+def _setNameJ(prop, value):  
+    old_value = prop.get('name_j')  
+    prop_value = value
+    if prop_value and prop_value != old_value:
+        root = Model.findRoot(bpy.context.active_object)
+        if root:
+            rig = Model(root)
+            prop_value = utils.uniqueName(value, [mat.mmd_material.name_j for mat in rig.materials()])
+        else:
+            prop_value = utils.uniqueName(value, [mat.mmd_material.name_j for mat in bpy.data.materials])
+
+    prop['name_j'] = prop_value
 
 #===========================================
 # Property classes
@@ -63,6 +78,8 @@ class MMDMaterial(PropertyGroup):
         name='Name',
         description='Japanese Name',
         default='',
+        set=_setNameJ,
+        get=_getNameJ,
         )
 
     name_e = StringProperty(

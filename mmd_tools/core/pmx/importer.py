@@ -90,6 +90,9 @@ class PMXImporter:
 
         self.__armObj = self.__rig.armature()
         self.__armObj.hide = True
+        
+        # Temporarily set the root object as active to let property function hooks access it.
+        self.__targetScene.objects.active = self.__rig.rootObject()
 
     def __createMeshObject(self):
         model_name = self.__model.name
@@ -647,7 +650,7 @@ class PMXImporter:
             root.mmd_root.show_armature = True
         else:
             root.mmd_root.show_meshes = True
-        bpy.context.scene.objects.active = root
+        self.__targetScene.objects.active = root
         root.select = True
 
         logging.info(' Finished importing the model in %f seconds.', time.time() - start_time)

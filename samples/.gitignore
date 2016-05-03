@@ -1,0 +1,14 @@
+# Ignore everything in the samples directory
+/samples/*
+
+# except
+!.gitignore
+!*.md
+
+# Ignore everything in
+blends/*
+pmx/*
+pmd/*
+
+# except placeholders
+!*.HERE

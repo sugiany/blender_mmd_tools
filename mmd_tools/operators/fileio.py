@@ -3,6 +3,7 @@
 import logging
 import re
 import traceback
+import os
 
 import bpy
 from bpy.types import Operator
@@ -222,6 +223,11 @@ class ExportPmx(Operator, ExportHelper):
     filter_glob = bpy.props.StringProperty(default='*.pmx', options={'HIDDEN'})
 
     copy_textures = bpy.props.BoolProperty(name='Copy textures', default=True)
+    sort_materials = bpy.props.BoolProperty(name='Sort Materials', default=False,
+                                            description=('Sort materials for alpha blending. '
+                                                         'WARNING: Will not work if you have ' +
+                                                         'transparent meshes inside the model. ' +
+                                                         'E.g. blush meshes'))
 
     log_level = bpy.props.EnumProperty(items=LOG_LEVEL_ITEMS, name='Log level', default='DEBUG')
     save_log = bpy.props.BoolProperty(name='Create a log file', default=False)
@@ -270,6 +276,7 @@ class ExportPmx(Operator, ExportHelper):
                 rigid_bodies=rig.rigidBodies(),
                 joints=rig.joints(),
                 copy_textures=self.copy_textures,
+                sort_materials=self.sort_materials,
                 )
         finally:
             if self.save_log:
