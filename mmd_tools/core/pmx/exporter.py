@@ -62,6 +62,7 @@ class __PmxExporter:
         self.__model = None
         self.__bone_name_table = []
         self.__material_name_table = []
+        self.__material_name_map = {} # Used to map MMD material names to Blender names
         self.__vertex_index_map = {} # used for exporting uv morphs
 
     @staticmethod
@@ -140,6 +141,8 @@ class __PmxExporter:
     def __exportTexture(self, filepath):
         if filepath.strip() == '':
             return -1
+        # Use bpy.path to resolve '//' in .blend relative filepaths
+        filepath = bpy.path.abspath(filepath)
         filepath = os.path.abspath(filepath)
         for i, tex in enumerate(self.__model.textures):
             if tex.path == filepath:
@@ -215,6 +218,7 @@ class __PmxExporter:
 
         # self.__material_name_table.append(material.name) # We should create the material name table AFTER sorting the materials
         self.__model.materials.append(p_mat)
+        self.__material_name_map[p_mat.name] = material.name
 
     @classmethod
     def __countBoneDepth(cls, bone):
@@ -501,9 +505,42 @@ class __PmxExporter:
         for mat, offset, vert_count in [(x[1], x[2], x[3]) for x in sorted(distances, key=lambda x: x[0])]:
             sorted_faces.extend(faces[offset:offset+vert_count])
             sorted_mat.append(mat)
-            self.__material_name_table.append(mat.name)
+            bl_mat_name = self.__material_name_map[mat.name]
+            self.__material_name_table.append(bl_mat_name)
         self.__model.materials = sorted_mat
         self.__model.faces = sorted_faces
+
+    def __keepMaterialOrder(self, meshes):
+        """
+        Sort materials to keep the original order in the meshes
+        """
+        pmx_mat_names = []
+        for mesh in meshes:
+            for mat in mesh.materials:
+                self.__material_name_table.append(mat.name)
+                pmx_mat_name = mat.mmd_material.name_j or mat.name
+                pmx_mat_names.append(pmx_mat_name)
+        try:
+            offset = 0
+            new_order = []
+            faces = self.__model.faces
+            for mat in self.__model.materials:
+                num_faces = int(mat.vertex_count / 3)
+                new_index = pmx_mat_names.index(mat.name)
+                new_order.append((new_index, mat, offset, num_faces)) 
+                offset += num_faces
+
+            sorted_faces = []
+            sorted_mat = []
+            for mat, offset, face_count in [(x[1], x[2], x[3]) for x in sorted(new_order, key=lambda x: x[0])]:
+                sorted_faces.extend(faces[offset:offset+face_count])
+                sorted_mat.append(mat)
+
+            self.__model.materials = sorted_mat
+            self.__model.faces = sorted_faces
+                
+        except ValueError:
+            logging.warning('Problem keeping material order')
 
     @staticmethod
     def makeVMDBoneLocationMatrix(blender_bone): #TODO may move to vmd exporter function
@@ -811,7 +848,7 @@ class __PmxExporter:
         with bpyutils.select_object(meshObj):
             if meshObj.data.shape_keys is None:
                 bpy.ops.object.shape_key_add()
-            if meshObj.data.tessface_uv_textures.active is None:
+            if meshObj.data.uv_textures.active is None:
                 bpy.ops.mesh.uv_texture_add()
 
         shape_key_weights = []
@@ -919,6 +956,7 @@ class __PmxExporter:
         self.__filepath = filepath
 
         self.__scale = 1.0/float(args.get('scale', 0.2))
+        self.sortMaterials = args.get('sort_materials', False)
 
 
         nameMap = self.__exportBones()
@@ -930,7 +968,10 @@ class __PmxExporter:
 
         self.__exportMeshes(mesh_data, nameMap)
         self.__exportVertexMorphs(mesh_data, root)
-        self.__sortMaterials()
+        if self.sortMaterials:
+            self.__sortMaterials()
+        else:
+            self.__keepMaterialOrder(mesh_data)
         rigid_map = self.__exportRigidBodies(rigid_bodeis, nameMap)
         self.__exportJoints(joints, rigid_map)
         if root is not None:

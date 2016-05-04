@@ -407,6 +407,18 @@ class Model:
     def temporaryObjects(self):
         return filter(isTemporaryObject, self.allObjects(self.rigidGroupObject())+self.allObjects(self.temporaryGroupObject()))
 
+    def materials(self):
+        """
+        Helper method to list all materials in all meshes
+        """
+        material_list = []
+        for mesh in self.meshes():
+            for mat in mesh.data.materials:
+                if mat not in material_list:
+                    # control the case of a material shared among different meshes
+                    material_list.append(mat)
+        return material_list
+
     def renameBone(self, old_bone_name, new_bone_name):
         armature = self.armature()
         bone = armature.pose.bones[old_bone_name]
