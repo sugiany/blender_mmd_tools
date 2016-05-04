@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import bpy
 from bpy.types import Operator
 from bpy.props import StringProperty, BoolProperty
 
 from mmd_tools.core.material import FnMaterial
 from mmd_tools import cycles_converter
+from mmd_tools import bpyutils
 
 class ConvertMaterialsForCycles(Operator):
     bl_idname = 'mmd_tools.convert_materials_for_cycles'
@@ -93,3 +93,75 @@ class RemoveSphereTexture(Operator):
         fnMat = FnMaterial(mat)
         fnMat.remove_sphere_texture()
         return {'FINISHED'}
+
+class MoveMaterialUp(Operator):
+    bl_idname = 'mmd_tools.move_material_up'
+    bl_label = 'Move Material Up'
+    bl_description = 'Moves selected material one slot up'
+    bl_options = {'PRESET'}
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        valid_mesh = obj and obj.type == 'MESH' and obj.mmd_type == 'NONE'
+        return valid_mesh and obj.active_material_index > 0
+
+    def execute(self, context):
+        obj = context.active_object
+        current_idx = obj.active_material_index
+        prev_index = current_idx - 1
+        # save a reference to the materials
+        mat = obj.data.materials[current_idx]
+        prev_mat = obj.data.materials[prev_index]
+        if None in (mat, prev_mat):
+            self.report({'ERROR'}, 'Materials not valid')
+            return { 'CANCELLED' }
+        # Swap the assigned polygons
+        with bpyutils.select_object(obj):
+            for poly in obj.data.polygons:
+                if poly.material_index == current_idx:
+                    poly.material_index = prev_index
+                elif poly.material_index == prev_index:
+                    poly.material_index = current_idx
+            # Swap the material slots
+            obj.material_slots[prev_index].material = mat
+            obj.material_slots[current_idx].material = prev_mat
+            obj.active_material_index = prev_index
+
+        return { 'FINISHED' }
+
+class MoveMaterialDown(Operator):
+    bl_idname = 'mmd_tools.move_material_down'
+    bl_label = 'Move Material Down'
+    bl_description = 'Moves the selected material one slot down'
+    bl_options = {'PRESET'}
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        valid_mesh = obj and obj.type == 'MESH' and obj.mmd_type == 'NONE'
+        return valid_mesh and obj.active_material_index < len(obj.material_slots) - 1
+
+    def execute(self, context):
+        obj = context.active_object
+        current_idx = obj.active_material_index
+        next_index = current_idx + 1
+        # save a reference to the materials
+        mat = obj.data.materials[current_idx]
+        next_mat = obj.data.materials[next_index]
+        if None in (mat, next_mat):
+            self.report({'ERROR'}, 'Materials not valid')
+            return { 'CANCELLED' }
+        # Swap the assigned polygons
+        with bpyutils.select_object(obj):
+            for poly in obj.data.polygons:
+                if poly.material_index == current_idx:
+                    poly.material_index = next_index
+                elif poly.material_index == next_index:
+                    poly.material_index = current_idx
+            # Swap the material slots
+            obj.material_slots[next_index].material = mat
+            obj.material_slots[current_idx].material = next_mat
+            obj.active_material_index = next_index
+
+        return { 'FINISHED' }

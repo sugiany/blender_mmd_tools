@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import bpy
-from mmd_tools import bpyutils
-from mmd_tools import utils
 from bpy.types import Operator
 from mathutils import Vector, Quaternion
 
 import mmd_tools.core.model as mmd_model
+from mmd_tools import bpyutils
+from mmd_tools import utils
 
 #Util functions
 def divide_vector_components(vec1, vec2):
@@ -203,17 +203,17 @@ class AddMaterialOffset(Operator):
             return { 'CANCELLED' }
         if orig_mat.name+"_temp" in meshObj.data.materials.keys():
             self.report({ 'ERROR' }, 'Another offset is using this Material, apply it first')
-            return { 'CANCELLED' }                    
+            return { 'CANCELLED' }
         copy_mat = orig_mat.copy()
         copy_mat.name = orig_mat.name+"_temp"
         meshObj.data.materials.append(copy_mat)
         orig_idx = meshObj.active_material_index
         copy_idx = meshObj.data.materials.find(copy_mat.name)
-        
-        for poly in meshObj.data.polygons:
-            if poly.material_index == orig_idx:
-                poly.material_index = copy_idx
-            
+        with bpyutils.select_object(meshObj):
+            for poly in meshObj.data.polygons:
+                if poly.material_index == orig_idx:
+                    poly.material_index = copy_idx
+
         morph = mmd_root.material_morphs[mmd_root.active_morph]
         mat_data = morph.data.add()
         mat_data.related_mesh = meshObj.data.name
@@ -253,15 +253,16 @@ class RemoveMaterialOffset(Operator):
             return { 'CANCELLED' }        
         work_mat_name = mat_data.material+"_temp"
         if work_mat_name in meshObj.data.materials.keys():
-            base_idx = meshObj.data.materials.find(mat_data.material)
-            copy_idx = meshObj.data.materials.find(work_mat_name)
-            
-            for poly in meshObj.data.polygons:
-                if poly.material_index == copy_idx:
-                    poly.material_index = base_idx
-            
-            mat = meshObj.data.materials.pop(index=copy_idx)
-            bpy.data.materials.remove(mat)
+            with bpyutils.select_object(meshObj):
+                base_idx = meshObj.data.materials.find(mat_data.material)
+                copy_idx = meshObj.data.materials.find(work_mat_name)
+                
+                for poly in meshObj.data.polygons:
+                    if poly.material_index == copy_idx:
+                        poly.material_index = base_idx
+                
+                mat = meshObj.data.materials.pop(index=copy_idx)
+                bpy.data.materials.remove(mat)
         morph.data.remove(morph.active_material_data)
         morph.active_material_data = max(0, morph.active_material_data-1)
         mmd_root.editing_morphs -= 1
@@ -298,10 +299,10 @@ class ApplyMaterialOffset(Operator):
         copy_idx = meshObj.data.materials.find(work_mat.name)
         base_mmd_mat = base_mat.mmd_material
         work_mmd_mat = work_mat.mmd_material
-
-        for poly in meshObj.data.polygons:
-            if poly.material_index == copy_idx:
-                poly.material_index = base_idx
+        with bpyutils.select_object(meshObj):
+            for poly in meshObj.data.polygons:
+                if poly.material_index == copy_idx:
+                    poly.material_index = base_idx
         if mat_data.offset_type == "MULT":
                 
             try:
@@ -368,10 +369,10 @@ class CreateWorkMaterial(Operator):
         meshObj.data.materials.append(work_mat)   
         base_idx = meshObj.data.materials.find(base_mat.name)
         copy_idx = meshObj.data.materials.find(work_mat.name)
-                
-        for poly in meshObj.data.polygons:
-            if poly.material_index == base_idx:
-                poly.material_index = copy_idx
+        with bpyutils.select_object(meshObj):
+            for poly in meshObj.data.polygons:
+                if poly.material_index == base_idx:
+                    poly.material_index = copy_idx
 
         base_mmd_mat = base_mat.mmd_material
         work_mmd_mat = work_mat.mmd_material
@@ -426,12 +427,13 @@ class ClearTempMaterials(Operator):
                 if base_idx == -1:
                     self.report({ 'ERROR' } ,'Warning! base material for %s was not found'%temp_mat.name)
                 else:
-                    for poly in meshObj.data.polygons:
-                        if poly.material_index == temp_idx:
-                            poly.material_index = base_idx
-                    mat = meshObj.data.materials.pop(index=temp_idx)
-                    bpy.data.materials.remove(mat)
-                    root.mmd_root.editing_morphs -= 1
+                    with bpyutils.select_object(meshObj):
+                        for poly in meshObj.data.polygons:
+                            if poly.material_index == temp_idx:
+                                poly.material_index = base_idx
+                        mat = meshObj.data.materials.pop(index=temp_idx)
+                        bpy.data.materials.remove(mat)
+                        root.mmd_root.editing_morphs -= 1
 
         return { 'FINISHED' }
     
