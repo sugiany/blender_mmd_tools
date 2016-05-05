@@ -4,7 +4,8 @@ import logging
 import os
 
 import bpy
-from mmd_tools.bpyutils import addon_preferences
+from mmd_tools.bpyutils import addon_preferences, select_object
+from mmd_tools.core.exceptions import MaterialNotFoundError
 
 SPHERE_MODE_OFF    = 0
 SPHERE_MODE_MULT   = 1
@@ -25,6 +26,51 @@ class FnMaterial(object):
             if material.mmd_material.material_id == material_id:
                 return cls(material)
         return None
+
+    @classmethod
+    def swap_materials(cls, meshObj, mat1_ref, mat2_ref, reverse=False,
+                       swap_slots=False):
+        """
+        This method will assign the polygons of mat1 to mat2.
+        If reverse is True it will also swap the polygons assigned to mat2 to mat1.
+        The reference to materials can be indexes or names
+        Finally it will also swap the material slots if the option is given.
+        """
+        try:
+            # Try to find the materials
+            mat1 = meshObj.data.materials[mat1_ref]
+            mat2 = meshObj.data.materials[mat2_ref]
+            if None in (mat1, mat2):
+                raise MaterialNotFoundError()
+        except (KeyError, IndexError):
+            # Wrap exceptions within our custom ones
+            raise MaterialNotFoundError()
+        mat1_idx = meshObj.data.materials.find(mat1.name)
+        mat2_idx = meshObj.data.materials.find(mat2.name)
+        with select_object(meshObj):
+            # Swap polygons
+            for poly in meshObj.data.polygons:
+                if poly.material_index == mat1_idx:
+                    poly.material_index = mat2_idx
+                elif reverse and poly.material_index == mat2_idx:
+                    poly.material_index = mat1_idx
+            # Swap slots if specified
+            if swap_slots:
+                meshObj.material_slots[mat1_idx].material = mat2
+                meshObj.material_slots[mat2_idx].material = mat1
+        return mat1, mat2
+
+    @classmethod
+    def fixMaterialOrder(cls, meshObj, material_names):
+        """
+        This method will fix the material order. Which is lost after joining meshes.
+        """
+        for new_idx, mat in enumerate(material_names):
+            # Get the material that is currently on this index
+            other_mat = meshObj.data.materials[new_idx]
+            if other_mat.name == mat:
+                continue  # This is already in place
+            cls.swap_materials(meshObj, mat, new_idx, reverse=True, swap_slots=True)
 
     @property
     def material_id(self):

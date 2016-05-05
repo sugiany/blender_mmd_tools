@@ -129,8 +129,21 @@ def _getActiveJointObject(prop):
 def _activeMorphReset(self, context):
     root = self.id_data
     root.mmd_root.active_morph = 0
-    
 
+def _setActiveMeshObject(prop, v):
+    obj = bpy.context.scene.objects[v]
+    if obj.type == 'MESH' and obj.mmd_type == 'NONE':
+        obj.hide = False
+        utils.selectAObject(obj)
+    prop['active_mesh_index'] = v
+    
+def _getActiveMeshObject(prop):
+    objects = bpy.context.scene.objects
+    active_obj = objects.active
+    if (active_obj and active_obj.type == 'MESH'
+            and active_obj.mmd_type == 'NONE'):
+        prop['active_mesh_index'] = objects.find(active_obj.name)
+    return prop.get('active_mesh_index', -1)
 
 #===========================================
 # Property classes
@@ -356,4 +369,11 @@ class MMDRoot(PropertyGroup):
                      'This is used as safety check to prevent some operations.'),
         default=0, 
         min=0,
+        )
+    active_mesh_index = IntProperty(
+        name='Active Mesh',
+        description='Active Mesh in this model',
+        default=-1,
+        set=_setActiveMeshObject,
+        get=_getActiveMeshObject,
         )

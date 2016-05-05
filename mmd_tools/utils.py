@@ -150,3 +150,23 @@ def uniqueName(name, used_names):
         count += 1
     return new_name
 
+def int2base(x, base):
+    """
+    Method to convert an int to a base
+    Source: http://stackoverflow.com/questions/2267362
+    """
+    import string
+    digs = string.digits + string.ascii_uppercase
+    if x < 0: sign = -1
+    elif x == 0: return digs[0]
+    else: 
+        sign = 1
+        x *= sign
+        digits = []
+    while x:
+        digits.append(digs[x % base])
+        x = int(x / base)
+    if sign < 0:
+        digits.append('-')
+    digits.reverse()
+    return ''.join(digits)

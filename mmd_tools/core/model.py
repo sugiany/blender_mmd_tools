@@ -398,6 +398,25 @@ class Model:
                 return mesh
         return None
 
+    def findMeshByIndex(self, index):
+        """
+        Helper method to find the mesh by index
+        """
+        for i, mesh in enumerate(self.meshes()):
+            if i == index:
+                return mesh
+
+        return None
+
+    def getMeshIndex(self, mesh_name):
+        """
+        Helper method to get the index of a mesh. Returns -1 if not found
+        """
+        for i, mesh in enumerate(self.meshes()):
+            if mesh.name == mesh_name or mesh.data.name == mesh_name:
+                return i
+        return -1
+
     def rigidBodies(self):
         return filter(isRigidBodyObject, self.allObjects(self.rigidGroupObject()))
 
