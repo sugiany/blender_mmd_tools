@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 
 import bpy
-from mmd_tools import bpyutils
-from mmd_tools import utils
 from bpy.types import Operator
 from mathutils import Vector, Quaternion
 
 import mmd_tools.core.model as mmd_model
+from mmd_tools import bpyutils
+from mmd_tools.core.material import FnMaterial
+from mmd_tools.core.exceptions import MaterialNotFoundError, DivisionError
+from mmd_tools import utils
 
 #Util functions
 def divide_vector_components(vec1, vec2):
@@ -18,7 +20,7 @@ def divide_vector_components(vec1, vec2):
             if v1 == 0:
                 v2 = 1 #If we have a 0/0 case we change the divisor to 1
             else:
-                raise ValueError("Invalid Input: a non-zero value can't be divided by zero")
+                raise DivisionError("Invalid Input: a non-zero value can't be divided by zero")
         result.append(v1/v2)
     return result
 
@@ -37,7 +39,7 @@ def special_division(n1, n2):
         if n1 == 0:
             n2 = 1
         else:
-            raise ValueError("Invalid Input: a non-zero value can't be divided by zero")
+            raise DivisionError("Invalid Input: a non-zero value can't be divided by zero")
     return n1/n2
 
 class _AddMorphBase(object):
@@ -180,6 +182,11 @@ class AddMaterialOffset(Operator):
     bl_label = 'Add Material Offset'
     bl_description = ''
     bl_options = {'PRESET'}
+
+    @classmethod
+    def poll(cls, context):
+        root = mmd_model.Model.findRoot(context.active_object)
+        return root and mmd_model.Model(root).firstMesh()
     
     def execute(self, context):
         obj = context.active_object
@@ -193,9 +200,6 @@ class AddMaterialOffset(Operator):
         else:
             self.report({ 'WARNING' }, "The active object is not a valid mesh. The first mesh was used instead")
 
-        if meshObj is None:
-            self.report({ 'ERROR' }, "The model mesh can't be found")
-            return { 'CANCELLED' }
         # Let's create a temporary material to edit the offset
         orig_mat = meshObj.active_material
         if orig_mat is None or "_temp" in orig_mat.name:
@@ -203,17 +207,11 @@ class AddMaterialOffset(Operator):
             return { 'CANCELLED' }
         if orig_mat.name+"_temp" in meshObj.data.materials.keys():
             self.report({ 'ERROR' }, 'Another offset is using this Material, apply it first')
-            return { 'CANCELLED' }                    
+            return { 'CANCELLED' }
         copy_mat = orig_mat.copy()
         copy_mat.name = orig_mat.name+"_temp"
         meshObj.data.materials.append(copy_mat)
-        orig_idx = meshObj.active_material_index
-        copy_idx = meshObj.data.materials.find(copy_mat.name)
-        
-        for poly in meshObj.data.polygons:
-            if poly.material_index == orig_idx:
-                poly.material_index = copy_idx
-            
+        FnMaterial.swap_materials(meshObj, orig_mat.name, copy_mat.name)
         morph = mmd_root.material_morphs[mmd_root.active_morph]
         mat_data = morph.data.add()
         mat_data.related_mesh = meshObj.data.name
@@ -227,44 +225,47 @@ class RemoveMaterialOffset(Operator):
     bl_label = 'Remove Material Offset'
     bl_description = ''
     bl_options = {'PRESET'}
-    
+
+    @classmethod
+    def poll(cls, context):
+        root = mmd_model.Model.findRoot(context.active_object)
+        return root and mmd_model.Model(root).firstMesh()
+
     def execute(self, context):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
         rig = mmd_model.Model(root)
         mmd_root = root.mmd_root
-        meshObj = rig.firstMesh()
 
         morph = mmd_root.material_morphs[mmd_root.active_morph]
         if len(morph.data) == 0:
             return { 'FINISHED' }
         mat_data = morph.data[morph.active_material_data]
-
-        # if mmd_root.advanced_mode:
-        relMesh = rig.findMesh(mat_data.related_mesh)
-        if relMesh is not None:
-            meshObj = relMesh
-        else:
-            self.report({ 'ERROR' }, "The related mesh can't be found")
-            return { 'CANCELLED' }
-        
+        meshObj = rig.findMesh(mat_data.related_mesh)
         if meshObj is None:
             self.report({ 'ERROR' }, "The model mesh can't be found")
-            return { 'CANCELLED' }        
+            return { 'CANCELLED' }
+
         work_mat_name = mat_data.material+"_temp"
-        if work_mat_name in meshObj.data.materials.keys():
-            base_idx = meshObj.data.materials.find(mat_data.material)
-            copy_idx = meshObj.data.materials.find(work_mat_name)
-            
-            for poly in meshObj.data.polygons:
-                if poly.material_index == copy_idx:
-                    poly.material_index = base_idx
-            
+        base_mat = None
+        try:
+            copy_mat, base_mat = FnMaterial.swap_materials(meshObj, work_mat_name,
+                                                           mat_data.material)
+        except MaterialNotFoundError:
+            # if the temp material is not found it can be safely ignored
+            # if the base material is not found we should report it
+            if base_mat is None:
+                self.report({ 'WARNING' }, 'Material not found')
+        else:
+            # Only remove the temp material if it has been successfully replaced with the base
+            copy_idx = meshObj.data.materials.find(copy_mat.name)
             mat = meshObj.data.materials.pop(index=copy_idx)
             bpy.data.materials.remove(mat)
+
         morph.data.remove(morph.active_material_data)
         morph.active_material_data = max(0, morph.active_material_data-1)
         mmd_root.editing_morphs -= 1
+
         return { 'FINISHED' }
         
 class ApplyMaterialOffset(Operator):
@@ -272,36 +273,36 @@ class ApplyMaterialOffset(Operator):
     bl_label = 'Apply Material Offset'
     bl_description = 'Calculates the offsets and apply them, then the temporary material is removed'
     bl_options = {'PRESET'}
-    
+
+    @classmethod
+    def poll(cls, context):
+        root = mmd_model.Model.findRoot(context.active_object)
+        return root and mmd_model.Model(root).firstMesh()
+
     def execute(self, context):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
         rig = mmd_model.Model(root)
         mmd_root = root.mmd_root
-        meshObj = rig.firstMesh()
         morph = mmd_root.material_morphs[mmd_root.active_morph]
         mat_data = morph.data[morph.active_material_data]
-        # if mmd_root.advanced_mode:
-        relMesh = rig.findMesh(mat_data.related_mesh)
-        if relMesh is not None:
-            meshObj = relMesh
-        else:
-            self.report({ 'ERROR' }, "The related mesh can't be found")
-            return { 'CANCELLED' }
 
+        meshObj = rig.findMesh(mat_data.related_mesh)
         if meshObj is None:
             self.report({ 'ERROR' }, "The model mesh can't be found")
             return { 'CANCELLED' }
-        base_mat = meshObj.data.materials[mat_data.material]
-        work_mat = meshObj.data.materials[base_mat.name+"_temp"]
-        base_idx = meshObj.data.materials.find(base_mat.name)
+        try:
+            work_mat_name = mat_data.material + '_temp'
+            work_mat, base_mat = FnMaterial.swap_materials(meshObj, work_mat_name,
+                                                           mat_data.material)
+        except MaterialNotFoundError:
+            self.report({ 'ERROR' }, "Material not found")
+            return { 'CANCELLED' }
+
         copy_idx = meshObj.data.materials.find(work_mat.name)
         base_mmd_mat = base_mat.mmd_material
         work_mmd_mat = work_mat.mmd_material
 
-        for poly in meshObj.data.polygons:
-            if poly.material_index == copy_idx:
-                poly.material_index = base_idx
         if mat_data.offset_type == "MULT":
                 
             try:
@@ -314,12 +315,14 @@ class ApplyMaterialOffset(Operator):
                 mat_data.ambient_color = divide_vector_components(work_mmd_mat.ambient_color, base_mmd_mat.ambient_color)
                 mat_data.edge_color = edge_offset
                 mat_data.edge_weight = special_division(work_mmd_mat.edge_weight, base_mmd_mat.edge_weight)
-            except ValueError as err:
-                if "Invalid Input:" in str(err):
-                    mat_data.offset_type = "ADD" #If there is any 0 division we automatically switch it to type ADD
-                else:
-                    self.report({ 'ERROR' }, 'An unexpected error happened')                          
-                    
+
+            except DivisionError:
+                mat_data.offset_type = "ADD" # If there is any 0 division we automatically switch it to type ADD
+            except ValueError:
+                self.report({ 'ERROR' }, 'An unexpected error happened')
+                # We should stop on our tracks and re-raise the exception
+                raise
+
         if mat_data.offset_type =="ADD":        
             diffuse_offset = list(work_mmd_mat.diffuse_color - base_mmd_mat.diffuse_color) + [work_mmd_mat.alpha - base_mmd_mat.alpha]
             specular_offset = list(work_mmd_mat.specular_color - base_mmd_mat.specular_color)
@@ -341,38 +344,29 @@ class CreateWorkMaterial(Operator):
     bl_label = 'Create Work Material'
     bl_description = 'Creates a temporary material to edit this offset'
     bl_options = {'PRESET'}
-    
+
+    @classmethod
+    def poll(cls, context):
+        root = mmd_model.Model.findRoot(context.active_object)
+        return root and mmd_model.Model(root).firstMesh()
+
     def execute(self, context):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
         rig = mmd_model.Model(root)
         mmd_root = root.mmd_root
-        meshObj = rig.firstMesh()
         morph = mmd_root.material_morphs[mmd_root.active_morph]
         mat_data = morph.data[morph.active_material_data]
 
-        # if mmd_root.advanced_mode:
-        relMesh = rig.findMesh(mat_data.related_mesh)
-        if relMesh is not None:
-            meshObj = relMesh
-        else:
-            self.report({ 'ERROR' }, "The related mesh can't be found")
-            return { 'CANCELLED' }
-
+        meshObj = rig.findMesh(mat_data.related_mesh)
         if meshObj is None:
             self.report({ 'ERROR' }, "The model mesh can't be found")
             return { 'CANCELLED' }
         base_mat = meshObj.data.materials[mat_data.material]
         work_mat = base_mat.copy()
         work_mat.name = base_mat.name+"_temp"     
-        meshObj.data.materials.append(work_mat)   
-        base_idx = meshObj.data.materials.find(base_mat.name)
-        copy_idx = meshObj.data.materials.find(work_mat.name)
-                
-        for poly in meshObj.data.polygons:
-            if poly.material_index == base_idx:
-                poly.material_index = copy_idx
-
+        meshObj.data.materials.append(work_mat)
+        FnMaterial.swap_materials(meshObj, base_mat.name, work_mat.name)
         base_mmd_mat = base_mat.mmd_material
         work_mmd_mat = work_mat.mmd_material
 
@@ -404,12 +398,18 @@ class CreateWorkMaterial(Operator):
 
         mmd_root.editing_morphs += 1
         return { 'FINISHED' }
+
 class ClearTempMaterials(Operator):
     bl_idname = 'mmd_tools.clear_temp_materials'
     bl_label = 'Clear Temp Materials'
     bl_description = 'Clears all the temporary materials'
     bl_options = {'PRESET'}
-    
+
+    @classmethod
+    def poll(cls, context):
+        root = mmd_model.Model.findRoot(context.active_object)
+        return root and mmd_model.Model(root).firstMesh()
+
     def execute(self, context):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
@@ -421,14 +421,12 @@ class ClearTempMaterials(Operator):
                     mats_to_delete.append(mat)
             for temp_mat in reversed(mats_to_delete):
                 base_mat_name=temp_mat.name[0:-1*len("_temp")]
-                base_idx = meshObj.data.materials.find(base_mat_name)
-                temp_idx = meshObj.data.materials.find(temp_mat.name)
-                if base_idx == -1:
-                    self.report({ 'ERROR' } ,'Warning! base material for %s was not found'%temp_mat.name)
+                try:
+                    FnMaterial.swap_materials(meshObj, temp_mat.name, base_mat_name)
+                except MaterialNotFoundError:
+                    self.report({ 'WARNING' } ,'Base material for %s was not found'%temp_mat.name)
                 else:
-                    for poly in meshObj.data.polygons:
-                        if poly.material_index == temp_idx:
-                            poly.material_index = base_idx
+                    temp_idx = meshObj.data.materials.find(temp_mat.name)
                     mat = meshObj.data.materials.pop(index=temp_idx)
                     bpy.data.materials.remove(mat)
                     root.mmd_root.editing_morphs -= 1

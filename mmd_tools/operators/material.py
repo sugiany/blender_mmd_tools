@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import bpy
 from bpy.types import Operator
 from bpy.props import StringProperty, BoolProperty
 
 from mmd_tools.core.material import FnMaterial
+from mmd_tools.core.exceptions import MaterialNotFoundError
 from mmd_tools import cycles_converter
 
 class ConvertMaterialsForCycles(Operator):
@@ -93,3 +93,54 @@ class RemoveSphereTexture(Operator):
         fnMat = FnMaterial(mat)
         fnMat.remove_sphere_texture()
         return {'FINISHED'}
+
+class MoveMaterialUp(Operator):
+    bl_idname = 'mmd_tools.move_material_up'
+    bl_label = 'Move Material Up'
+    bl_description = 'Moves selected material one slot up'
+    bl_options = {'PRESET'}
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        valid_mesh = obj and obj.type == 'MESH' and obj.mmd_type == 'NONE'
+        return valid_mesh and obj.active_material_index > 0
+
+    def execute(self, context):
+        obj = context.active_object
+        current_idx = obj.active_material_index
+        prev_index = current_idx - 1
+        try:
+            FnMaterial.swap_materials(obj, current_idx, prev_index,
+                                      reverse=True, swap_slots=True)
+        except MaterialNotFoundError:
+            self.report({'ERROR'}, 'Materials not found')
+            return { 'CANCELLED' }
+        obj.active_material_index = prev_index
+
+        return { 'FINISHED' }
+
+class MoveMaterialDown(Operator):
+    bl_idname = 'mmd_tools.move_material_down'
+    bl_label = 'Move Material Down'
+    bl_description = 'Moves the selected material one slot down'
+    bl_options = {'PRESET'}
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        valid_mesh = obj and obj.type == 'MESH' and obj.mmd_type == 'NONE'
+        return valid_mesh and obj.active_material_index < len(obj.material_slots) - 1
+
+    def execute(self, context):
+        obj = context.active_object
+        current_idx = obj.active_material_index
+        next_index = current_idx + 1
+        try:
+            FnMaterial.swap_materials(obj, current_idx, next_index,
+                                      reverse=True, swap_slots=True)
+        except MaterialNotFoundError:
+            self.report({'ERROR'}, 'Materials not found')
+            return { 'CANCELLED' }
+        obj.active_material_index = next_index
+        return { 'FINISHED' }
