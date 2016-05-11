@@ -38,26 +38,24 @@ class MMDBonePanel(Panel):
         row = c.row()
         row.prop(pose_bone.mmd_bone, 'transform_order')
         row.prop(pose_bone.mmd_bone, 'transform_after_dynamics')
-        row.prop(pose_bone.mmd_bone, 'is_visible')
-        row = c.row()
-        row.prop(pose_bone.mmd_bone, 'is_controllable')
         row.prop(pose_bone.mmd_bone, 'is_tip')
-        row.prop(pose_bone.mmd_bone, 'enabled_local_axes')
         row = c.row()
-        row.prop(pose_bone.mmd_bone, 'enabled_fixed_axis')
+        row.prop(pose_bone.mmd_bone, 'is_visible')
+        row.prop(pose_bone.mmd_bone, 'is_controllable')
         row.prop(pose_bone.mmd_bone, 'use_tail_location')
 
-        row = layout.row(align=True)
-        c = row.column()
-        c.prop(pose_bone.mmd_bone, 'local_axis_x')
-        c = row.column()
-        c.prop(pose_bone.mmd_bone, 'local_axis_z')
+        c = layout.column(align=True)
+        c.prop(pose_bone.mmd_bone, 'enabled_fixed_axis')
+        row = c.row()
+        row.active = pose_bone.mmd_bone.enabled_fixed_axis
+        row.column(align=True).prop(pose_bone.mmd_bone, 'fixed_axis', text='')
 
-        c = layout.column()
-        
-        row = layout.row(align=True)
-        c = row.column()
-        c.prop(pose_bone.mmd_bone, 'fixed_axis')
+        c = layout.column(align=True)
+        c.prop(pose_bone.mmd_bone, 'enabled_local_axes')
+        row = c.row()
+        row.active = pose_bone.mmd_bone.enabled_local_axes
+        row.column(align=True).prop(pose_bone.mmd_bone, 'local_axis_x')
+        row.column(align=True).prop(pose_bone.mmd_bone, 'local_axis_z')
 
 
 class MMDBoneATPanel(Panel):

@@ -81,12 +81,11 @@ class Model:
 
     @classmethod
     def findRoot(cls, obj):
-        if obj.mmd_type == 'ROOT':
-            return obj
-        elif obj.parent is not None:
+        if obj:
+            if obj.mmd_type == 'ROOT':
+                return obj
             return cls.findRoot(obj.parent)
-        else:
-            return None
+        return None
 
     def initialDisplayFrames(self):
         frames = self.__root.mmd_root.display_item_frames
