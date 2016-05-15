@@ -240,9 +240,9 @@ class __PmxExporter:
         r = {}
 
         # sort by a depth of bones.
-        t = []
-        for i in pose_bones:
-            t.append((i, self.__countBoneDepth(i)))
+        #t = []
+        #for i in pose_bones:
+        #    t.append((i, self.__countBoneDepth(i)))
 
         sorted_bones = sorted(pose_bones, key=self.__countBoneDepth)
 
@@ -252,10 +252,7 @@ class __PmxExporter:
                     continue
                 bone = data.edit_bones[p_bone.name]
                 pmx_bone = pmx.Bone()
-                if p_bone.mmd_bone.name_j != '':
-                    pmx_bone.name = p_bone.mmd_bone.name_j
-                else:
-                    pmx_bone.name = bone.name
+                pmx_bone.name = p_bone.mmd_bone.name_j or bone.name
 
                 mmd_bone = p_bone.mmd_bone
                 pmx_bone.hasAdditionalRotate = mmd_bone.has_additional_rotation
@@ -273,6 +270,7 @@ class __PmxExporter:
                 pmx_bone.isControllable = mmd_bone.is_controllable
                 pmx_bone.isMovable = not all(p_bone.lock_location)
                 pmx_bone.isRotatable = not all(p_bone.lock_rotation)
+                pmx_bone.transAfterPhis = mmd_bone.transform_after_dynamics
                 pmx_bones.append(pmx_bone)
                 self.__bone_name_table.append(p_bone.name)
                 boneMap[bone] = pmx_bone

@@ -12,6 +12,7 @@ import mmd_tools.core.pmx.importer as import_pmx
 import mmd_tools.core.pmd as pmd
 import mmd_tools.core.pmx as pmx
 
+from math import radians
 
 class PMDImporter:
     def execute(self, **args):
@@ -28,7 +29,7 @@ def import_pmd(**kwargs):
     logging.info('****************************************')
     logging.info(' mmd_tools.import_pmd module')
     logging.info('----------------------------------------')
-    logging.info(' Start to convert pmx data into pmd data')
+    logging.info(' Start to convert pmd data into pmx data')
     logging.info('              by the mmd_tools.pmd modlue.')
     logging.info('')
 
@@ -159,8 +160,8 @@ def import_pmd(**kwargs):
             ik_link = pmx.IKLink()
             ik_link.target = i
             if i in knee_bones:
-                ik_link.maximumAngle = [-0.5, 0.0, 0.0]
-                ik_link.minimumAngle = [-180.0, 0.0, 0.0]
+                ik_link.maximumAngle = [radians(-0.5), 0.0, 0.0]
+                ik_link.minimumAngle = [radians(-180.0), 0.0, 0.0]
                 logging.info('  Add knee constraints to %s', i)
             logging.debug('  IKLink: %s(index: %d)', pmx_model.bones[i].name, i)
             pmx_bone.ik_links.append(ik_link)
