@@ -276,18 +276,24 @@ class __PmxExporter:
                 boneMap[bone] = pmx_bone
                 r[bone.name] = len(pmx_bones) - 1
 
+                if bone.use_connect and arm.pose.bones[bone.parent.name].mmd_bone.is_tip:
+                    logging.debug(' * fix location of bone %s, parent %s is tip', bone.name, bone.parent.name)
+                    pmx_bone.location = boneMap[bone.parent].location
+
                 if p_bone.mmd_bone.is_tip:
                     pmx_bone.displayConnection = -1
                 elif p_bone.mmd_bone.use_tail_location:
                     tail_loc = world_mat * mathutils.Vector(bone.tail) * self.__scale * self.TO_PMX_MATRIX
                     pmx_bone.displayConnection = tail_loc - pmx_bone.location
                 else:
+                    pmx_bone.displayConnection = None
                     for child in bone.children:
                         if child.use_connect:
                             pmx_bone.displayConnection = child
                             break
-                    #if not pmx_bone.displayConnection: #I think this wasn't working properly
-                        #pmx_bone.displayConnection = bone.tail - bone.head
+                    if not pmx_bone.displayConnection:
+                        tail_loc = world_mat * mathutils.Vector(bone.tail) * self.__scale * self.TO_PMX_MATRIX
+                        pmx_bone.displayConnection = tail_loc - pmx_bone.location
 
                 #add fixed and local axes
                 if mmd_bone.enabled_fixed_axis:
@@ -394,6 +400,8 @@ class __PmxExporter:
         for c in target_bone.children:
             if c.is_mmd_shadow_bone:
                 continue
+            if c.bone.use_connect:
+                return c
             length = (c.head - target_bone.tail).length
             if not min_length or length < min_length:
                 min_length = length
@@ -456,7 +464,8 @@ class __PmxExporter:
                 try:
                     morph_data.index = self.__material_name_table.index(data.material)
                 except ValueError:
-                    morph_data.index = -1
+                    logging.warning('Material Morph (%s): Material %s was not found.', morph.name, data.material)
+                    continue
                 morph_data.offset_type = ['MULT', 'ADD'].index(data.offset_type)
                 morph_data.diffuse_offset = data.diffuse_color
                 morph_data.specular_offset = data.specular_color
@@ -572,7 +581,6 @@ class __PmxExporter:
             return
         categories = self.CATEGORIES
         pose_bones = self.__armature.pose.bones
-        #TODO clear pose before exporting bone morphs
         for morph in mmd_root.bone_morphs:
             bone_morph = pmx.BoneMorph(
                 name=morph.name,
@@ -586,15 +594,13 @@ class __PmxExporter:
                 except ValueError:
                     morph_data.index = -1
                 blender_bone = pose_bones.get(data.bone, None)
-                if blender_bone:
-                    mat = self.makeVMDBoneLocationMatrix(blender_bone)
-                    morph_data.location_offset = mat * mathutils.Vector(data.location) * self.__scale
-                    rw, rx, ry, rz = self.convertToVMDBoneRotation(blender_bone, data.rotation)
-                    morph_data.rotation_offset = (rx, ry, rz, rw)
-                else:
+                if blender_bone is None:
                     logging.warning('Bone Morph (%s): Bone %s was not found.', morph.name, data.bone)
-                    morph_data.location_offset = (0, 0, 0)
-                    morph_data.rotation_offset = (0, 0, 0, 1)
+                    continue
+                mat = self.makeVMDBoneLocationMatrix(blender_bone)
+                morph_data.location_offset = mat * mathutils.Vector(data.location) * self.__scale
+                rw, rx, ry, rz = self.convertToVMDBoneRotation(blender_bone, data.rotation)
+                morph_data.rotation_offset = (rx, ry, rz, rw)
                 bone_morph.offsets.append(morph_data)
             self.__model.morphs.append(bone_morph)
 
@@ -635,13 +641,13 @@ class __PmxExporter:
             )
             for data in morph.data:
                 morph_index = morph_map.get((data.morph_type, data.name), -1)
-                if morph_index >= 0:
-                    morph_data = pmx.GroupMorphOffset()
-                    morph_data.morph = morph_index
-                    morph_data.factor = data.factor
-                    group_morph.offsets.append(morph_data)
-                else:
+                if morph_index < 0:
                     logging.warning('Group Morph (%s): Morph %s was not found.', morph.name, data.name)
+                    continue
+                morph_data = pmx.GroupMorphOffset()
+                morph_data.morph = morph_index
+                morph_data.factor = data.factor
+                group_morph.offsets.append(morph_data)
             self.__model.morphs.append(group_morph)
 
     def __exportDisplayItems(self, root, bone_map):

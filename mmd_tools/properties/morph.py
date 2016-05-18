@@ -132,7 +132,7 @@ class BoneMorph(_MorphBase, PropertyGroup):
         )
 
 def _get_material(prop):
-    mat_id = prop.get('material_id')
+    mat_id = prop.get('material_id', -1)
     if mat_id < 0:
         return ''
     fnMat = FnMaterial.from_material_id(mat_id)

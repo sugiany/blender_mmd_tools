@@ -287,8 +287,8 @@ class Model:
 
         """
         ik_target_name = ik_target.name
-        print((ik_target.head - bone.tail).length)
         if (ik_target.head - bone.tail).length > threshold:
+            logging.debug('*** create a ik_target_dummy of bone %s', ik_target.name)
             with bpyutils.edit_object(self.__arm) as data:
                 dummy_target = data.edit_bones.new(name=ik_target.name + '.ik_target_dummy')
                 dummy_target.head = bone.tail

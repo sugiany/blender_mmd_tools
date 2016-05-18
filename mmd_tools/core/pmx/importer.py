@@ -140,9 +140,7 @@ class PMXImporter:
 
         self.__textureTable = []
         for i in pmxModel.textures:
-            pathFixed = i.path.replace('\\', os.path.sep)
-            name = os.path.basename(pathFixed).split('.')[0]
-            self.__textureTable.append(bpy.path.resolve_ncase(path=pathFixed))
+            self.__textureTable.append(bpy.path.resolve_ncase(path=i.path))
 
     def __createEditBones(self, obj, pmx_bones):
         """ create EditBones from pmx file data.
@@ -151,12 +149,12 @@ class PMXImporter:
         editBoneTable = []
         nameTable = []
         dependency_cycle_ik_bones = []
-        for i, p_bone in enumerate(pmx_bones):
-            if p_bone.isIK:
-                if p_bone.target != -1:
-                    t = pmx_bones[p_bone.target]
-                    if p_bone.parent == t.parent:
-                        dependency_cycle_ik_bones.append(i)
+        #for i, p_bone in enumerate(pmx_bones):
+        #    if p_bone.isIK:
+        #        if p_bone.target != -1:
+        #            t = pmx_bones[p_bone.target]
+        #            if p_bone.parent == t.parent:
+        #                dependency_cycle_ik_bones.append(i)
 
         with bpyutils.edit_object(obj) as data:
             for i in pmx_bones:
@@ -191,11 +189,14 @@ class PMXImporter:
                     if t.parent is not None and t.parent == b_bone:
                         t.use_connect = True
 
-            for b_bone in editBoneTable:
+            for b_bone, m_bone in zip(editBoneTable, pmx_bones):
                 # Set the length of too short bones to 1 because Blender delete them.
-                if b_bone.length  < 0.001:
+                if b_bone.length < 0.001:
                     loc = mathutils.Vector([0, 0, 1]) * self.__scale
                     b_bone.tail = b_bone.head + loc
+                    if m_bone.displayConnection != -1 and m_bone.displayConnection != [0.0, 0.0, 0.0]:
+                        logging.debug(' * set as tip bone %s, display %s', b_bone.name, str(m_bone.displayConnection))
+                        m_bone.displayConnection = -1
 
         return nameTable
 
@@ -240,7 +241,6 @@ class PMXImporter:
         pose_bones = self.__sortPoseBonesByBoneIndex(self.__armObj.pose.bones, boneNameTable)
         self.__boneTable = pose_bones
         for i, pmx_bone in sorted(enumerate(pmxModel.bones), key=lambda x: x[1].transform_order):
-            # variable p_bone renamed to pmx_bone to avoid confusion with Pose Bones
             b_bone = pose_bones[i]
             b_bone.mmd_bone.name_j = pmx_bone.name
             b_bone.mmd_bone.name_e = pmx_bone.name_e
@@ -266,10 +266,10 @@ class PMXImporter:
             #Movable bones should have a tail too
             if pmx_bone.isMovable and pmx_bone.visible:
                 b_bone.mmd_bone.use_tail_location = True
-            
+
             #Some models don't have correct tail bones, let's try to fix it
-            if re.search(u'先$', pmx_bone.name):
-                b_bone.mmd_bone.is_tip = True
+            #if re.search(u'先$', pmx_bone.name):
+            #    b_bone.mmd_bone.is_tip = True
 
             b_bone.bone.hide = b_bone.mmd_bone.is_tip or not pmx_bone.visible
 
@@ -301,10 +301,10 @@ class PMXImporter:
                 b_bone.mmd_bone.enabled_fixed_axis = True
                 b_bone.mmd_bone.fixed_axis=pmx_bone.axis
 
-            if b_bone.mmd_bone.is_tip:
-                b_bone.lock_rotation = [True, True, True]
-                b_bone.lock_location = [True, True, True]
-                b_bone.lock_scale = [True, True, True]
+            #if b_bone.mmd_bone.is_tip:
+            #    b_bone.lock_rotation = [True, True, True]
+            #    b_bone.lock_location = [True, True, True]
+            #    b_bone.lock_scale = [True, True, True]
 
     def __importRigids(self):
         self.__rigidTable = []
@@ -393,10 +393,7 @@ class PMXImporter:
             mmd_mat.enabled_self_shadow_map = i.enabled_self_shadow_map
             mmd_mat.enabled_self_shadow = i.enabled_self_shadow
             mmd_mat.enabled_toon_edge = i.enabled_toon_edge
-            if(len(i.edge_color)==4):# If it cames from PMD it will not
-                # have edge color and assigning an empty array
-                # will raise an error(ValueError)
-                mmd_mat.edge_color = i.edge_color
+            mmd_mat.edge_color = i.edge_color
             mmd_mat.edge_weight = i.edge_size
             mmd_mat.sphere_texture_type = str(i.sphere_texture_mode)
             if i.is_shared_toon_texture:
@@ -470,6 +467,8 @@ class PMXImporter:
             mat_morph.name_e = morph.name_e
             mat_morph.category = categories.get(morph.category, 'OTHER')
             for morph_data in morph.offsets:
+                if not (0 <= morph_data.index < len(self.__materialTable)):
+                    continue
                 data = mat_morph.data.add()
                 data.related_mesh = self.__meshObj.data.name
                 data.material = self.__materialTable[morph_data.index].name
@@ -493,8 +492,10 @@ class PMXImporter:
             bone_morph.name_e = morph.name_e
             bone_morph.category = categories.get(morph.category, 'OTHER')
             for morph_data in morph.offsets:
-                data = bone_morph.data.add()    
-                bl_bone = self.__boneTable[morph_data.index]            
+                if not (0 <= morph_data.index < len(self.__boneTable)):
+                    continue
+                data = bone_morph.data.add()
+                bl_bone = self.__boneTable[morph_data.index]
                 data.bone = bl_bone.name
                 mat = VMDImporter.makeVMDBoneLocationToBlenderMatrix(bl_bone)
                 data.location = mat * mathutils.Vector(morph_data.location_offset) * self.__scale
@@ -527,6 +528,8 @@ class PMXImporter:
             group_morph.name_e = morph.name_e
             group_morph.category = categories.get(morph.category, 'OTHER')
             for morph_data in morph.offsets:
+                if not (0 <= morph_data.morph < len(pmx_morphs)):
+                    continue
                 data = group_morph.data.add()
                 m = pmx_morphs[morph_data.morph]
                 data.name = m.name

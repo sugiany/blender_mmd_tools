@@ -16,12 +16,14 @@ from math import radians
 
 class PMDImporter:
     def execute(self, **args):
-        import_pmd(**args)
+        args['pmx'] = import_pmd_to_pmx(args['filepath'])
+        importer = import_pmx.PMXImporter()
+        importer.execute(**args)
 
-def import_pmd(**kwargs):
+def import_pmd_to_pmx(filepath):
     """ Import pmd file
     """
-    target_path = kwargs['filepath']
+    target_path = filepath
     pmd_model = pmd.load(target_path)
 
 
@@ -184,6 +186,7 @@ def import_pmd(**kwargs):
         pmx_mat.enabled_self_shadow = True # pmd doesn't support this
         pmx_mat.enabled_self_shadow_map = abs(mat.diffuse[3] - 0.98) > 1e-7 # consider precision error
         pmx_mat.enabled_toon_edge = (mat.edge_flag != 0)
+        pmx_mat.edge_color = [0, 0, 0, 1]
         pmx_mat.vertex_count = mat.vertex_count
         if len(mat.texture_path) > 0:
             tex_path = mat.texture_path
@@ -342,6 +345,4 @@ def import_pmd(**kwargs):
     logging.info(' mmd_tools.import_pmd module')
     logging.info('****************************************')
 
-    importer = import_pmx.PMXImporter()
-    kwargs['pmx'] = pmx_model
-    importer.execute(**kwargs)
+    return pmx_model

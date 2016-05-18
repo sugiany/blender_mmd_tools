@@ -355,6 +355,8 @@ class Model:
         self.joints = []
 
     def load(self, fs):
+        self.header = fs.header()
+
         self.name = fs.readStr()
         self.name_e = fs.readStr()
 
@@ -806,6 +808,7 @@ class Texture:
 
     def load(self, fs):
         self.path = fs.readStr()
+        self.path = self.path.replace('\\', os.path.sep)
         if not os.path.isabs(self.path):
             self.path = os.path.normpath(os.path.join(os.path.dirname(fs.path()), self.path))
 
