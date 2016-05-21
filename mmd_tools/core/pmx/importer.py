@@ -220,6 +220,7 @@ class PMXImporter:
         ikConst = self.__rig.create_ik_constraint(ik_bone, target_bone)
         ikConst.iterations = pmx_bone.loopCount
         ikConst.chain_count = len(pmx_bone.ik_links)
+        ik_bone.mmd_bone.ik_rotation_constraint = pmx_bone.rotationConstraint
         for i in pmx_bone.ik_links:
             if i.maximumAngle is not None:
                 bone = pose_bones[i.target]

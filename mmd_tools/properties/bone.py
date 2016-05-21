@@ -108,6 +108,14 @@ class MMDBone(PropertyGroup):
         default=False,
         )
 
+    ik_rotation_constraint = FloatProperty(
+        name='IK Rotation Constraint',
+        subtype='ANGLE',
+        soft_min=0,
+        soft_max=4,
+        default=1,
+        )
+
     has_additional_rotation = BoolProperty(
         name='Additional Rotation',
         default=False,

@@ -50,7 +50,7 @@ class TestPmxExporter(unittest.TestCase):
     # Header & Informations
     #********************************************
 
-    def __check_pmx_header_info(self, source_model, result_model):
+    def __check_pmx_header_info(self, source_model, result_model, import_types):
         '''
         Test pmx model info, header
         '''
@@ -70,13 +70,17 @@ class TestPmxExporter(unittest.TestCase):
             self.assertEqual(source_header.version, result_header.version)
             self.assertEqual(source_header.encoding.index, result_header.encoding.index)
             self.assertEqual(source_header.encoding.charset, result_header.encoding.charset)
-            self.assertEqual(source_header.additional_uvs, result_header.additional_uvs)
-            self.assertEqual(source_header.vertex_index_size, result_header.vertex_index_size)
-            self.assertEqual(source_header.texture_index_size, result_header.texture_index_size)
-            self.assertEqual(source_header.material_index_size, result_header.material_index_size)
-            self.assertEqual(source_header.bone_index_size, result_header.bone_index_size)
-            self.assertEqual(source_header.morph_index_size, result_header.morph_index_size)
-            self.assertEqual(source_header.rigid_index_size, result_header.rigid_index_size)
+            if 'MESH' in import_types:
+                self.assertEqual(source_header.additional_uvs, result_header.additional_uvs)
+                self.assertEqual(source_header.vertex_index_size, result_header.vertex_index_size)
+                self.assertEqual(source_header.texture_index_size, result_header.texture_index_size)
+                self.assertEqual(source_header.material_index_size, result_header.material_index_size)
+            if 'ARMATURE' in import_types:
+                self.assertEqual(source_header.bone_index_size, result_header.bone_index_size)
+            if 'MORPHS' in import_types:
+                self.assertEqual(source_header.morph_index_size, result_header.morph_index_size)
+            if 'PHYSICS' in import_types:
+                self.assertEqual(source_header.rigid_index_size, result_header.rigid_index_size)
 
     #********************************************
     # Mesh
@@ -161,19 +165,19 @@ class TestPmxExporter(unittest.TestCase):
         source_faces = source_model.faces
         result_faces = result_model.faces
         self.assertEqual(len(source_faces), len(result_faces))
-        return
 
         for f0, f1 in zip(source_faces, result_faces):
             seq0 = [source_vertices[i] for i in f0]
             seq1 = [result_vertices[i] for i in f1]
             for v0, v1 in zip(seq0, seq1):
-                self.assertLess(self.__vector_error(v0.co, v1.co), 1e-3)
-                self.assertLess(self.__vector_error(v0.normal, v1.normal), 1e-3)
-                self.assertLess(self.__vector_error(v0.uv, v1.uv), 1e-3)
+                self.assertLess(self.__vector_error(v0.co, v1.co), 1e-6)
+                self.assertLess(self.__vector_error(v0.uv, v1.uv), 1e-6)
+                #self.assertLess(self.__vector_error(v0.normal, v1.normal), 1e-3)
 
                 self.assertEqual(v0.additional_uvs, v1.additional_uvs)
-                self.assertEqual(v0.weight.weights, v1.weight.weights)
                 self.assertEqual(v0.edge_scale, v1.edge_scale)
+                #self.assertEqual(v0.weight.weights, v1.weight.weights)
+                #self.assertEqual(v0.weight.bones, v1.weight.bones)
 
     #********************************************
     # Armature
@@ -255,7 +259,7 @@ class TestPmxExporter(unittest.TestCase):
             target1 = self.__get_bone_name(bone1.target, result_bones)
             self.assertEqual(target0, target1, msg)
             self.assertEqual(bone0.loopCount, bone1.loopCount, msg)
-            #self.assertEqual(bone0.rotationConstraint, bone1.rotationConstraint, msg) #TODO
+            self.assertEqual(bone0.rotationConstraint, bone1.rotationConstraint, msg)
             self.assertEqual(len(bone0.ik_links), len(bone1.ik_links), msg)
             for link0, link1 in zip(bone0.ik_links, bone1.ik_links):
                 target0 = self.__get_bone_name(link0.target, source_bones)
@@ -574,8 +578,9 @@ class TestPmxExporter(unittest.TestCase):
                 for c in pb.constraints:
                     c.mute = True
         for m in rig.meshes():
-            for c in m.constraints:
-                c.mute = True
+            for c in m.modifiers:
+                c.show_viewport = False
+                c.show_render = False
 
     def test_pmx_exporter(self):
         '''
@@ -599,7 +604,8 @@ class TestPmxExporter(unittest.TestCase):
             print('\n     - %2d/%d | filepath: %s'%(test_num+1, len(input_files), filepath))
             try:
                 bpy.ops.wm.read_homefile() # reload blender startup file
-                bpy.ops.wm.addon_enable(module='mmd_tools') # make sure addon 'mmd_tools' is enabled
+                if not bpy.context.user_preferences.addons.get('mmd_tools', None):
+                    bpy.ops.wm.addon_enable(module='mmd_tools') # make sure addon 'mmd_tools' is enabled
 
                 file_loader = pmx.load
                 if filepath.lower().endswith('.pmd'):
@@ -611,6 +617,7 @@ class TestPmxExporter(unittest.TestCase):
                     scale=1,
                     renameBones=False,
                     )
+                bpy.context.scene.update()
                 self.__mute_constraints()
             except Exception:
                 self.fail('Exception happened during import %s'%filepath)
@@ -633,7 +640,7 @@ class TestPmxExporter(unittest.TestCase):
                     except:
                         self.fail('Failed to load output file %s'%output_pmx)
 
-                    self.__check_pmx_header_info(source_model, result_model)
+                    self.__check_pmx_header_info(source_model, result_model, import_types)
 
                     if 'MESH' in check_types:
                         self.__check_pmx_mesh(source_model, result_model)

@@ -45,6 +45,11 @@ class MMDBonePanel(Panel):
         row.prop(pose_bone.mmd_bone, 'use_tail_location')
 
         c = layout.column(align=True)
+        row = c.row()
+        row.active = len([i for i in pose_bone.constraints if i.type == 'IK']) > 0
+        row.prop(pose_bone.mmd_bone, 'ik_rotation_constraint')
+
+        c = layout.column(align=True)
         c.prop(pose_bone.mmd_bone, 'enabled_fixed_axis')
         row = c.row()
         row.active = pose_bone.mmd_bone.enabled_fixed_axis

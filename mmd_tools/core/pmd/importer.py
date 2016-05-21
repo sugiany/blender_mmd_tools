@@ -158,6 +158,7 @@ def import_pmd_to_pmx(filepath):
         pmx_bone.isIK = True
         pmx_bone.target = ik.target_bone
         pmx_bone.loopCount = ik.iterations
+        pmx_bone.rotationConstraint = ik.control_weight*4
         for i in ik.ik_child_bones:
             ik_link = pmx.IKLink()
             ik_link.target = i
