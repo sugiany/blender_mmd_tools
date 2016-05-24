@@ -402,7 +402,7 @@ class __PmxExporter:
             if c.bone.use_connect:
                 return c
             length = (c.head - target_bone.tail).length
-            if not min_length or length < min_length:
+            if min_length is None or length < min_length:
                 min_length = length
                 r = c
         return r
