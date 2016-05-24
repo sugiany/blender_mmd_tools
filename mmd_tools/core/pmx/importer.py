@@ -148,6 +148,7 @@ class PMXImporter:
         """
         editBoneTable = []
         nameTable = []
+        specialTipBones = []
         dependency_cycle_ik_bones = []
         #for i, p_bone in enumerate(pmx_bones):
         #    if p_bone.isIK:
@@ -182,12 +183,10 @@ class PMXImporter:
                     b_bone.tail = b_bone.head + loc
 
             for b_bone, m_bone in zip(editBoneTable, pmx_bones):
-                if isinstance(m_bone.displayConnection, int)\
-                        and m_bone.displayConnection >= 0\
-                        and not m_bone.isMovable:
+                if isinstance(m_bone.displayConnection, int) and m_bone.displayConnection >= 0:
                     t = editBoneTable[m_bone.displayConnection]
                     if t.parent is not None and t.parent == b_bone:
-                        t.use_connect = True
+                        t.use_connect = not pmx_bones[m_bone.displayConnection].isMovable
 
             for b_bone, m_bone in zip(editBoneTable, pmx_bones):
                 # Set the length of too short bones to 1 because Blender delete them.
@@ -195,10 +194,10 @@ class PMXImporter:
                     loc = mathutils.Vector([0, 0, 1]) * self.__scale
                     b_bone.tail = b_bone.head + loc
                     if m_bone.displayConnection != -1 and m_bone.displayConnection != [0.0, 0.0, 0.0]:
-                        logging.debug(' * set as tip bone %s, display %s', b_bone.name, str(m_bone.displayConnection))
-                        m_bone.displayConnection = -1
+                        logging.debug(' * special tip bone %s, display %s', b_bone.name, str(m_bone.displayConnection))
+                        specialTipBones.append(b_bone.name)
 
-        return nameTable
+        return nameTable, specialTipBones
 
     def __sortPoseBonesByBoneIndex(self, pose_bones, bone_names):
         r = []
@@ -238,7 +237,7 @@ class PMXImporter:
     def __importBones(self):
         pmxModel = self.__model
 
-        boneNameTable = self.__createEditBones(self.__armObj, pmxModel.bones)
+        boneNameTable, specialTipBones = self.__createEditBones(self.__armObj, pmxModel.bones)
         pose_bones = self.__sortPoseBonesByBoneIndex(self.__armObj.pose.bones, boneNameTable)
         self.__boneTable = pose_bones
         for i, pmx_bone in sorted(enumerate(pmxModel.bones), key=lambda x: x[1].transform_order):
@@ -253,6 +252,9 @@ class PMXImporter:
             if pmx_bone.displayConnection == -1 or pmx_bone.displayConnection == [0.0, 0.0, 0.0]:                
                 b_bone.mmd_bone.is_tip = True
                 logging.debug('bone %s is a tip bone', pmx_bone.name)
+            elif b_bone.name in specialTipBones:
+                b_bone.mmd_bone.is_tip = True
+                logging.debug('bone %s is a special tip bone. DisplayConnection: %s', pmx_bone.name, str(pmx_bone.displayConnection))
             elif not isinstance(pmx_bone.displayConnection, int):
                 b_bone.mmd_bone.use_tail_location = True
                 logging.debug('bone %s is using a vector tail', pmx_bone.name)
@@ -260,13 +262,13 @@ class PMXImporter:
                 logging.debug('bone %s is not using a vector tail and is not a tip bone. DisplayConnection: %s', 
                               pmx_bone.name, str(pmx_bone.displayConnection))
                 
-            if pmx_bone.axis is not None and pmx_bone.parent != -1:
-                #The twist bones (type 8 in PMD) are special, without this the tail will not be displayed during export
-                pose_bones[pmx_bone.parent].mmd_bone.use_tail_location = True
+            #if pmx_bone.axis is not None and pmx_bone.parent != -1:
+            #    #The twist bones (type 8 in PMD) are special, without this the tail will not be displayed during export
+            #    pose_bones[pmx_bone.parent].mmd_bone.use_tail_location = True
                                 
             #Movable bones should have a tail too
-            if pmx_bone.isMovable and pmx_bone.visible:
-                b_bone.mmd_bone.use_tail_location = True
+            #if pmx_bone.isMovable and pmx_bone.visible:
+            #    b_bone.mmd_bone.use_tail_location = True
 
             #Some models don't have correct tail bones, let's try to fix it
             #if re.search(u'先$', pmx_bone.name):

@@ -280,18 +280,16 @@ class __PmxExporter:
                     logging.debug(' * fix location of bone %s, parent %s is tip', bone.name, bone.parent.name)
                     pmx_bone.location = boneMap[bone.parent].location
 
-                if p_bone.mmd_bone.is_tip:
-                    pmx_bone.displayConnection = -1
-                elif p_bone.mmd_bone.use_tail_location:
-                    tail_loc = world_mat * mathutils.Vector(bone.tail) * self.__scale * self.TO_PMX_MATRIX
-                    pmx_bone.displayConnection = tail_loc - pmx_bone.location
-                else:
-                    pmx_bone.displayConnection = None
-                    for child in bone.children:
-                        if child.use_connect:
-                            pmx_bone.displayConnection = child
-                            break
-                    if not pmx_bone.displayConnection:
+                # a connected child bone is prefered
+                pmx_bone.displayConnection = None
+                for child in bone.children:
+                    if child.use_connect:
+                        pmx_bone.displayConnection = child
+                        break
+                if not pmx_bone.displayConnection:
+                    if p_bone.mmd_bone.is_tip:
+                        pmx_bone.displayConnection = -1
+                    else:
                         tail_loc = world_mat * mathutils.Vector(bone.tail) * self.__scale * self.TO_PMX_MATRIX
                         pmx_bone.displayConnection = tail_loc - pmx_bone.location
 
@@ -354,7 +352,7 @@ class __PmxExporter:
         if pose_bone.parent is not None:
             return self.__exportIKLinks(pose_bone.parent, pmx_bones, bone_map, ik_links + [ik_link], count - 1)
         else:
-            return ik_link + [ik_link]
+            return ik_links + [ik_link]
 
 
     def __exportIK(self, bone_map):

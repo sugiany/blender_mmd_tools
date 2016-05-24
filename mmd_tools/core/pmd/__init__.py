@@ -538,7 +538,12 @@ class Model:
         logging.info('------------------------------')
         logging.info(' Load Rigid Bodies')
         logging.info('------------------------------')
-        rigid_count = fs.readUnsignedInt()
+        try:
+            rigid_count = fs.readUnsignedInt()
+        except struct.error:
+            logging.info('no physics data')
+            logging.info('===============================')
+            return
         self.rigid_bodies = []
         for i in range(rigid_count):
             rigid = RigidBody()
