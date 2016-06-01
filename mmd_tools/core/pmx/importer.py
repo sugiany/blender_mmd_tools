@@ -274,7 +274,7 @@ class PMXImporter:
             #if re.search(u'先$', pmx_bone.name):
             #    b_bone.mmd_bone.is_tip = True
 
-            b_bone.bone.hide = b_bone.mmd_bone.is_tip or not pmx_bone.visible
+            b_bone.bone.hide = not pmx_bone.visible #or b_bone.mmd_bone.is_tip
 
             if not pmx_bone.isRotatable:
                 b_bone.lock_rotation = [True, True, True]
