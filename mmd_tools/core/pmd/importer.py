@@ -36,6 +36,7 @@ def import_pmd_to_pmx(filepath):
     logging.info('')
 
     pmx_model = pmx.Model()
+    pmx_model.filepath = filepath
 
     pmx_model.name = pmd_model.name
     pmx_model.name_e = pmd_model.name_e

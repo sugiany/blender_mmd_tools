@@ -78,7 +78,11 @@ class PMXImporter:
         """
         pmxModel = self.__model
         self.__rig = mmd_model.Model.create(pmxModel.name, pmxModel.name_e, self.__scale)
-        mmd_root = self.__rig.rootObject().mmd_root
+        root = self.__rig.rootObject()
+        mmd_root = root.mmd_root
+
+        root['import_folder'] = os.path.dirname(pmxModel.filepath)
+
         txt = bpy.data.texts.new(pmxModel.name+'_comment')
         txt.from_string(pmxModel.comment.replace('\r', ''))
         txt.current_line_index = 0
@@ -90,9 +94,9 @@ class PMXImporter:
 
         self.__armObj = self.__rig.armature()
         self.__armObj.hide = True
-        
+
         # Temporarily set the root object as active to let property function hooks access it.
-        self.__targetScene.objects.active = self.__rig.rootObject()
+        self.__targetScene.objects.active = root
 
     def __createMeshObject(self):
         model_name = self.__model.name

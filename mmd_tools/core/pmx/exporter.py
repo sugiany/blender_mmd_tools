@@ -154,11 +154,11 @@ class __PmxExporter:
             logging.warning('  The texture file does not exist: %s', t.path)
         return len(self.__model.textures) - 1
 
-    def __copy_textures(self, tex_dir):
+    def __copy_textures(self, output_dir, base_folder=''):
+        tex_dir = output_dir
         tex_dir_fallback = os.path.join(tex_dir, 'textures')
         for texture in self.__model.textures:
             path = texture.path
-            base_folder = bpyutils.addon_preferences('base_texture_folder', '')
             dst_name = os.path.basename(path)
             if base_folder != '':
                 dst_name = os.path.relpath(path, base_folder)
@@ -167,6 +167,8 @@ class __PmxExporter:
                     # Fall back to basename and textures folder
                     dst_name = os.path.basename(path)
                     tex_dir = tex_dir_fallback
+                else:
+                    tex_dir = output_dir
             else:
                 tex_dir = tex_dir_fallback
             dest_path = os.path.join(tex_dir, dst_name)
@@ -985,8 +987,10 @@ class __PmxExporter:
             self.__exportDisplayItems(root, nameMap)
 
         if self.__copyTextures:
-            tex_dir = os.path.dirname(filepath)
-            self.__copy_textures(tex_dir)
+            output_dir = os.path.dirname(filepath)
+            import_folder = root.get('import_folder', '') if root else ''
+            base_folder = bpyutils.addon_preferences('base_texture_folder', '')
+            self.__copy_textures(output_dir, import_folder or base_folder)
 
         pmx.save(filepath, self.__model)
 

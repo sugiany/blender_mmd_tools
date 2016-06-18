@@ -325,6 +325,7 @@ class Header:
 
 class Model:
     def __init__(self):
+        self.filepath = ''
         self.header = None
 
         self.name = ''
@@ -355,6 +356,7 @@ class Model:
         self.joints = []
 
     def load(self, fs):
+        self.filepath = fs.path()
         self.header = fs.header()
 
         self.name = fs.readStr()
