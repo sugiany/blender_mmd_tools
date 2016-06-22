@@ -104,8 +104,9 @@ class ImportPmx(Operator, ImportHelper):
                 spa_blend_factor=self.spa_blend_factor,
                 )
         except Exception as e:
-            logging.error(traceback.format_exc())
-            self.report({'ERROR'}, str(e))
+            err_msg = traceback.format_exc()
+            logging.error(err_msg)
+            self.report({'ERROR'}, err_msg)
         finally:
             if self.save_log:
                 logger.removeHandler(handler)
@@ -278,6 +279,10 @@ class ExportPmx(Operator, ExportHelper):
                 copy_textures=self.copy_textures,
                 sort_materials=self.sort_materials,
                 )
+        except Exception as e:
+            err_msg = traceback.format_exc()
+            logging.error(err_msg)
+            self.report({'ERROR'}, err_msg)
         finally:
             if self.save_log:
                 logger.removeHandler(handler)
