@@ -56,7 +56,7 @@ def import_pmd_to_pmx(filepath):
         pmx_v.normal = v.normal
         pmx_v.uv = v.uv
         pmx_v.additional_uvs= []
-        pmx_v.edge_scale = 1
+        pmx_v.edge_scale = 1 if v.enable_edge == 0 else 0
 
         weight = pmx.BoneWeight()
         if v.bones[0] != v.bones[1]:

@@ -108,12 +108,14 @@ class PMXImporter:
         self.__vertexGroupTable = []
         for i in self.__model.bones:
             self.__vertexGroupTable.append(self.__meshObj.vertex_groups.new(name=i.name))
+        self.__vertexGroupTable.append(self.__meshObj.vertex_groups.new(name='mmd_edge_scale'))
 
     def __importVertices(self):
         self.__importVertexGroup()
 
         pmxModel = self.__model
         mesh = self.__meshObj.data
+        vg_edge_scale = self.__vertexGroupTable[-1]
 
         mesh.vertices.add(count=len(self.__model.vertices))
         for i, pv in enumerate(pmxModel.vertices):
@@ -121,6 +123,7 @@ class PMXImporter:
 
             bv.co = mathutils.Vector(pv.co) * self.TO_BLE_MATRIX * self.__scale
             #bv.normal = pv.normal # no effect
+            vg_edge_scale.add(index=[i], weight=pv.edge_scale, type='REPLACE')
 
             if isinstance(pv.weight.weights, pmx.BoneWeightSDEF):
                 self.__vertexGroupTable[pv.weight.bones[0]].add(index=[i], weight=pv.weight.weights.weight, type='REPLACE')

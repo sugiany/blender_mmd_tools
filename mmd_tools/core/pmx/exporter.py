@@ -17,11 +17,12 @@ import mmd_tools.core.model as mmd_model
 
 
 class _Vertex:
-    def __init__(self, co, groups, offsets, old_index):
+    def __init__(self, co, groups, offsets, old_index, edge_scale):
         self.co = copy.deepcopy(co)
         self.groups = copy.copy(groups) # [(group_number, weight), ...]
         self.offsets = copy.deepcopy(offsets)
         self.old_index = old_index # used for exporting uv morphs
+        self.edge_scale = edge_scale
         self.index = None
         self.uv = None
         self.normal = None
@@ -99,6 +100,7 @@ class __PmxExporter:
                     pv.co = list(v.co)
                     pv.normal = v.normal
                     pv.uv = self.flipUV_V(v.uv)
+                    pv.edge_scale = v.edge_scale
 
                     t = len(v.groups)
                     if t == 0:
@@ -862,6 +864,7 @@ class __PmxExporter:
             i.value = 0.0
 
         vertex_group_names = {i:x.name for i, x in enumerate(meshObj.vertex_groups) if x.name in bone_map}
+        vg_edge_scale = meshObj.vertex_groups.get('mmd_edge_scale', None)
 
         pmx_matrix = self.TO_PMX_MATRIX * meshObj.matrix_world * self.__scale
         sx, sy, sz = meshObj.matrix_world.to_scale()
@@ -886,7 +889,9 @@ class __PmxExporter:
                 v.co,
                 [(x.group, x.weight) for x in v.groups if x.weight > 0 and x.group in vertex_group_names],
                 {},
-                v.index if has_uv_morphs else None)]
+                v.index if has_uv_morphs else None,
+                vg_edge_scale.weight(v.index) if vg_edge_scale else 1,
+                )]
 
         # calculate offsets
         shape_key_names = []
