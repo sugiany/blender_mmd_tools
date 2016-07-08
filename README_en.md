@@ -31,10 +31,12 @@ Extract the archive and put the folder mmd__tools into the addon folder of blend
 2. Press _Import Model_ and select a .pmx or .pmd file
 
 
-### Reading of motion data
-1. Load the MMD model, please select the model of the mesh and the like.
-2. Please by pressing the _Import Motion_ button of _MMD Model Tools_ within the panel.
-3. If the rigid body simulation is needed, please press the _Build_ button in the same panel.
+### Importing motion data
+1. Load the MMD model. Then, select the imported model's Mesh, Armature and Camera.
+2. Click the _Import Motion_ button of the mmd_tools panel.
+3. If a rigid body simulation is needed, press the _Build_ button in the same panel.
+
+Turn on "update scene settings" checkbox to automatically update scene settings such as frame range after the motion import.
 
 
 Various functions in detail
