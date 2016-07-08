@@ -51,54 +51,49 @@ Imports a MMD model. Corresponding file formats are .pmd and .pmx (version 2.0).
 * Use MIP map for UV textures
     * Specify if mipmaps will be generated
     * Please turn it off when the textures seem messed up
-* Influence of .sph textures
-    * Specifies the strength of the sphere map <a></a>
-* Influence of .spa textures
-    * Specifies the strength of the sphere map <a></a>
+* Influence of .sph textures and influence of .spa textures
+    * Used to set the diffuse_color_factor of texture slot for sphere textures.
 
 ### Import Motion
-Imports some motion from a .vmd file for the currently selected armature/bones
+Apply motion imported from vmd file to the Armature, Mesh and Camera currently selected.
 * Scale
     * Recommended to make it the same as the imported model's scale
-* Margin <a></a>
-    * The margin frame for the physical simulation.
-    * If the initial position of the motion is far away from the origin, physical simulation will collapse because the model would move the moment when the motion begins.
-    To work around this behavior, insert a blank space between the timeline start and motion the beginning of the blender.
-    * There is also the effect of stabilizing the rigid body at the time of the motion start.
+* Margin
+    * It is used to add/offset some frames before the motion start, so the rigid bodies can have more smooth transition at the beginning
 * Update scene settings
     * Performs automatic setting of the camera range and frame rate after the motion data read.
 
 
-Other
+Notes
 ------
-* If the camera and the character motion is in a different file, character motion to select the Armature and Mesh, please be imported in two so that the camera motion to select the Camera.
-* When you import the motion data will apply the motion to each bone using a bone names.
-    * If the bone name and the structure is consistent with the MMD model, it is possible import of motion in the original model, and the like.
-    * If you want to load the MMD model by a method other than mmd_tools, please be bone name to match the MMD model.
-* The camera generates a Empty object named MMD_Camera, it will be assigned to the motion to this object.
-* If you want to import with the offset to or frame if you want to import more than one motion, please edit the animation in the NLA editor.
-* If the initial position of the animation is far away and the origin of the model, you may be rigid body simulation to collapse. In that case, please increase the vmd import parameters "margin".
-* Motion data because to prevent the collapse of the physical simulation "margin" is added. This margin is the value of the "margin" is specified at the time of vmd import.
-    * Imported motion body will start from the value +1 frame of the "margin". (Example: If the margin = 5, 6 th frame becomes the 0-th frame of vmd motion)
-For * pmx import
-    * If the weight information of the vertex of SDEF, do the same treatment as the BDEF2.
-    * It does not correspond to morph information other than the vertex morph.
-    * Rigid setting "physical + bone alignment" is treated as "physics".
-* If you want to import multiple pmx files, please unified scale.
+* If camera and character motions are not in one file, import two times. First, select Armature and Mesh and import the character motion. Second, select Camera and import the camera motion.
+* When mmd_tool imports motion data, mmd_tool uses the bone name to apply motion to each bone.
+    * If the bone name and the bones structure matches with MMD model, you can import the motion to any model.
+    * When you import MMD model by using other than mmd_tools, match bone names to those in MMD model.
+* mmd_tools creates an empty model named "MMD_Camera" and assigns the motion to the object.
+* If you want to import multiple motions or want to import motion with offset, edit the motion with NLA editor.
+* If the origin point of the motion is significantly different from the origin point of the model, rigid body simulation might break. If this happens, increase "margin" parameter in vmd import.
+* mmd_tool adds blank frames to avoid the glitch from physics simulation. The number of the blank frames is "margin" parameter in vmd import.
+    * The imported motion starts from the frame number "margin" + 1. (e.g. If margin is 5, frame 6 is frame 0 in vmd motion)
+* pmx import
+    * If the weight information is SDEF, mmd_tool processes as if it is in BDEF2.
+    * mmd_tool only supports vertex morph.
+    * mmd_tool treats "Physics + Bone location match" in rigid body setting as "Physics simulation".
+* Use the same scale in case you imports multiple pmx files.
 
 
-Known problems
+Known issues
 ----------
-* Because you are forcibly resolve the non-collision group of rigid body, you may want to freeze When you import a model number of rigid body often.
-    * Well, this is not exactly a complete freeze, it just is taking unusual time to read.
-    * If you want to load the freeze to model, please put a check to "ignore non collision groups" option.
-    * If you turn on the above-mentioned options, unintended rigid bodies is interference, there is a possibility that normal physical simulation does not work.
-* "Movement grant" bone does not work correctly.
-* If the object of the coordinate (root of empty and Armature) is moved from the origin, it may bone structure to collapse.
-    * If you want to move the model, without the movement of an object mode, please move the bone, such as "center" or "all of the parent" in Pose Mode.
-    * Status quo, because resolution is difficult, it is recommended that you do not move operation in the object mode.
-
-
+* Resolution of rigid body non collision group is brute-force now. If the model has too many rigid bodies, import would cause lockup.
+    * Accurately, the lockup is not a real lockup but import takes excessively long time.
+    * When you import the model that causes this issue, turn on "ignore non collision groups" option.
+    * When you turn on the option, undesired collision would occur among rigid bodies and physics simulation wouldn't work as expected.
+* "Additional move" bones don't work as expected.
+* The bone structure would break if you move the object (empty object at root and Armature) position from the origin.
+    * If you want to move the model, use Pose Mode and move "Center" or "Parent of all" bone and don't use object mode.
+    * Since resolving this issue is difficult, I recommend not to use Object mode to move objects.
+    
+    
 License
 ----------
 &Copy; 2012-2014 sugiany
