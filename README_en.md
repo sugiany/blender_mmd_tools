@@ -84,14 +84,7 @@ Notes
 
 Known issues
 ----------
-* Resolution of rigid body non collision group is brute-force now. If the model has too many rigid bodies, import would cause lockup.
-    * Accurately, the lockup is not a real lockup but import takes excessively long time.
-    * When you import the model that causes this issue, turn on "ignore non collision groups" option.
-    * When you turn on the option, undesired collision would occur among rigid bodies and physics simulation wouldn't work as expected.
-* "Additional move" bones don't work as expected.
-* The bone structure would break if you move the object (empty object at root and Armature) position from the origin.
-    * If you want to move the model, use Pose Mode and move "Center" or "Parent of all" bone and don't use object mode.
-    * Since resolving this issue is difficult, I recommend not to use Object mode to move objects.
+* None, feel free to report some
     
     
 License
