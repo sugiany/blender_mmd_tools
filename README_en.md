@@ -8,7 +8,7 @@ mmd_tools is a blender import addon for importing MMD (MikuMikuDance) model data
 ### Environment
 
 #### Compatible Version
-blender 2.67 or later
+blender 2.70 or later (blender 2.75+ is recommended)
 
 Usage
 ---------
@@ -18,9 +18,9 @@ Usage
     * https://github.com/powroupi/blender_mmd_tools/archive/dev_test.zip
 
 ### Install
-Extract the archive and put the folder mmd__tools into the addon folder of blender.
+Extract the archive and put the folder mmd_tools into the addon folder of blender.
 
-    .../blender-2.67-windows64/2.67/scripts/addons/
+    .../blender-2.70-windows64/2.70/scripts/addons/
 
 ### Loading Addon
 1. User Preferences -> addon tab -> select the User filter and click the checkbox before mmd_tools (you can also find the addon using the search function)
@@ -89,5 +89,5 @@ Known issues
     
 License
 ----------
-&Copy; 2012-2014 sugiany
+&copy; 2012-2014 sugiany
 Distributed under the MIT License.
