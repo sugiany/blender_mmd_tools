@@ -1,34 +1,21 @@
 mmd_tools
 ===========
 
-About
+Overview
 ----
 mmd_tools is a blender import addon for importing MMD (MikuMikuDance) model data (.pmd, .pmx) and motion data (.vmd)
-
 
 ### Environment
 
 #### Compatible Version
-blender 2.67 and later
-
-#### Tested working environments
-Windows 7 + blender 2.67 64bit
-
-OSX + blender 2.67 64bit
-
-Ubuntu + blender 2.67 64bit
-
+blender 2.67 or later
 
 Usage
 ---------
 ### Download
 
-* download mmd_tools from our github repository.
-    * https://github.com/sugiany/blender_mmd_tools
-* Stable release can be found in the link below.
-    * [Tags](https://github.com/sugiany/blender_mmd_tools/tags)
-* Nightly release can be downloaded from the master, only basic functionality is tested working.
-    * [master.zip](https://github.com/sugiany/blender_mmd_tools/archive/master.zip)
+* Download mmd_tools from [the github repository](https://github.com/powroupi/blender_mmd_tools/tree/dev_test) (dev_test branch)
+    * https://github.com/powroupi/blender_mmd_tools/archive/dev_test.zip
 
 ### Install
 Extract the archive and put the folder mmd__tools into the addon folder of blender.
@@ -36,141 +23,71 @@ Extract the archive and put the folder mmd__tools into the addon folder of blend
     .../blender-2.67-windows64/2.67/scripts/addons/
 
 ### Loading Addon
-1. In User Preferences, under addon tab, select User filter and click the checkbox before mmd_tools
-   (you can also find the addon my search)
-2. After installation, you can find the panel called MMD on the left of 3D view
+1. User Preferences -> addon tab -> select the User filter and click the checkbox before mmd_tools (you can also find the addon using the search function)
+2. After the installation, you can find two panels called mmd_tools and mmd_utils on the left of the 3D view
 
-### MMDモデルデータ読み込み
-1. mmd_toolsパネルの"import/Model"ボタンを選択してください。
-2. ファイル選択画面でpmxファイルを選択すると、選択されたモデルをインポートします。
-
-### モーションデータの読み込み
-1. あらかじめ読み込んでおいたモデルのMeshとArmature、Cameraを選択してください。(選択していない項目はインポートされません)
-2. mmd_toolsパネルの"import/Motion"ボタンを選択してください。
-3. ファイル選択画面でvmdファイルを選択すると選択中のオブジェクトへモーションをインポートします。
-4. 「update scene settings」チェックボックスをオンにしておくと、モーションの読み込み後にフレームレンジ等のシーン設定を自動更新します。
+### Importing a model
+1. Go to the mmd_tools panel
+2. Press _Import Model_ and select a .pmx or .pmd file
 
 
-各種機能詳細
+### Importing motion data
+1. Load the MMD model. Then, select the imported model's Mesh, Armature and Camera.
+2. Click the _Import Motion_ button of the mmd_tools panel.
+3. If a rigid body simulation is needed, press the _Build_ button in the same panel.
+
+Turn on "update scene settings" checkbox to automatically update scene settings such as frame range after the motion import.
+
+
+Various functions in detail
 -------------------------------
 ### Import Model
-MMDモデルデータをインポートします。対応形式はpmdファイルおよびpmx(ver2.0)ファイルです。
-各オプションはデフォルト推薦です。
-剛体情報を読み込みたくない場合は、"import only non dynamics rigid bodies"オプションをオンにしてください。
+Imports a MMD model. Corresponding file formats are .pmd and .pmx (version 2.0).
 
-* scale
-    * スケールです。Import Motion時のスケールと統一してください。
-* rename bones
-    * ボーンの名前をblenderに適した名前にリネームします。（右腕→腕.Lなど）
-* hide rigid bodies and joints
-    *  剛体情報を持つ各種オブジェクトを非表示にします。
-* import only non dynamics rigid bodies
-    * ボーン追従の剛体のみインポートします。clothやsoft bodyを使用する等、剛体情報が不要な場合に使用してください。
-* ignore non collision groups
-    * 非衝突グループを読み込みません。モデルの読み込み時にフリーズしてしまう場合に使用してください。
-* distance of ignore collisions
-    * 非衝突グループの解決範囲を指定します。
-* use MIP map for UV textures
-    * Blenderの自動ミップマップ生成機能のオンオフを指定します。
-    * 一部アルファチャンネルを持つテクスチャで紫色のノイズが発生する場合はオフにしてください。
-* influence of .sph textures
-    * スフィアマップの強度を指定します。(0.0～1.0)
-* influence of .spa textures
-    * スフィアマップの強度を指定します。(0.0～1.0)
+* Scale
+    * Size of the model
+* Rename bones
+    * Renames the bones to be more blender suitable
+* Use MIP map for UV textures
+    * Specify if mipmaps will be generated
+    * Please turn it off when the textures seem messed up
+* Influence of .sph textures and influence of .spa textures
+    * Used to set the diffuse_color_factor of texture slot for sphere textures.
 
 ### Import Motion
-現在選択中のArmature、MeshおよびCameraにvmdファイルのモーションを適用します。
-
-* scale
-    * スケールです。Import Model時のスケールと統一してください。
-* margin
-    * 物理シミュレーション用の余白フレームです。
-    * モーションの初期位置が原点から大きく離れている場合、モーション開始時にモデルが瞬間移動してしまうため物理シミュレーションが破綻します。
-    この現象を回避するため、blenderのタイムライン開始とモーション開始の間に余白を挿入します。
-    * モーション開始時に剛体を安定させる効果もあります。
-* update scene settings
-    * モーションデータ読み込み後にフレームレンジおよびフレームレートの自動設定を行います。
-    * フレームレンジは現在シーン中に存在するアニメーションを全て再生するために必要なレンジを設定します。
-    * フレームレートを30fpsに変更します。
-
-### Set frame range
-フレームレンジは現在シーン中に存在するアニメーションを全て再生するために必要なレンジを設定します。
-また、フレームレートを30fpsに変更します。
-* Import vmdのupdate scene settingsオプションと同じ機能です。
-
-### View
-
-#### GLSL
-GLSLモードで表示するための必要設定を自動で行います。
-* ShadingをGLSLに切り替えます。
-* 現在のシーン内全てのマテリアルのshadelessをオフにします。
-* Hemiライトを追加します。
-* ボタンを押した3DViewのシェーディングをTexturedに変更します。
-
-#### Shadeless
-Shadelessモードで表示するための必要設定を自動で行います。
-* ShadingをGLSLに切り替えます。
-* 現在のシーン内全てのマテリアルをshadelessにします。
-* ボタンを押した3DViewのシェーディングをTexturedに変更します。
-
-#### Cycles
-シーン内に存在する全てのマテリアルをCycles用に変換します。
-* 何の根拠もない適当な変換です。
-* 完了メッセージなどは表示されません。マテリアルパネルから変換されているかどうか確認してください。
-* ボタンを押した3DViewのシェーディングをMaterialに変更します。
-    * 3DViewのシェーディングをRenderedに変更すれば、Cyclesのリアルタイムプレビューが可能です。
-* ライティングは変更しません。設定が面倒な場合は、WorldのColorを白(1,1,1)に変更すればそれなりに見えます。
-
-#### Reset
-GLSLボタンで変更した内容を初期状態に戻します。
-
-#### Separate by materials
-選択したメッシュオブジェクトのメッシュをマテリアル毎に分割し、分割後のオブジェクト名を各マテリアル名に変更します。
-* blenderデフォルトの"Separate"→"By Material"機能を使用しています。
+Apply motion imported from vmd file to the Armature, Mesh and Camera currently selected.
+* Scale
+    * Recommended to make it the same as the imported model's scale
+* Margin
+    * It is used to add/offset some frames before the motion start, so the rigid bodies can have more smooth transition at the beginning
+* Update scene settings
+    * Performs automatic setting of the camera range and frame rate after the motion data read.
 
 
-その他
+Notes
 ------
-* カメラとキャラクタモーションが別ファイルの場合は、ArmatureとMeshを選択してキャラモーション、Cameraを選択してカメラモーションというように2回に分けてインポートしてください。
-* モーションデータのインポート時はボーン名を利用して各ボーンにモーションを適用します。
-    * ボーン名と構造がMMDモデルと一致していれば、オリジナルのモデル等にもモーションのインポートが可能です。
-    * mmd_tools以外の方法によってMMDモデルを読み込む場合、ボーン名をMMDモデルと一致させてください。
-* カメラはMMD_Cameraという名前のEmptyオブジェクトを生成し、このオブジェクトにモーションをアサインします。
-* 複数のモーションをインポートする場合やフレームにオフセットをつけてインポートしたい場合は、NLAエディタでアニメーションを編集してください。
-* アニメーションの初期位置がモデルの原点と大きく離れている場合、剛体シミュレーションが破綻することがあります。その際は、vmdインポートパラメータ"margin"を大きくしてください。
-* モーションデータは物理シミュレーションの破綻を防止するため"余白"が追加されます。この余白はvmdインポート時に指定する"margin"の値です。
-    * インポートしたモーション本体は"margin"の値+1フレーム目から開始されます。（例：margin=5の場合、6フレーム目がvmdモーションの0フレーム目になります）
-* pmxインポートについて
-    * 頂点のウェイト情報がSDEFの場合、BDEF2と同じ扱いを行います。
-    * 頂点モーフ以外のモーフ情報には対応していません。
-    * 剛体設定の"物理+ボーン位置合わせ"は"物理演算"として扱います。
-* 複数のpmxファイルをインポートする場合はscaleを統一してください。
+* If camera and character motions are not in one file, import two times. First, select Armature and Mesh and import the character motion. Second, select Camera and import the camera motion.
+* When mmd_tool imports motion data, mmd_tool uses the bone name to apply motion to each bone.
+    * If the bone name and the bones structure matches with MMD model, you can import the motion to any model.
+    * When you import MMD model by using other than mmd_tools, match bone names to those in MMD model.
+* mmd_tools creates an empty model named "MMD_Camera" and assigns the motion to the object.
+* If you want to import multiple motions or want to import motion with offset, edit the motion with NLA editor.
+* If the origin point of the motion is significantly different from the origin point of the model, rigid body simulation might break. If this happens, increase "margin" parameter in vmd import.
+* mmd_tool adds blank frames to avoid the glitch from physics simulation. The number of the blank frames is "margin" parameter in vmd import.
+    * The imported motion starts from the frame number "margin" + 1. (e.g. If margin is 5, frame 6 is frame 0 in vmd motion)
+* pmx import
+    * If the weight information is SDEF, mmd_tool processes as if it is in BDEF2.
+    * mmd_tool only supports vertex morph.
+    * mmd_tool treats "Physics + Bone location match" in rigid body setting as "Physics simulation".
+* Use the same scale in case you imports multiple pmx files.
 
 
-既知の問題
+Known issues
 ----------
-* 剛体の非衝突グループを強引に解決しているため、剛体の数が多いモデルを読み込むとフリーズすることがあります。
-    * 正確には完全なフリーズではなく、読み込みに異常な時間がかかっているだけです。
-    * フリーズするモデルを読み込む場合は、"ignore non collision groups"オプションにチェックを入れてください。
-    * 上記オプションをオンにした場合、意図しない剛体同士が干渉し、正常に物理シミュレーションが動作しない可能性があります。
-* 「移動付与」ボーンは正常に動作しません。
-* オブジェクトの座標（rootのemptyおよびArmature）を原点から移動させると、ボーン構造が破綻することがあります。
-    * モデルを移動させたい場合は、オブジェクトモードでの移動は行わず、Pose Modeで「センター」や「全ての親」などのボーンを移動させてください。
-    * 現状、解決が難しいため、オブジェクトモードでの移動操作は行わないことをおすすめします。
-
-
-Bug・Request・Questions etc.
-------------------
-Please submit a GitHub issue or contact me using twitter 
-[@sugiany](https://twitter.com/sugiany)
-
-
-Changelog
---------
-Please refer to CHANGELOG.md
-
-
+* None, feel free to report some
+    
+    
 License
 ----------
-&copy; 2012-2014 sugiany  
-Distributed under the MIT License.  
+&Copy; 2012-2014 sugiany
+Distributed under the MIT License.
