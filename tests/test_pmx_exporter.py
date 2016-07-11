@@ -266,18 +266,14 @@ class TestPmxExporter(unittest.TestCase):
                 maximumAngle0 = link0.maximumAngle
                 maximumAngle1 = link1.maximumAngle
                 if maximumAngle0 and maximumAngle1:
-                    if maximumAngle0[0] < 0:
-                        maximumAngle0[0] = 0
-                    self.assertLess(self.__vector_error(maximumAngle0, maximumAngle1), 1e-6, msg)
+                    self.assertLess(self.__vector_error(maximumAngle0, maximumAngle1), 1e-9, msg)
                 else:
                     self.assertEqual(maximumAngle0, maximumAngle1, msg)
 
                 minimumAngle0 = link0.minimumAngle
                 minimumAngle1 = link1.minimumAngle
                 if minimumAngle0 and minimumAngle1:
-                    if minimumAngle0[0] > 0:
-                        minimumAngle0[0] = 0
-                    self.assertLess(self.__vector_error(minimumAngle0, minimumAngle1), 1e-6, msg)
+                    self.assertLess(self.__vector_error(minimumAngle0, minimumAngle1), 1e-9, msg)
                 else:
                     self.assertEqual(minimumAngle0, minimumAngle1, msg)
 

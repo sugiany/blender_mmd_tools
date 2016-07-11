@@ -350,6 +350,19 @@ class __PmxExporter:
             else:
                 minimum.append(0.0)
                 maximum.append(0.0)
+
+            ik_limit_override = pose_bone.constraints.get('mmd_ik_limit_override', None)
+            if ik_limit_override:
+                if ik_limit_override.use_limit_x:
+                    minimum[0] = -ik_limit_override.max_x
+                    maximum[0] = -ik_limit_override.min_x
+                if ik_limit_override.use_limit_y:
+                    minimum[1] = ik_limit_override.min_y
+                    maximum[1] = ik_limit_override.max_y
+                if ik_limit_override.use_limit_z:
+                    minimum[2] = ik_limit_override.min_z
+                    maximum[2] = ik_limit_override.max_z
+
             ik_link.minimumAngle = minimum
             ik_link.maximumAngle = maximum
 
