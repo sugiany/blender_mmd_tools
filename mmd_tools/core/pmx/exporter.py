@@ -323,6 +323,16 @@ class __PmxExporter:
                 pose_bone = i.additionalTransform[0]
                 i.additionalTransform[0] = r.get(pose_bone.name, -1) if pose_bone else -1
 
+            if len(pmx_bones) == 0:
+                # avoid crashing MMD
+                pmx_bone = pmx.Bone()
+                pmx_bone.name = u'全ての親'
+                pmx_bone.name_e = 'Root'
+                pmx_bone.location = world_mat * mathutils.Vector([0,0,0]) * self.__scale * self.TO_PMX_MATRIX
+                tail_loc = world_mat * mathutils.Vector([0,0,1]) * self.__scale * self.TO_PMX_MATRIX
+                pmx_bone.displayConnection = tail_loc - pmx_bone.location
+                pmx_bones.append(pmx_bone)
+
             self.__model.bones = pmx_bones
         return r
 

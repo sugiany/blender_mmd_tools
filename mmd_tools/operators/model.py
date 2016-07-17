@@ -67,7 +67,7 @@ class CreateMMDModelRoot(Operator):
         with bpyutils.edit_object(arm) as data:
             bone = data.edit_bones.new(name=u'全ての親')
             bone.head = [0.0, 0.0, 0.0]
-            bone.tail = [0.0, 0.0, 1.0*self.scale]
+            bone.tail = [0.0, 0.0, 1.0]
         arm.pose.bones[u'全ての親'].mmd_bone.name_j = u'全ての親'
         arm.pose.bones[u'全ての親'].mmd_bone.name_e = 'Root'
 
