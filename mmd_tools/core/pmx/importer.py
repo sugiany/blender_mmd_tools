@@ -585,6 +585,7 @@ class PMXImporter:
         armModifier = meshObj.modifiers.new(name='Armature', type='ARMATURE')
         armModifier.object = armObj
         armModifier.use_vertex_groups = True
+        armModifier.name='mmd_bone_order_override'
 
     def __assignCustomNormals(self):
         mesh = self.__meshObj.data
@@ -646,6 +647,10 @@ class PMXImporter:
             self.__assignCustomNormals()
 
         if 'ARMATURE' in types:
+            # for tracking bone order
+            if 'MESH' not in types:
+                self.__createMeshObject()
+                self.__importVertexGroup()
             self.__importBones()
             if args.get('rename_LR_bones', False):
                 self.__renameLRBones()

@@ -212,9 +212,12 @@ class TestPmxExporter(unittest.TestCase):
         result_bones = result_model.bones
         self.assertEqual(len(source_bones), len(result_bones))
 
-        source_table = sorted(source_bones, key=lambda x: x.name)
-        result_table = sorted(result_bones, key=lambda x: x.name)
-        for bone0, bone1 in zip(source_table, result_table):
+        # check bone order
+        bone_order0 = [x.name for x in source_bones]
+        bone_order1 = [x.name for x in result_bones]
+        self.assertEqual(bone_order0, bone_order1)
+
+        for bone0, bone1 in zip(source_bones, result_bones):
             msg = bone0.name
             self.assertEqual(bone0.name, bone1.name)
             self.assertEqual(bone0.name_e, bone1.name_e, msg)
@@ -224,7 +227,7 @@ class TestPmxExporter(unittest.TestCase):
             parent1 = self.__get_bone_name(bone1.parent, result_bones)
             self.assertEqual(parent0, parent1, msg)
 
-            #self.assertEqual(bone0.transform_order, bone1.transform_order, msg) #TODO
+            self.assertEqual(bone0.transform_order, bone1.transform_order, msg)
             self.assertEqual(bone0.isRotatable, bone1.isRotatable, msg)
             self.assertEqual(bone0.isMovable, bone1.isMovable, msg)
             self.assertEqual(bone0.visible, bone1.visible, msg)
@@ -277,7 +280,7 @@ class TestPmxExporter(unittest.TestCase):
                 else:
                     self.assertEqual(minimumAngle0, minimumAngle1, msg)
 
-        for bone0, bone1 in zip(source_table, result_table):
+        for bone0, bone1 in zip(source_bones, result_bones):
             msg = bone0.name
             displayConnection0 = self.__get_bone_display_connection(bone0, source_bones)
             displayConnection1 = self.__get_bone_display_connection(bone1, result_bones)
