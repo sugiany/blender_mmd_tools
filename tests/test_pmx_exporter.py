@@ -376,6 +376,12 @@ class TestPmxExporter(unittest.TestCase):
     #********************************************
     # Morphs
     #********************************************
+    def __get_material(self, index, materials):
+        if 0 <= index < len(materials):
+            return materials[index]
+        class _dummy:
+            name = None
+        return _dummy
 
     def __check_pmx_morphs(self, source_model, result_model):
         '''
@@ -463,13 +469,12 @@ class TestPmxExporter(unittest.TestCase):
             self.assertEqual(m0.name, m1.name, msg)
             self.assertEqual(m0.name_e, m1.name_e, msg)
             self.assertEqual(m0.category, m1.category, msg)
-            # the source may contains invalid data
-            source_offsets = [m for m in m0.offsets if 0 <= m.index < len(source_materials)]
+            source_offsets = m0.offsets
             result_offsets = m1.offsets
             self.assertEqual(len(source_offsets), len(result_offsets), msg)
             for s0, s1 in zip(source_offsets, result_offsets):
-                mat0 = source_materials[s0.index]
-                mat1 = result_materials[s1.index]
+                mat0 = self.__get_material(s0.index, source_materials)
+                mat1 = self.__get_material(s1.index, result_materials)
                 self.assertEqual(mat0.name, mat1.name, msg)
                 self.assertEqual(s0.offset_type, s1.offset_type, msg)
                 self.assertEqual(s0.diffuse_offset, s1.diffuse_offset, msg)

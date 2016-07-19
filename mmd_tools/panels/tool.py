@@ -376,7 +376,7 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
         c_mat.prop_search(data, 'material', meshObj.data, 'materials')
 
         base_mat_name = data.material
-        if "_temp" in base_mat_name or base_mat_name not in meshObj.data.materials:
+        if "_temp" in base_mat_name or (base_mat_name != '' and base_mat_name not in meshObj.data.materials):
             c = col.column(align=True)
             c.label('This is not a valid base material', icon='ERROR')
             return
@@ -385,11 +385,13 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
         if work_mat is None:
             c = col.column(align=True)
             row = c.row(align=True)
-            row.operator(operators.morph.CreateWorkMaterial.bl_idname)
-            row.operator(operators.morph.ClearTempMaterials.bl_idname, text='Clear')
+            if base_mat_name == '':
+                row.label('This offset affects to all materials', icon='INFO')
+            else:
+                row.operator(operators.morph.CreateWorkMaterial.bl_idname)
+                row.operator(operators.morph.ClearTempMaterials.bl_idname, text='Clear')
 
             c = col.column()
-            c.enabled = False # remove this line to allow user to edit directly
             row = c.row()
             row.prop(data, 'offset_type')
             row = c.row()

@@ -493,7 +493,10 @@ class __PmxExporter:
             for data in morph.data:
                 morph_data = pmx.MaterialMorphOffset()
                 try:
-                    morph_data.index = self.__material_name_table.index(data.material)
+                    if data.material != '':
+                        morph_data.index = self.__material_name_table.index(data.material)
+                    else:
+                        morph_data.index = -1
                 except ValueError:
                     logging.warning('Material Morph (%s): Material %s was not found.', morph.name, data.material)
                     continue
