@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import re
-import math
+import os
 
 ## 指定したオブジェクトのみを選択状態かつアクティブにする
 def selectAObject(obj):
@@ -170,3 +170,31 @@ def int2base(x, base):
         digits.append('-')
     digits.reverse()
     return ''.join(digits)
+
+def saferelpath(path, start, strategy='inside'):
+    """
+    On Windows relpath will raise a ValueError
+    when trying to calculate the relative path to a
+    different drive.
+    This method will behave different depending on the strategy
+    choosen to handle the different drive issue.
+    Strategies:
+    - inside: this will just return the basename of the path given
+    - outside: this will prepend '..' to the basename
+    - absolute: this will return the absolute path instead of a relative.
+    See http://bugs.python.org/issue7195
+    """
+    result = os.path.basename(path)
+    if os.name == 'nt':
+        d1 = os.path.splitdrive(path)[0]
+        d2 = os.path.splitdrive(start)[0]
+        if d1 != d2:
+            if strategy == 'outside':
+                result = '..'+os.sep+os.path.basename(path)
+            elif strategy == 'absolute':
+                result = os.path.abspath(path)
+        else:
+            result = os.path.relpath(path, start)
+    else:
+        result = os.path.relpath(path, start)
+    return result
