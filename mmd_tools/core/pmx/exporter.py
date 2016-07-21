@@ -1006,7 +1006,12 @@ class __PmxExporter:
 
         mesh_data = []
         for i in meshes:
-            mesh_data.append(self.__loadMeshData(i, nameMap))
+            show_only_shape_key = i.show_only_shape_key
+            try:
+                i.show_only_shape_key = False
+                mesh_data.append(self.__loadMeshData(i, nameMap))
+            finally:
+                i.show_only_shape_key = show_only_shape_key
 
         self.__exportMeshes(mesh_data, nameMap)
         self.__exportVertexMorphs(mesh_data, root)
