@@ -13,6 +13,7 @@ from mmd_tools.core import pmx
 from mmd_tools.core.bone import FnBone
 from mmd_tools.core.material import FnMaterial
 from mmd_tools import bpyutils
+from mmd_tools.utils import saferelpath
 import mmd_tools.core.model as mmd_model
 
 
@@ -159,25 +160,32 @@ class __PmxExporter:
     def __copy_textures(self, output_dir, base_folder=''):
         tex_dir = output_dir
         tex_dir_fallback = os.path.join(tex_dir, 'textures')
+        tex_dir_preference = bpyutils.addon_preferences('base_texture_folder', '')
         for texture in self.__model.textures:
             path = texture.path
+            tex_dir = output_dir  # restart to the default directory at each loop
+            if not os.path.isfile(path):
+                logging.warning('*** skipping texture file which does not exist: %s', path)
+                continue
             dst_name = os.path.basename(path)
             if base_folder != '':
-                dst_name = os.path.relpath(path, base_folder)
+                dst_name = saferelpath(path, base_folder, strategy='outside')
                 if dst_name.startswith('..'):
-                    logging.warning('The texture %s is not inside the base texture folder', path)
-                    # Fall back to basename and textures folder
-                    dst_name = os.path.basename(path)
-                    tex_dir = tex_dir_fallback
-                else:
-                    tex_dir = output_dir
+                    # Check if the texture comes from the preferred folder
+                    if tex_dir_preference:
+                        dst_name = saferelpath(path, tex_dir_preference, strategy='outside')
+                    if dst_name.startswith('..'):
+                        # If the code reaches here the texture is somewhere else
+                        logging.warning('The texture %s is not inside the base texture folder', path)
+                        # Fall back to basename and textures folder
+                        dst_name = os.path.basename(path)
+                        tex_dir = tex_dir_fallback
             else:
                 tex_dir = tex_dir_fallback
             dest_path = os.path.join(tex_dir, dst_name)
             os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-            if not os.path.isfile(path):
-                logging.warning('*** skipping texture file which does not exist: %s', path)
-            elif path != dest_path:  # Only copy if the paths are different                        
+
+            if path != dest_path:  # Only copy if the paths are different                        
                 shutil.copyfile(path, dest_path)
                 logging.info('Copy file %s --> %s', path, dest_path)
             texture.path = dest_path
@@ -916,12 +924,14 @@ class __PmxExporter:
 
         base_vertices = {}
         for v in base_mesh.vertices:
+            # Check that the vertex is in the vg_edge_scale
+            export_edge_scale = vg_edge_scale and vg_edge_scale.index in [x.group for x in v.groups]
             base_vertices[v.index] = [_Vertex(
                 v.co,
                 [(x.group, x.weight) for x in v.groups if x.weight > 0 and x.group in vertex_group_names],
                 {},
                 v.index if has_uv_morphs else None,
-                vg_edge_scale.weight(v.index) if vg_edge_scale else 1,
+                vg_edge_scale.weight(v.index) if export_edge_scale else 1,
                 )]
 
         # calculate offsets
