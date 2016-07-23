@@ -416,16 +416,17 @@ class __PmxExporter:
                     else:
                         ik_bone_index = bone_map[c.subtarget]
 
-                    ik_target_bone = self.__get_connected_child_bone(bone)
+                    ik_target_bone = self.__get_ik_target_bone(bone)
                     pmx_ik_bone = pmx_bones[ik_bone_index]
+                    logging.debug('  - IK bone: %s, IK Target: %s', pmx_ik_bone.name, ik_target_bone.name)
                     pmx_ik_bone.isIK = True
                     pmx_ik_bone.loopCount = c.iterations
                     pmx_ik_bone.rotationConstraint = bone.mmd_bone.ik_rotation_constraint
                     pmx_ik_bone.target = bone_map[ik_target_bone.name]
                     pmx_ik_bone.ik_links = self.__exportIKLinks(bone, pmx_bones, bone_map, [], c.chain_count)
 
-    def __get_connected_child_bone(self, target_bone):
-        """ Get a connected child bone.
+    def __get_ik_target_bone(self, target_bone):
+        """ Get mmd ik target bone.
 
          Args:
              target_bone: A blender PoseBone
@@ -434,11 +435,18 @@ class __PmxExporter:
              A bpy.types.PoseBone object which is the closest bone from the tail position of target_bone.
              Return None if target_bone has no child bones.
         """
+        valid_children = [c for c in target_bone.children if not c.is_mmd_shadow_bone]
+
+        # search 'mmd_ik_target_override' first
+        for c in valid_children:
+            ik_target_override = c.constraints.get('mmd_ik_target_override', None)
+            if ik_target_override and ik_target_override.subtarget == target_bone.name:
+                logging.debug('  (use "mmd_ik_target_override")')
+                return c
+
         r = None
         min_length = None
-        for c in target_bone.children:
-            if c.is_mmd_shadow_bone:
-                continue
+        for c in valid_children:
             if c.bone.use_connect:
                 return c
             length = (c.head - target_bone.tail).length

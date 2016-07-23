@@ -220,14 +220,35 @@ class PMXImporter:
          @param pose_bones the list of PoseBones sorted by the bone index
         """
 
-        ik_bone = pose_bones[pmx_bone.target].parent
+        # for tracking mmd ik target, simple explaination:
+        # + Root
+        # | + link1
+        # |   + link0 (ik_bone) <- ik constraint, chain_count=2
+        # |     + IK target (ik_target) <- constraint 'mmd_ik_target_override', subtarget=link0
+        # + IK bone (target_bone)
+        #
+        # it is possible that the link0 is the IK target,
+        # so ik constraint will be on link1, chain_count=1
+        # the IK target isn't affected by IK bone
+
         target_bone = pose_bones[index]
+        ik_target = pose_bones[pmx_bone.target]
+        ik_bone = ik_target.parent
+
+        c = ik_target.constraints.new(type='DAMPED_TRACK')
+        c.name = 'mmd_ik_target_override'
+        c.mute = True
+        c.influence = 0
+        c.target = self.__armObj
+        c.subtarget = ik_bone.name
 
         ikConst = self.__rig.create_ik_constraint(ik_bone, target_bone)
         ikConst.iterations = pmx_bone.loopCount
         ikConst.chain_count = len(pmx_bone.ik_links)
         ik_bone.mmd_bone.ik_rotation_constraint = pmx_bone.rotationConstraint
         for i in pmx_bone.ik_links:
+            if i.target == pmx_bone.target:
+                ikConst.chain_count -= 1
             if i.maximumAngle is not None:
                 bone = pose_bones[i.target]
                 bone.use_ik_limit_x = True
