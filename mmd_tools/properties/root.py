@@ -154,6 +154,7 @@ class MMDDisplayItem(PropertyGroup):
     """
     type = EnumProperty(
         name='Type',
+        description='Select item type',
         items = [
             ('BONE', 'Bone', '', 1),
             ('MORPH', 'Morph', '', 2),
@@ -162,13 +163,13 @@ class MMDDisplayItem(PropertyGroup):
 
     morph_type = EnumProperty(
         name='Morph Type',
-        description='Morph Type',
+        description='Select morph type',
         items = [
-            ('material_morphs', 'Material', '', 0),
-            ('uv_morphs', 'UV', '', 1),
-            ('bone_morphs', 'Bone', '', 2),
-            ('vertex_morphs', 'Vertex', '', 3),
-            ('group_morphs', 'Group', '', 4),
+            ('material_morphs', 'Material', 'Material Morphs', 0),
+            ('uv_morphs', 'UV', 'UV Morphs', 1),
+            ('bone_morphs', 'Bone', 'Bone Morphs', 2),
+            ('vertex_morphs', 'Vertex', 'Vertex Morphs', 3),
+            ('group_morphs', 'Group', 'Group Morphs', 4),
             ],
         default='vertex_morphs',
         )
@@ -188,6 +189,7 @@ class MMDDisplayItemFrame(PropertyGroup):
     # 特殊枠はファイル仕様上の固定枠(削除、リネーム不可)
     is_special = BoolProperty(
         name='Special',
+        description='Is special',
         default=False,
         )
 
@@ -212,21 +214,25 @@ class MMDRoot(PropertyGroup):
     """
     name = StringProperty(
         name='Name',
+        description='The name of the MMD model',
         default='',
         )
 
     name_e = StringProperty(
         name='Name (English)',
+        description='The english name of the MMD model',
         default='',
         )
 
     comment_text = StringProperty(
         name='Comment',
+        description='The text datablock of the comment',
         default='',
         )
 
     comment_e_text = StringProperty(
         name='Comment (English)',
+        description='The text datablock of the english comment',
         default='',
         )
 
@@ -238,54 +244,64 @@ class MMDRoot(PropertyGroup):
 
     show_meshes = BoolProperty(
         name='Show Meshes',
+        description='Show all meshes of the MMD model',
         update=_toggleVisibilityOfMeshes,
         )
 
     show_rigid_bodies = BoolProperty(
         name='Show Rigid Bodies',
+        description='Show all rigid bodies of the MMD model',
         update=_toggleVisibilityOfRigidBodies,
         )
 
     show_joints = BoolProperty(
         name='Show Joints',
+        description='Show all joints of the MMD model',
         update=_toggleVisibilityOfJoints,
         )
 
     show_temporary_objects = BoolProperty(
         name='Show Temps',
+        description='Show all temporary objects of the MMD model',
         update=_toggleVisibilityOfTemporaryObjects,
         )
 
     show_armature = BoolProperty(
         name='Show Armature',
+        description='Show the armature object of the MMD model',
         get=lambda x: not mmd_model.Model(x.id_data).armature().hide,
         set=lambda x, v: _setVisibilityOfMMDRigArmature(x.id_data, v),
         )
 
     show_names_of_rigid_bodies = BoolProperty(
         name='Show Rigid Body Names',
+        description='Show rigid body names',
         update=_toggleShowNamesOfRigidBodies,
         )
 
     show_names_of_joints = BoolProperty(
         name='Show Joint Names',
+        description='Show joint names',
         update=_toggleShowNamesOfJoints,
         )
 
     use_toon_texture = BoolProperty(
         name='Use Toon Texture',
+        description='Use toon texture',
         update=_toggleUseToonTexture,
         default=True,
         )
 
     use_sphere_texture = BoolProperty(
         name='Use Sphere Texture',
+        description='Use sphere texture',
         update=_toggleUseSphereTexture,
         default=True,
         )
 
     scale = FloatProperty(
         name='Scale',
+        description='Scaling factor on importing',
         min=0.1,
         default=1,
         )
@@ -347,13 +363,13 @@ class MMDRoot(PropertyGroup):
         )
     active_morph_type = EnumProperty(
         name='Active Morph Type',
-        description='Active Morph Type',
+        description='Select current morph type',
         items = [
-            ('material_morphs', 'MAT', 'Material Morphs', 0),
+            ('material_morphs', 'Material', 'Material Morphs', 0),
             ('uv_morphs', 'UV', 'UV Morphs', 1),
-            ('bone_morphs', 'BONE', 'Bone Morphs', 2),
-            ('vertex_morphs', 'VTX', 'Vertex Morphs', 3),
-            ('group_morphs', 'GRP', 'Group Morphs', 4),
+            ('bone_morphs', 'Bone', 'Bone Morphs', 2),
+            ('vertex_morphs', 'Vertex', 'Vertex Morphs', 3),
+            ('group_morphs', 'Group', 'Group Morphs', 4),
             ],
         default='vertex_morphs',
         update=_activeMorphReset

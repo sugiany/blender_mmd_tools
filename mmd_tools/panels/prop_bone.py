@@ -42,7 +42,7 @@ class MMDBonePanel(Panel):
         row = c.row()
         row.prop(pose_bone.mmd_bone, 'is_visible')
         row.prop(pose_bone.mmd_bone, 'is_controllable')
-        row.prop(pose_bone.mmd_bone, 'use_tail_location')
+        #row.prop(pose_bone.mmd_bone, 'use_tail_location')
 
         c = layout.column(align=True)
         row = c.row()

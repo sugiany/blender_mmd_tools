@@ -7,7 +7,7 @@ from bpy.types import Operator
 class SetGLSLShading(Operator):
     bl_idname = 'mmd_tools.set_glsl_shading'
     bl_label = 'GLSL View'
-    bl_description = ''
+    bl_description = 'Set GLSL view'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -31,7 +31,7 @@ class SetGLSLShading(Operator):
 class SetShadelessGLSLShading(Operator):
     bl_idname = 'mmd_tools.set_shadeless_glsl_shading'
     bl_label = 'Shadeless GLSL View'
-    bl_description = ''
+    bl_description = 'Set shadeless GLSL view'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -55,7 +55,7 @@ class SetShadelessGLSLShading(Operator):
 class ResetShading(Operator):
     bl_idname = 'mmd_tools.reset_shading'
     bl_label = 'Reset View'
-    bl_description = ''
+    bl_description = 'Reset view'
     bl_options = {'PRESET'}
 
     def execute(self, context):

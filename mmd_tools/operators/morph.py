@@ -43,10 +43,19 @@ def special_division(n1, n2):
     return n1/n2
 
 class _AddMorphBase(object):
-    name_j = bpy.props.StringProperty(name='Name', default='Morph')
-    name_e = bpy.props.StringProperty(name='Name(Eng)', default='Morph_e')
+    name_j = bpy.props.StringProperty(
+        name='Name',
+        description='Japanese Name',
+        default='Morph',
+        )
+    name_e = bpy.props.StringProperty(
+        name='Name(Eng)',
+        description='English Name',
+        default='Morph_e',
+        )
     category = bpy.props.EnumProperty(
         name='Category',
+        description='Select category',
         items = [
             ('SYSTEM', 'System', '', 0),
             ('EYEBROW', 'Eye Brow', '', 1),
@@ -88,7 +97,7 @@ class _AddMorphBase(object):
 class MoveUpMorph(Operator):
     bl_idname = 'mmd_tools.move_up_morph'
     bl_label = 'Move Up Morph'
-    bl_description = ''
+    bl_description = 'Move active morph item up in the list'
     bl_options = {'PRESET'}
     
     def execute(self, context):
@@ -104,7 +113,7 @@ class MoveUpMorph(Operator):
 class MoveDownMorph(Operator):
     bl_idname = 'mmd_tools.move_down_morph'
     bl_label = 'Move Down Morph'
-    bl_description = ''
+    bl_description = 'Move active morph item down in the list'
     bl_options = {'PRESET'}
     
     def execute(self, context):
@@ -121,7 +130,7 @@ class MoveDownMorph(Operator):
 class AddVertexMorph(Operator, _AddMorphBase):
     bl_idname = 'mmd_tools.add_vertex_morph'
     bl_label = 'Add Vertex Morph'
-    bl_description = ''
+    bl_description = 'Add a vertex morph item, and a shape key to the mesh (a "Exp" display item will be added automatically)'
     bl_options = {'PRESET'}
 
     #XXX Fix for draw order
@@ -162,7 +171,7 @@ class AddVertexMorph(Operator, _AddMorphBase):
 class AddMaterialMorph(Operator, _AddMorphBase):
     bl_idname = 'mmd_tools.add_material_morph'
     bl_label = 'Add Material Morph'
-    bl_description = ''
+    bl_description = 'Add a material morph item to the list (a "Exp" display item will be added automatically)'
     bl_options = {'PRESET'}
 
     #XXX Fix for draw order
@@ -180,7 +189,7 @@ class AddMaterialMorph(Operator, _AddMorphBase):
 class AddMaterialOffset(Operator):
     bl_idname = 'mmd_tools.add_material_morph_offset'
     bl_label = 'Add Material Offset'
-    bl_description = ''
+    bl_description = 'Add a material offset item to the list'
     bl_options = {'PRESET'}
 
     @classmethod
@@ -223,7 +232,7 @@ class AddMaterialOffset(Operator):
 class RemoveMaterialOffset(Operator):
     bl_idname = 'mmd_tools.remove_material_morph_offset'
     bl_label = 'Remove Material Offset'
-    bl_description = ''
+    bl_description = 'Remove active material offset item from the list'
     bl_options = {'PRESET'}
 
     @classmethod
@@ -436,7 +445,7 @@ class ClearTempMaterials(Operator):
 class AddBoneMorph(Operator, _AddMorphBase):
     bl_idname = 'mmd_tools.add_bone_morph'
     bl_label = 'Add Bone Morph'
-    bl_description = ''
+    bl_description = 'Add a bone morph item to the list (a "Exp" display item will be added automatically)'
     bl_options = {'PRESET'}
 
     #XXX Fix for draw order
@@ -446,6 +455,7 @@ class AddBoneMorph(Operator, _AddMorphBase):
 
     create_from_pose = bpy.props.BoolProperty(
         name='Create From Pose',
+        description='Also create bone morph offsets from current pose if enabled',
         default=False,
         )
     
@@ -475,7 +485,7 @@ class AddBoneMorph(Operator, _AddMorphBase):
 class ViewBoneMorph(Operator):
     bl_idname = 'mmd_tools.view_bone_morph'
     bl_label = 'View Bone Morph'
-    bl_description = ''
+    bl_description = 'View the result of active bone morph'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -497,7 +507,7 @@ class ViewBoneMorph(Operator):
 class AddBoneMorphOffset(Operator):
     bl_idname = 'mmd_tools.add_bone_morph_offset'
     bl_label = 'Add Bone Morph Offset'
-    bl_description = ''
+    bl_description = 'Add a bone morph offset item to the list'
     bl_options = {'PRESET'}
     
     def execute(self, context):
@@ -523,7 +533,7 @@ class AddBoneMorphOffset(Operator):
 class RemoveBoneMorphOffset(Operator):
     bl_idname = 'mmd_tools.remove_bone_morph_offset'
     bl_label = 'Remove Bone Morph Offset'
-    bl_description = ''
+    bl_description = 'Remove active bone morph offset item from the list'
     bl_options = {'PRESET'}
     
     def execute(self, context):
@@ -625,7 +635,7 @@ class ApplyBoneOffset(Operator):
 class AddUVMorph(Operator, _AddMorphBase):
     bl_idname = 'mmd_tools.add_uv_morph'
     bl_label = 'Add UV Morph'
-    bl_description = ''
+    bl_description = 'Add a UV morph item to the list (a "Exp" display item will be added automatically)'
     bl_options = {'PRESET'}
 
     #XXX Fix for draw order
@@ -643,11 +653,12 @@ class AddUVMorph(Operator, _AddMorphBase):
 class ViewUVMorph(Operator):
     bl_idname = 'mmd_tools.view_uv_morph'
     bl_label = 'View UV Morph'
-    bl_description = ''
+    bl_description = 'View the result of active UV morph'
     bl_options = {'PRESET'}
 
     with_animation = bpy.props.BoolProperty(
         name='With Animation',
+        description='View the effect using Timeline window from frame 0 to frame 100 if enabled',
         default=False,
         )
 
@@ -736,7 +747,7 @@ class ViewUVMorph(Operator):
 class ClearUVMorphView(Operator):
     bl_idname = 'mmd_tools.clear_uv_morph_view'
     bl_label = 'Clear UV Morph View'
-    bl_description = ''
+    bl_description = 'Clear all temporary data of UV morphs'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -773,7 +784,7 @@ class ClearUVMorphView(Operator):
 class EditUVMorph(Operator):
     bl_idname = 'mmd_tools.edit_uv_morph'
     bl_label = 'Edit UV Morph'
-    bl_description = ''
+    bl_description = 'Edit UV morph on a temporary UV layer (use UV Editor to edit the result)'
     bl_options = {'PRESET'}
 
     @classmethod
@@ -816,17 +827,18 @@ class EditUVMorph(Operator):
 class ApplyUVMorph(Operator):
     bl_idname = 'mmd_tools.apply_uv_morph'
     bl_label = 'Apply UV Morph'
-    bl_description = ''
+    bl_description = 'Calculate the UV offsets of selected vertices and apply to active UV morph'
     bl_options = {'PRESET'}
 
-    with_animation = bpy.props.BoolProperty(
-        name='With Animation',
-        default=False,
-        )
+    #with_animation = bpy.props.BoolProperty(
+    #    name='With Animation',
+    #    description='View the effect using Timeline window from frame 0 to frame 100 if enabled',
+    #    default=False,
+    #    )
 
-    def invoke(self, context, event):
-        vm = context.window_manager
-        return vm.invoke_props_dialog(self)
+    #def invoke(self, context, event):
+    #    vm = context.window_manager
+    #    return vm.invoke_props_dialog(self)
 
     @classmethod
     def poll(cls, context):
@@ -888,7 +900,7 @@ class ApplyUVMorph(Operator):
 class AddGroupMorph(Operator, _AddMorphBase):
     bl_idname = 'mmd_tools.add_group_morph'
     bl_label = 'Add Group Morph'
-    bl_description = ''
+    bl_description = 'Add a group morph item to the list (a "Exp" display item will be added automatically)'
     bl_options = {'PRESET'}
 
     #XXX Fix for draw order
@@ -906,7 +918,7 @@ class AddGroupMorph(Operator, _AddMorphBase):
 class AddGroupMorphOffset(Operator):
     bl_idname = 'mmd_tools.add_group_morph_offset'
     bl_label = 'Add Group Morph Offset'
-    bl_description = ''
+    bl_description = 'Add a group morph offset item to the list'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -921,7 +933,7 @@ class AddGroupMorphOffset(Operator):
 class RemoveGroupMorphOffset(Operator):
     bl_idname = 'mmd_tools.remove_group_morph_offset'
     bl_label = 'Remove Group Morph Offset'
-    bl_description = ''
+    bl_description = 'Remove active group morph offset item from the list'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -938,7 +950,7 @@ class RemoveGroupMorphOffset(Operator):
 class RemoveMorph(Operator):
     bl_idname = 'mmd_tools.remove_morph'
     bl_label = 'Remove Morph'
-    bl_description = ''
+    bl_description = 'Remove active morph item from the list (the "Exp" display item will be removed automatically if found)'
     bl_options = {'PRESET'}
     
     def execute(self, context):

@@ -22,6 +22,7 @@ def _setMMDCameraAngle(prop, value):
 class MMDCamera(PropertyGroup):
     angle = FloatProperty(
         name='Angle',
+        description='Camera lens field of view',
         subtype='ANGLE',
         get=_getMMDCameraAngle,
         set=_setMMDCameraAngle,
@@ -32,5 +33,6 @@ class MMDCamera(PropertyGroup):
 
     is_perspective = BoolProperty(
         name='Perspective',
+        description='Is perspective',
         default=True,
         )

@@ -142,6 +142,7 @@ class MMDRigidBody(PropertyGroup):
 
     collision_group_number = IntProperty(
         name='Collision Group',
+        description='The collision group of the object',
         min=0,
         max=15,
         default=1,
@@ -150,12 +151,14 @@ class MMDRigidBody(PropertyGroup):
 
     collision_group_mask = BoolVectorProperty(
         name='Collision Group Mask',
+        description='The groups the object can not collide with',
         size=16,
         subtype='LAYER',
         )
 
     type = EnumProperty(
         name='Rigid Type',
+        description='Select rigid type',
         items = [
             (str(rigid_body.MODE_STATIC), 'Static', '', 1),
             (str(rigid_body.MODE_DYNAMIC), 'Dynamic', '', 2),
@@ -165,6 +168,7 @@ class MMDRigidBody(PropertyGroup):
 
     shape = EnumProperty(
         name='Shape',
+        description='Select the collision shape',
         items = [
             ('SPHERE', 'Sphere', '', 1),
             ('BOX', 'Box', '', 2),
@@ -175,7 +179,7 @@ class MMDRigidBody(PropertyGroup):
 
     bone = StringProperty(
         name='Bone',
-        description='',
+        description='Target bone',
         default='',
         get=_get_bone,
         set=_set_bone,
@@ -183,6 +187,7 @@ class MMDRigidBody(PropertyGroup):
 
     size = FloatVectorProperty(
         name='Size',
+        description='Size of the object',
         subtype='XYZ',
         size=3,
         min=0,
@@ -207,6 +212,7 @@ class MMDJoint(PropertyGroup):
 
     spring_linear = FloatVectorProperty(
         name='Spring(Linear)',
+        description='Spring constant of movement',
         subtype='XYZ',
         size=3,
         min=0,
@@ -215,6 +221,7 @@ class MMDJoint(PropertyGroup):
 
     spring_angular = FloatVectorProperty(
         name='Spring(Angular)',
+        description='Spring constant of rotation',
         subtype='XYZ',
         size=3,
         min=0,

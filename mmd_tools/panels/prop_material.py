@@ -17,6 +17,9 @@ class MMDMaterialPanel(Panel):
         return material and material.mmd_material
 
     def draw(self, context):
+        if context.active_object.mmd_type != 'NONE':
+            self.layout.label('MMD Material is Ignored!', icon='INFO')
+            return
         material = context.active_object.active_material
         mmd_material = material.mmd_material
 
@@ -79,6 +82,9 @@ class MMDTexturePanel(Panel):
         return material and material.mmd_material
 
     def draw(self, context):
+        if context.active_object.mmd_type != 'NONE':
+            self.layout.label('MMD Material is Ignored!', icon='INFO')
+            return
         material = context.active_object.active_material
         mmd_material = material.mmd_material
 

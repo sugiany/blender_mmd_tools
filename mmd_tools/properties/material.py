@@ -95,6 +95,7 @@ class MMDMaterial(PropertyGroup):
 
     ambient_color = FloatVectorProperty(
         name='Ambient Color',
+        description='Ambient color',
         subtype='COLOR',
         size=3,
         min=0,
@@ -107,6 +108,7 @@ class MMDMaterial(PropertyGroup):
 
     diffuse_color = FloatVectorProperty(
         name='Diffuse Color',
+        description='Diffuse color',
         subtype='COLOR',
         size=3,
         min=0,
@@ -119,6 +121,7 @@ class MMDMaterial(PropertyGroup):
 
     alpha = FloatProperty(
         name='Alpha',
+        description='Alpha transparency',
         min=0,
         max=1,
         precision=3,
@@ -129,6 +132,7 @@ class MMDMaterial(PropertyGroup):
 
     specular_color = FloatVectorProperty(
         name='Specular Color',
+        description='Specular color',
         subtype='COLOR',
         size=3,
         min=0,
@@ -141,6 +145,7 @@ class MMDMaterial(PropertyGroup):
 
     shininess = FloatProperty(
         name='Shininess',
+        description='How hard (sharp) the specular reflection is',
         min=0,
         soft_max=512,
         step=100.0,
@@ -150,41 +155,42 @@ class MMDMaterial(PropertyGroup):
 
     is_double_sided = BoolProperty(
         name='Double Sided',
-        description='',
+        description='The face is double sided or single sided',
         default=True,
         update=_updateIsDoubleSided,
         )
 
     enabled_drop_shadow = BoolProperty(
         name='Drop Shadow',
-        description='',
+        description='Use drop shadow',
         default=True,
         update=_updateDropShadow,
         )
 
     enabled_self_shadow_map = BoolProperty(
         name='Self Shadow Map',
-        description='',
+        description='Use self shadow map',
         default=True,
         update=_updateSelfShadowMap,
         )
 
     enabled_self_shadow = BoolProperty(
         name='Self Shadow',
-        description='',
+        description='Use self shadow',
         default=True,
         update=_updateSelfShadow,
         )
 
     enabled_toon_edge = BoolProperty(
         name='Toon Edge',
-        description='',
+        description='Use toon edge',
         default=False,
         update=_updateEnabledToonEdge,
         )
 
     edge_color = FloatVectorProperty(
         name='Edge Color',
+        description='Toon edge color',
         subtype='COLOR',
         size=4,
         min=0,
@@ -197,6 +203,7 @@ class MMDMaterial(PropertyGroup):
 
     edge_weight = FloatProperty(
         name='Edge Weight',
+        description='Toon edge size',
         min=0,
         max=100,
         soft_max=2,
@@ -207,7 +214,7 @@ class MMDMaterial(PropertyGroup):
 
     sphere_texture_type = EnumProperty(
         name='Sphere Map Type',
-        description='',
+        description='Choose sphere texture blend type',
         items = [
             (str(material.SPHERE_MODE_OFF),    'Off',        '', 1),
             (str(material.SPHERE_MODE_MULT),   'Multiply',   '', 2),
@@ -219,7 +226,7 @@ class MMDMaterial(PropertyGroup):
 
     is_shared_toon_texture = BoolProperty(
         name='Use Shared Toon Texture',
-        description='',
+        description='Use shared toon texture or custom toon texture',
         default=False,
         update=_updateToonTexture,
         )
@@ -227,14 +234,14 @@ class MMDMaterial(PropertyGroup):
     toon_texture = StringProperty(
         name='Toon Texture',
         subtype='FILE_PATH',
-        description='',
+        description='The file path of custom toon texture',
         default='',
         update=_updateToonTexture,
         )
 
     shared_toon_texture = IntProperty(
         name='Shared Toon Texture',
-        description='',
+        description='Shared toon texture id (toon01.bmp ~ toon10.bmp)',
         default=0,
         min=0,
         max=9,
@@ -243,5 +250,6 @@ class MMDMaterial(PropertyGroup):
 
     comment = StringProperty(
         name='Comment',
+        description='Comment',
         )
 

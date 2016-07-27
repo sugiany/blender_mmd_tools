@@ -47,6 +47,7 @@ def _set_name(prop, value):
 class _MorphBase:
     name = StringProperty(
         name='Name',
+        description='Japanese Name',
         set=_set_name,
         get=_get_name,
         )
@@ -57,6 +58,7 @@ class _MorphBase:
         )
     category = EnumProperty(
         name='Category',
+        description='Select category',
         items = [
             ('SYSTEM', 'System', '', 0),
             ('EYEBROW', 'Eye Brow', '', 1),
@@ -96,6 +98,7 @@ class BoneMorphData(PropertyGroup):
     """
     bone = StringProperty(
         name='Bone',
+        description='Target bone',
         set=_set_bone,
         get=_get_bone,
         )
@@ -106,6 +109,7 @@ class BoneMorphData(PropertyGroup):
 
     location = FloatVectorProperty(
         name='Location',
+        description='Location',
         subtype='TRANSLATION',
         size=3,
         default=[0, 0, 0],
@@ -113,6 +117,7 @@ class BoneMorphData(PropertyGroup):
 
     rotation = FloatVectorProperty(
         name='Rotation',
+        description='Rotation in quaternions',
         subtype='QUATERNION',
         size=4,
         default=[1, 0, 0, 0],
@@ -167,6 +172,7 @@ class MaterialMorphData(PropertyGroup):
         )
     offset_type = EnumProperty(
         name='Offset Type',
+        description='Select offset type',
         items=[
             ('MULT', 'Multiply', '', 0),
             ('ADD', 'Add', '', 1)
@@ -175,6 +181,7 @@ class MaterialMorphData(PropertyGroup):
         )
     material = StringProperty(
         name='Material',
+        description='Target material',
         get=_get_material,
         set=_set_material,
         )
@@ -186,6 +193,7 @@ class MaterialMorphData(PropertyGroup):
 
     diffuse_color = FloatVectorProperty(
         name='Diffuse Color',
+        description='Diffuse color',
         subtype='COLOR',
         size=4,
         soft_min=0,
@@ -197,6 +205,7 @@ class MaterialMorphData(PropertyGroup):
 
     specular_color = FloatVectorProperty(
         name='Specular Color',
+        description='Specular color',
         subtype='COLOR',
         size=3,
         soft_min=0,
@@ -208,6 +217,7 @@ class MaterialMorphData(PropertyGroup):
 
     shininess = FloatProperty(
         name='Shininess',
+        description='Shininess',
         soft_min=0,
         soft_max=500,
         step=100.0,
@@ -216,6 +226,7 @@ class MaterialMorphData(PropertyGroup):
 
     ambient_color = FloatVectorProperty(
         name='Ambient Color',
+        description='Ambient color',
         subtype='COLOR',
         size=3,
         soft_min=0,
@@ -227,6 +238,7 @@ class MaterialMorphData(PropertyGroup):
 
     edge_color = FloatVectorProperty(
         name='Edge Color',
+        description='Edge color',
         subtype='COLOR',
         size=4,
         soft_min=0,
@@ -238,6 +250,7 @@ class MaterialMorphData(PropertyGroup):
 
     edge_weight = FloatProperty(
         name='Edge Weight',
+        description='Edge weight',
         soft_min=0,
         soft_max=2,
         step=0.1,
@@ -246,6 +259,7 @@ class MaterialMorphData(PropertyGroup):
 
     texture_factor = FloatVectorProperty(
         name='Texture factor',
+        description='Texture factor',
         subtype='COLOR',
         size=4,
         soft_min=0,
@@ -257,6 +271,7 @@ class MaterialMorphData(PropertyGroup):
 
     sphere_texture_factor = FloatVectorProperty(
         name='Sphere Texture factor',
+        description='Sphere texture factor',
         subtype='COLOR',
         size=4,
         soft_min=0,
@@ -268,6 +283,7 @@ class MaterialMorphData(PropertyGroup):
 
     toon_texture_factor = FloatVectorProperty(
         name='Toon Texture factor',
+        description='Toon texture factor',
         subtype='COLOR',
         size=4,
         soft_min=0,
@@ -295,11 +311,13 @@ class UVMorphOffset(PropertyGroup):
     """
     index = IntProperty(
         name='Vertex Index',
+        description='Vertex index',
         min=0,
         default=0,
         )
     offset = FloatVectorProperty(
         name='UV Offset',
+        description='UV offset',
         size=4,
         #min=-1,
         #max=1,
@@ -313,6 +331,7 @@ class UVMorph(_MorphBase, PropertyGroup):
     """
     uv_index = IntProperty(
         name='UV Index',
+        description='UV index (UV, UV1 ~ UV4)',
         min=0,
         max=4,
         default=0,
@@ -332,13 +351,13 @@ class GroupMorphOffset(PropertyGroup):
     """
     morph_type = EnumProperty(
         name='Morph Type',
-        description='Morph Type',
+        description='Select morph type',
         items = [
-            ('material_morphs', 'Material', '', 0),
-            ('uv_morphs', 'UV', '', 1),
-            ('bone_morphs', 'Bone', '', 2),
-            ('vertex_morphs', 'Vertex', '', 3),
-            #('group_morphs', 'Group', '', 4),
+            ('material_morphs', 'Material', 'Material Morphs', 0),
+            ('uv_morphs', 'UV', 'UV Morphs', 1),
+            ('bone_morphs', 'Bone', 'Bone Morphs', 2),
+            ('vertex_morphs', 'Vertex', 'Vertex Morphs', 3),
+            #('group_morphs', 'Group', 'Group Morphs', 4),
             ],
         default='vertex_morphs',
         )

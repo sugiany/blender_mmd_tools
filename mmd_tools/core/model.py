@@ -70,8 +70,10 @@ class Model:
         root.lock_scale = [True, True, True]
 
         arm = bpy.data.armatures.new(name=name)
+        #arm.draw_type = 'STICK'
         armObj = bpy.data.objects.new(name=name+'_arm', object_data=arm)
         armObj.lock_rotation = armObj.lock_location = armObj.lock_scale = [True, True, True]
+        armObj.show_x_ray = True
         armObj.parent = root
 
         scene.objects.link(root)

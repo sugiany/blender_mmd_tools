@@ -43,7 +43,7 @@ class _OpenTextureBase(object):
 class OpenTexture(Operator, _OpenTextureBase):
     bl_idname = 'mmd_tools.material_open_texture'
     bl_label = 'Open Texture'
-    bl_description = ''
+    bl_description = 'Create main texture of active material'
     
     def execute(self, context):
         mat = context.active_object.active_material
@@ -57,7 +57,7 @@ class RemoveTexture(Operator):
     """
     bl_idname = 'mmd_tools.material_remove_texture'
     bl_label = 'Remove Texture'
-    bl_description = ''
+    bl_description = 'Remove main texture of active material'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -71,7 +71,7 @@ class OpenSphereTextureSlot(Operator, _OpenTextureBase):
     """
     bl_idname = 'mmd_tools.material_open_sphere_texture'
     bl_label = 'Open Sphere Texture'
-    bl_description = ''
+    bl_description = 'Create sphere texture of active material'
 
     def execute(self, context):
         mat = context.active_object.active_material
@@ -85,7 +85,7 @@ class RemoveSphereTexture(Operator):
     """
     bl_idname = 'mmd_tools.material_remove_sphere_texture'
     bl_label = 'Remove Sphere Texture'
-    bl_description = ''
+    bl_description = 'Remove sphere texture of active material'
     bl_options = {'PRESET'}
 
     def execute(self, context):

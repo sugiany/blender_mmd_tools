@@ -14,25 +14,25 @@ from mmd_tools import utils
 class SelectRigidBody(Operator):
     bl_idname = 'mmd_tools.select_rigid_body'
     bl_label = 'Select Rigid Body'
-    bl_description = ''
+    bl_description = 'Select similar rigidbody objects which have the same property values with active rigidbody object'
     bl_options = {'PRESET'}
 
     properties = bpy.props.EnumProperty(
         name='Properties',
-        description='',
+        description='Select the properties to be compared',
         options={'ENUM_FLAG'},
         items = [
-            ('collision_group_number', 'Collision Group', '', 1),
-            ('collision_group_mask', 'Collision Group Mask', '', 2),
-            ('type', 'Rigid Type', '', 4),
-            ('shape', 'Shape', '', 8),
-            ('bone', 'Bone', '', 16),
+            ('collision_group_number', 'Collision Group', 'Collision group', 1),
+            ('collision_group_mask', 'Collision Group Mask', 'Collision group mask', 2),
+            ('type', 'Rigid Type', 'Rigid type', 4),
+            ('shape', 'Shape', 'Collision shape', 8),
+            ('bone', 'Bone', 'Target bone', 16),
             ],
         default=set(),
         )
     hide_others = bpy.props.BoolProperty(
         name='Hide Others',
-        description='',
+        description='Hide the rigidbody object which does not have the same property values with active rigidbody object',
         default=False,
         )
 
@@ -84,21 +84,32 @@ class AddRigidBody(Operator):
     bl_description = 'Adds a Rigid Body'
     bl_options = {'PRESET'}
 
-    name_j = bpy.props.StringProperty(name='Name', default='$name_j')
-    name_e = bpy.props.StringProperty(name='Name(Eng)', default='$name_e')
+    name_j = bpy.props.StringProperty(
+        name='Name',
+        description='The name of rigid body ($name_j means use the japanese name of target bone)',
+        default='$name_j',
+        )
+    name_e = bpy.props.StringProperty(
+        name='Name(Eng)',
+        description='The english name of rigid body ($name_e means use the english name of target bone)',
+        default='$name_e',
+        )
 
     collision_group_number = bpy.props.IntProperty(
         name='Collision Group',
+        description='The collision group of the object',
         min=0,
         max=15,
         )
     collision_group_mask = bpy.props.BoolVectorProperty(
         name='Collision Group Mask',
+        description='The groups the object can not collide with',
         size=16,
         subtype='LAYER',
         )
     rigid_type = bpy.props.EnumProperty(
         name='Rigid Type',
+        description='Select rigid type',
         items = [
             (str(rigid_body.MODE_STATIC), 'Static', '', 1),
             (str(rigid_body.MODE_DYNAMIC), 'Dynamic', '', 2),
@@ -107,6 +118,7 @@ class AddRigidBody(Operator):
         )
     rigid_shape = bpy.props.EnumProperty(
         name='Shape',
+        description='Select the collision shape',
         items = [
             ('SPHERE', 'Sphere', '', 1),
             ('BOX', 'Box', '', 2),
@@ -225,11 +237,12 @@ class RemoveRigidBody(Operator):
 class AddJoint(Operator): 
     bl_idname = 'mmd_tools.add_joint'
     bl_label = 'Add Joint'
+    bl_description = 'Add Joint(s) to selected rigidbody objects'
     bl_options = {'PRESET'} 
 
     use_bone_rotation = bpy.props.BoolProperty(
         name='Use Bone Rotation',
-        description='',
+        description='Match joint orientation to bone orientation if enabled',
         default=True,
         )
 

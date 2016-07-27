@@ -83,6 +83,7 @@ class MMD_ROOT_UL_display_item_frames(UIList):
 class MMD_ROOT_UL_display_items(UIList):
     morph_filter = bpy.props.EnumProperty(
         name="Morph Filter",
+        description='Only show items matching this category',
         items = [
             ('SYSTEM', 'System', '', 0),
             ('EYEBROW', 'Eye Brow', '', 1),
@@ -118,7 +119,7 @@ class MMD_ROOT_UL_display_items(UIList):
                 MMD_ROOT_UL_display_items.draw_bone_item(layout, mmd_model.Model(item.id_data).armature(), item.name)
             else:
                 row = layout.split(percentage=0.6, align=True)
-                row.label(text=item.name, translate=False, icon='SHAPEKEY_DATA')
+                row.prop(item, 'name', text='', emboss=False, icon='SHAPEKEY_DATA')
                 row = row.row(align=True)
                 row.prop(item, 'morph_type', text='', emboss=False, icon_value=icon)
                 if item.name not in getattr(item.id_data.mmd_root, item.morph_type):
@@ -241,7 +242,10 @@ class UL_Morphs(UIList):
             row.prop(item, 'name', text='', emboss=False, icon='SHAPEKEY_DATA')
             row = row.split(percentage=0.6, align=True)
             row.prop(item, 'name_e', text='', emboss=True, icon_value=icon)
+            row = row.row(align=True)
             row.prop(item, 'category', text='', emboss=False, icon_value=icon)
+            if item.name not in item.id_data.mmd_root.display_item_frames[u'表情'].items:
+                row.label(icon='INFO')
         elif self.layout_type in {'COMPACT'}:
             pass
         elif self.layout_type in {'GRID'}:
@@ -536,6 +540,7 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
 class UL_ObjectsMixIn(object):
     model_filter = bpy.props.EnumProperty(
         name="Model Filter",
+        description='Show items of active model or all models',
         items = [
             ('ACTIVE', 'Active Model', '', 0),
             ('ALL', 'All Models', '', 1),
@@ -544,6 +549,7 @@ class UL_ObjectsMixIn(object):
         )
     visible_only = bpy.props.BoolProperty(
         name='Visible Only',
+        description='Only show visible items',
         default=False,
         )
 
