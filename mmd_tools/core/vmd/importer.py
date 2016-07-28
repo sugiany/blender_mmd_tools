@@ -10,14 +10,23 @@ import mmd_tools.core.lamp as mmd_lamp
 import mmd_tools.core.vmd as vmd
 from mmd_tools import utils
 
+class RenamedBoneMapper:
+    def __init__(self, armObj):
+        self.__pose_bones = armObj.pose.bones
+
+    def get(self, bone_name, default=None):
+        bl_bone_name = utils.convertNameToLR(bone_name)
+        return self.__pose_bones.get(bl_bone_name, default)
+
+
 class VMDImporter:
-    def __init__(self, filepath, scale=1.0, use_pmx_bonename=True, convert_mmd_camera=True, convert_mmd_lamp=True, frame_margin=5):
+    def __init__(self, filepath, scale=1.0, bone_mapper=None, convert_mmd_camera=True, convert_mmd_lamp=True, frame_margin=5):
         self.__vmdFile = vmd.File()
         self.__vmdFile.load(filepath=filepath)
         self.__scale = scale
         self.__convert_mmd_camera = convert_mmd_camera
         self.__convert_mmd_lamp = convert_mmd_lamp
-        self.__use_pmx_bonename = use_pmx_bonename
+        self.__bone_mapper = bone_mapper
         self.__frame_margin = frame_margin + 1
 
 
@@ -110,15 +119,15 @@ class VMDImporter:
         boneAnim = self.__vmdFile.boneAnimation
 
         pose_bones = armObj.pose.bones
-        if self.__use_pmx_bonename:
-            pose_bones = utils.makePmxBoneMap(armObj)
+        if self.__bone_mapper:
+            pose_bones = self.__bone_mapper(armObj)
         for name, keyFrames in boneAnim.items():
-            if name not in pose_bones:
+            bone = pose_bones.get(name, None)
+            if bone is None:
                 print("WARNING: not found bone %s"%str(name))
                 continue
 
             keyFrames.sort(key=lambda x:x.frame_number)
-            bone = pose_bones[name]
             frameNumbers = map(lambda x: x.frame_number, keyFrames)
             mat = self.makeVMDBoneLocationToBlenderMatrix(bone)
             locations = map(lambda x: mat * mathutils.Vector(x.location) * self.__scale, keyFrames)
@@ -153,6 +162,10 @@ class VMDImporter:
                     self.__setInterpolation(keyFrames[i].interp[idx:16:4], frames[i - 1], frames[i])
 
     def __assignToMesh(self, meshObj, action_name=None):
+        if meshObj.data.shape_keys is None:
+            print("WARNING: mesh object %s does not have any shape key"%str(meshObj.name))
+            return
+
         if action_name is not None:
             act = bpy.data.actions.new(name=action_name)
             a = meshObj.data.shape_keys.animation_data_create()

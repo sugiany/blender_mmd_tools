@@ -11,6 +11,7 @@ from bpy_extras.io_utils import ImportHelper, ExportHelper
 
 from mmd_tools import auto_scene_setup
 from mmd_tools.utils import selectAObject
+from mmd_tools.utils import makePmxBoneMap
 
 import mmd_tools.core.pmd.importer as pmd_importer
 import mmd_tools.core.pmx.importer as pmx_importer
@@ -168,6 +169,16 @@ class ImportVmd(Operator, ImportHelper):
         min=0,
         default=5,
         )
+    bone_mapper = bpy.props.EnumProperty(
+        name='Bone Mapper',
+        description='Select bone mapper',
+        items=[
+            ('BLENDER', 'Blender', 'Use blender bone name', 0),
+            ('PMX', 'PMX', 'Use japanese name of MMD bone', 1),
+            ('RENAMED_BONES', 'Renamed bones', 'Rename the bone of motion data to be blender suitable', 2),
+            ],
+        default='PMX',
+        )
     update_scene_settings = bpy.props.BoolProperty(
         name='Update scene settings',
         description='Update frame range and frame rate (30 fps)',
@@ -196,7 +207,19 @@ class ImportVmd(Operator, ImportHelper):
                         hidden_obj.append(m)
                     m.select = True
 
-        importer = vmd_importer.VMDImporter(filepath=self.filepath, scale=self.scale, frame_margin=self.margin)
+        bone_mapper = None
+        if self.bone_mapper == 'PMX':
+            bone_mapper = makePmxBoneMap
+        elif self.bone_mapper == 'RENAMED_BONES':
+            bone_mapper = vmd_importer.RenamedBoneMapper
+
+        importer = vmd_importer.VMDImporter(
+            filepath=self.filepath,
+            scale=self.scale,
+            bone_mapper=bone_mapper,
+            frame_margin=self.margin,
+            )
+
         for i in context.selected_objects:
             importer.assign(i)
         if self.update_scene_settings:
