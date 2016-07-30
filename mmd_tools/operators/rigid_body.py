@@ -136,8 +136,9 @@ class AddRigidBody(Operator):
 
         if pose_bone:
             bone_name = pose_bone.name
-            name_j = name_j.replace('$name_j', pose_bone.mmd_bone.name_j or bone_name)
-            name_e = name_e.replace('$name_e', pose_bone.mmd_bone.name_e or bone_name)
+            mmd_bone = pose_bone.mmd_bone
+            name_j = name_j.replace('$name_j', mmd_bone.name_j or bone_name)
+            name_e = name_e.replace('$name_e', mmd_bone.name_e or bone_name)
 
             target_bone = pose_bone.bone
             loc = (target_bone.head_local + target_bone.tail_local)/2

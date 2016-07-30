@@ -51,7 +51,9 @@ class MMDToolsObjectPanel(_PanelBase, Panel):
                 col.label(text='Press the "Build" button before playing the physical animation.', icon='ERROR')
 
             col.label('Bone Constraints:')
-            col.operator('mmd_tools.apply_additioinal_transform')
+            row = col.row(align=True)
+            row.operator('mmd_tools.apply_additioinal_transform', text='Apply')
+            row.operator('mmd_tools.clean_additioinal_transform', text='Clean')
 
         col = self.layout.column(align=True)
         col.label('Import/Export:')

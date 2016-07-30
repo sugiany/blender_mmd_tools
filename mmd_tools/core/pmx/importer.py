@@ -282,39 +282,40 @@ class PMXImporter:
         self.__boneTable = pose_bones
         for i, pmx_bone in sorted(enumerate(pmxModel.bones), key=lambda x: x[1].transform_order):
             b_bone = pose_bones[i]
-            b_bone.mmd_bone.name_j = pmx_bone.name
-            b_bone.mmd_bone.name_e = pmx_bone.name_e
-            b_bone.mmd_bone.transform_order = pmx_bone.transform_order
-            b_bone.mmd_bone.is_visible = pmx_bone.visible
-            b_bone.mmd_bone.is_controllable = pmx_bone.isControllable
-            b_bone.mmd_bone.transform_after_dynamics = pmx_bone.transAfterPhis
+            mmd_bone = b_bone.mmd_bone
+            mmd_bone.name_j = pmx_bone.name
+            mmd_bone.name_e = pmx_bone.name_e
+            mmd_bone.is_visible = pmx_bone.visible
+            mmd_bone.is_controllable = pmx_bone.isControllable
+            mmd_bone.transform_order = pmx_bone.transform_order
+            mmd_bone.transform_after_dynamics = pmx_bone.transAfterPhis
 
             if pmx_bone.displayConnection == -1 or pmx_bone.displayConnection == [0.0, 0.0, 0.0]:                
-                b_bone.mmd_bone.is_tip = True
+                mmd_bone.is_tip = True
                 logging.debug('bone %s is a tip bone', pmx_bone.name)
             elif b_bone.name in specialTipBones:
-                b_bone.mmd_bone.is_tip = True
+                mmd_bone.is_tip = True
                 logging.debug('bone %s is a special tip bone. DisplayConnection: %s', pmx_bone.name, str(pmx_bone.displayConnection))
             elif not isinstance(pmx_bone.displayConnection, int):
-                b_bone.mmd_bone.use_tail_location = True
+                mmd_bone.use_tail_location = True
                 logging.debug('bone %s is using a vector tail', pmx_bone.name)
             else:
                 logging.debug('bone %s is not using a vector tail and is not a tip bone. DisplayConnection: %s', 
                               pmx_bone.name, str(pmx_bone.displayConnection))
-                
+
             #if pmx_bone.axis is not None and pmx_bone.parent != -1:
             #    #The twist bones (type 8 in PMD) are special, without this the tail will not be displayed during export
             #    pose_bones[pmx_bone.parent].mmd_bone.use_tail_location = True
-                                
+
             #Movable bones should have a tail too
             #if pmx_bone.isMovable and pmx_bone.visible:
-            #    b_bone.mmd_bone.use_tail_location = True
+            #    mmd_bone.use_tail_location = True
 
             #Some models don't have correct tail bones, let's try to fix it
             #if re.search(u'先$', pmx_bone.name):
-            #    b_bone.mmd_bone.is_tip = True
+            #    mmd_bone.is_tip = True
 
-            b_bone.bone.hide = not pmx_bone.visible #or b_bone.mmd_bone.is_tip
+            b_bone.bone.hide = not pmx_bone.visible #or mmd_bone.is_tip
 
             if not pmx_bone.isRotatable:
                 b_bone.lock_rotation = [True, True, True]
@@ -328,7 +329,6 @@ class PMXImporter:
 
             if pmx_bone.hasAdditionalRotate or pmx_bone.hasAdditionalLocation:
                 bone_index, influ = pmx_bone.additionalTransform
-                mmd_bone = b_bone.mmd_bone
                 mmd_bone.has_additional_rotation = pmx_bone.hasAdditionalRotate
                 mmd_bone.has_additional_location = pmx_bone.hasAdditionalLocation
                 mmd_bone.additional_transform_influence = influ
@@ -336,15 +336,15 @@ class PMXImporter:
                     mmd_bone.additional_transform_bone = pose_bones[bone_index].name
 
             if pmx_bone.localCoordinate is not None:
-                b_bone.mmd_bone.enabled_local_axes = True
-                b_bone.mmd_bone.local_axis_x = pmx_bone.localCoordinate.x_axis
-                b_bone.mmd_bone.local_axis_z = pmx_bone.localCoordinate.z_axis
+                mmd_bone.enabled_local_axes = True
+                mmd_bone.local_axis_x = pmx_bone.localCoordinate.x_axis
+                mmd_bone.local_axis_z = pmx_bone.localCoordinate.z_axis
 
             if pmx_bone.axis is not None:
-                b_bone.mmd_bone.enabled_fixed_axis = True
-                b_bone.mmd_bone.fixed_axis=pmx_bone.axis
+                mmd_bone.enabled_fixed_axis = True
+                mmd_bone.fixed_axis = pmx_bone.axis
 
-            #if b_bone.mmd_bone.is_tip:
+            #if mmd_bone.is_tip:
             #    b_bone.lock_rotation = [True, True, True]
             #    b_bone.lock_location = [True, True, True]
             #    b_bone.lock_scale = [True, True, True]

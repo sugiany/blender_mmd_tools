@@ -240,54 +240,6 @@ class ImportVmd(Operator, ImportHelper):
         return {'RUNNING_MODAL'}
 
 
-class ImportVmdToMMDModel(Operator, ImportHelper):
-    bl_idname = 'mmd_tools.import_vmd_to_mmd_model'
-    bl_label = 'Import VMD file To MMD Model'
-    bl_description = 'Import a VMD file (.vmd)'
-    bl_options = {'PRESET'}
-
-    filename_ext = '.vmd'
-    filter_glob = bpy.props.StringProperty(default='*.vmd', options={'HIDDEN'})
-
-    margin = bpy.props.IntProperty(
-        name='Margin',
-        description='How many frames added before motion starting',
-        min=0,
-        default=5,
-        )
-    update_scene_settings = bpy.props.BoolProperty(
-        name='Update scene settings',
-        description='Update frame range and frame rate (30 fps)',
-        default=True,
-        )
-
-    def execute(self, context):
-        obj = context.active_object
-        root = mmd_model.Model.findRoot(obj)
-        rig = mmd_model.Model(root)
-        importer = vmd_importer.VMDImporter(filepath=self.filepath, scale=root.mmd_root.scale, frame_margin=self.margin)
-        arm = rig.armature()
-        t = arm.hide
-        arm.hide = False
-        importer.assign(arm)
-        arm.hide = t
-        for i in rig.meshes():
-            t = i.hide
-            i.hide = False
-            importer.assign(i)
-            i.hide = t
-        if self.update_scene_settings:
-            auto_scene_setup.setupFrameRanges()
-            auto_scene_setup.setupFps()
-
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        wm = context.window_manager
-        wm.fileselect_add(self)
-        return {'RUNNING_MODAL'}
-
-
 class ExportPmx(Operator, ExportHelper):
     bl_idname = 'mmd_tools.export_pmx'
     bl_label = 'Export PMX file (.pmx)'

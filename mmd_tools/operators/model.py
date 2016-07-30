@@ -15,7 +15,7 @@ class CleanRiggingObjects(Operator):
 
     def execute(self, context):
         obj = context.active_object
-        root = mmd_model.Model.findRoot(context.active_object)
+        root = mmd_model.Model.findRoot(obj)
         rig = mmd_model.Model(root)
         rig.clean()
         context.scene.objects.active = obj
@@ -29,9 +29,27 @@ class BuildRig(Operator):
 
     def execute(self, context):
         obj = context.active_object
-        root = mmd_model.Model.findRoot(context.active_object)
+        root = mmd_model.Model.findRoot(obj)
         rig = mmd_model.Model(root)
         rig.build()
+        context.scene.objects.active = obj
+        return {'FINISHED'}
+
+class CleanAdditionalTransformConstraints(Operator):
+    bl_idname = 'mmd_tools.clean_additioinal_transform'
+    bl_label = 'Clean Additional Transform'
+    bl_description = 'Clean additional transform constraints and shadow bones of rigging'
+    bl_options = {'PRESET'}
+
+    @classmethod
+    def poll(cls, context):
+        return mmd_model.Model.findRoot(context.active_object)
+
+    def execute(self, context):
+        obj = context.active_object
+        root = mmd_model.Model.findRoot(obj)
+        rig = mmd_model.Model(root)
+        rig.cleanAdditionalTransformConstraints()
         context.scene.objects.active = obj
         return {'FINISHED'}
 
@@ -46,9 +64,11 @@ class ApplyAdditionalTransformConstraints(Operator):
         return mmd_model.Model.findRoot(context.active_object)
 
     def execute(self, context):
-        root = mmd_model.Model.findRoot(context.active_object)
-        mmd_model.Model(root).applyAdditionalTransformConstraints()
-        #context.scene.objects.active = obj
+        obj = context.active_object
+        root = mmd_model.Model.findRoot(obj)
+        rig = mmd_model.Model(root)
+        rig.applyAdditionalTransformConstraints()
+        context.scene.objects.active = obj
         return {'FINISHED'}
 
 class CreateMMDModelRoot(Operator):

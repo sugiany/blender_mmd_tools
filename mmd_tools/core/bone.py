@@ -44,6 +44,47 @@ class FnBone(object):
 
     pose_bone = property(__get_pose_bone, __set_pose_bone)
 
+    @classmethod
+    def __remove_bones(cls, armature, bone_names):
+        if len(bone_names) < 1:
+            return
+        with bpyutils.edit_object(armature) as data:
+            for name in bone_names:
+                b = data.edit_bones.get(name, None)
+                if b:
+                    data.edit_bones.remove(b)
+
+    @classmethod
+    def __remove_constraint(cls, constraints, name):
+        c = constraints.get(name, None)
+        if c:
+            constraints.remove(c)
+            return True
+        return False
+
+    @classmethod
+    def clean_additional_transformation(cls, armature):
+        # clean shadow bones
+        shadow_bone_types = {
+            'DUMMY',
+            'SHADOW',
+            'ADDITIONAL_TRANSFORM',
+            'ADDITIONAL_TRANSFORM_INVERT',
+        }
+        def __is_at_shadow_bone(b):
+            return b.is_mmd_shadow_bone and b.mmd_shadow_bone_type in shadow_bone_types
+        shadow_bone_names = [b.name for b in armature.pose.bones if __is_at_shadow_bone(b)]
+        cls.__remove_bones(armature, shadow_bone_names)
+
+        # clean constraints
+        for p_bone in armature.pose.bones:
+            p_bone.mmd_bone.is_additional_transform_dirty = True
+            constraints = p_bone.constraints
+            cls.__remove_constraint(constraints, cls.AT_ROTATION_CONSTRAINT_NAME)
+            cls.__remove_constraint(constraints, cls.AT_LOCATION_CONSTRAINT_NAME)
+            if cls.__remove_constraint(constraints, cls.AT_PARENT_CONSTRAINT_NAME):
+                p_bone.bone.use_inherit_rotation = True
+
     #****************************************
     # Methods for additional transformation
     #****************************************
@@ -56,30 +97,22 @@ class FnBone(object):
 
         arm = p_bone.id_data
         mmd_bone = p_bone.mmd_bone
+        if not mmd_bone.is_additional_transform_dirty:
+            return
 
         influence = mmd_bone.additional_transform_influence
         source_bone = mmd_bone.additional_transform_bone
         mute_rotation = not mmd_bone.has_additional_rotation
         mute_location = not mmd_bone.has_additional_location
 
-        mmd_bone.is_additional_transform_dirty = False
-
+        constraints = p_bone.constraints
         if not source_bone or (mute_rotation and mute_location) or influence == 0:
-            shadow_bones = {}
-            for name in [self.AT_ROTATION_CONSTRAINT_NAME, self.AT_LOCATION_CONSTRAINT_NAME]:
-                c = p_bone.constraints.get(name, None)
-                if c:
-                    if c.subtarget.startswith('_shadow.'):
-                        shadow_bones[c.subtarget] = True
-                        shadow_bones[c.subtarget.replace('_shadow.', '_dummy.')] = True
-                    p_bone.constraints.remove(c)
-
-            if len(shadow_bones) > 0:
-                with bpyutils.edit_object(arm) as data:
-                    for name in shadow_bones:
-                        b = data.edit_bones.get(name, None)
-                        if b:
-                            data.edit_bones.remove(b)
+            rot = self.__remove_constraint(constraints, self.AT_ROTATION_CONSTRAINT_NAME)
+            loc = self.__remove_constraint(constraints, self.AT_LOCATION_CONSTRAINT_NAME)
+            if rot or loc:
+                bone_name = p_bone.name
+                self.__remove_bones(arm, ['_dummy.' + bone_name, '_shadow.' + bone_name])
+            mmd_bone.is_additional_transform_dirty = False
             return
 
         invert = influence < 0
@@ -87,13 +120,16 @@ class FnBone(object):
 
         shadow_bone = self.__get_at_shadow_bone_v2(arm, source_bone)
 
-        c = p_bone.constraints.get(self.AT_ROTATION_CONSTRAINT_NAME, None)
+        c = constraints.get(self.AT_ROTATION_CONSTRAINT_NAME, None)
         if mute_rotation:
             if c:
-                p_bone.constraints.remove(c)
+                constraints.remove(c)
         else:
+            if c and c.type != 'COPY_ROTATION':
+                constraints.remove(c)
+                c = None
             if c is None:
-                c = p_bone.constraints.new('COPY_ROTATION')
+                c = constraints.new('COPY_ROTATION')
                 c.name = self.AT_ROTATION_CONSTRAINT_NAME
             c.use_offset = True
             c.influence = influence
@@ -105,13 +141,16 @@ class FnBone(object):
             c.invert_y = invert
             c.invert_z = invert
 
-        c = p_bone.constraints.get(self.AT_LOCATION_CONSTRAINT_NAME, None)
+        c = constraints.get(self.AT_LOCATION_CONSTRAINT_NAME, None)
         if mute_location:
             if c:
-                p_bone.constraints.remove(c)
+                constraints.remove(c)
         else:
+            if c and c.type != 'COPY_LOCATION':
+                constraints.remove(c)
+                c = None
             if c is None:
-                c = p_bone.constraints.new('COPY_LOCATION')
+                c = constraints.new('COPY_LOCATION')
                 c.name = self.AT_LOCATION_CONSTRAINT_NAME
             c.use_offset = True
             c.influence = influence
@@ -122,6 +161,8 @@ class FnBone(object):
             c.invert_x = invert
             c.invert_y = invert
             c.invert_z = invert
+
+        mmd_bone.is_additional_transform_dirty = False
 
     def __get_at_shadow_bone_v2(self, arm, source_bone_name):
         bone_name = self.__bone.name
@@ -170,198 +211,3 @@ class FnBone(object):
 
         return shadow_bone_name
 
-
-    def apply_additional_transformation_bak(self):
-        """ create or update constaints to apply additional transformation
-        """
-        mmd_bone = self.__bone.mmd_bone
-
-        influence = mmd_bone.additional_transform_influence
-        source_bone = mmd_bone.additional_transform_bone
-        mute_rotation = not mmd_bone.has_additional_rotation
-        mute_location = not mmd_bone.has_additional_location
-
-        mmd_bone.is_additional_transform_dirty = False
-
-        if not source_bone or (mute_rotation and mute_location):
-            self.__remove_constraints()
-            return
-
-        rot_constraint, loc_constraint, parent_constraint = self.__create_constraints()
-
-        shadow_bone = self.__get_at_shadow_bone(source_bone, influence < 0)
-
-        rot_constraint.subtarget = shadow_bone.name
-        rot_constraint.influence = abs(influence)
-        rot_constraint.inverse_matrix = mathutils.Matrix(shadow_bone.bone.matrix_local).inverted()
-
-        loc_constraint.subtarget = shadow_bone.name
-        loc_constraint.influence = abs(influence)
-
-        rot_constraint.mute = mute_rotation
-        loc_constraint.mute = mute_location
-
-    def __get_shadow_bone(self, bone_name, shadow_bone_type):
-        arm = self.__bone.id_data
-        for p_bone in arm.pose.bones:
-            if p_bone.mmd_shadow_bone_type == shadow_bone_type:
-                for c in p_bone.constraints:
-                    if c.subtarget == bone_name:
-                        return p_bone
-        return None
-
-    def __get_at_shadow_bone(self, bone_name, invert=False):
-        arm = self.__bone.id_data
-        mmd_shadow_bone_type = 'ADDITIONAL_TRANSFORM'
-        if invert:
-            mmd_shadow_bone_type += '_INVERT'
-
-        src_mmd_bone = arm.pose.bones[bone_name].mmd_bone
-        if src_mmd_bone.has_additional_rotation or src_mmd_bone.has_additional_location:
-            dummy_name = '_dummy.%s'%bone_name
-            if dummy_name not in arm.pose.bones: # A bone should have only one dummy bone
-                with bpyutils.edit_object(arm) as data:
-                    src_bone = data.edit_bones[bone_name]
-                    dummy = data.edit_bones.new(name=dummy_name)
-                    dummy.parent = src_bone.parent
-                    dummy.head = src_bone.head
-                    dummy.tail = src_bone.tail
-                    dummy.layers = tuple(x==9 for x in range(len(dummy.layers)))
-                dummy_p_bone = arm.pose.bones[dummy_name]
-                dummy_p_bone.is_mmd_shadow_bone = True
-                dummy_p_bone.mmd_shadow_bone_type = 'DUMMY'
-                c = dummy_p_bone.constraints.new('COPY_TRANSFORMS')
-                c.name = self.AT_DUMMY_CONSTRAINT_NAME
-                c.target = arm
-                c.subtarget = bone_name
-                c.target_space = 'POSE'
-                c.owner_space = 'POSE'
-            bone_name = dummy_name
-
-        shadow_bone = self.__get_shadow_bone(bone_name, mmd_shadow_bone_type)
-        if shadow_bone:
-            return shadow_bone
-        with bpyutils.edit_object(arm) as data:
-            src_bone = data.edit_bones[bone_name]
-            shadow_bone = data.edit_bones.new(name='%s.shadow'%(bone_name))
-            shadow_bone.head = mathutils.Vector([0, 0, 0])
-            shadow_bone.tail = src_bone.tail - src_bone.head
-            shadow_bone.layers = (
-                False, False, False, False, False, False, False, False,
-                True , False, False, False, False, False, False, False,
-                False, False, False, False, False, False, False, False,
-                False, False, False, False, False, False, False, False)
-            shadow_bone_name = shadow_bone.name
-
-        shadow_p_bone = arm.pose.bones[shadow_bone_name]
-        shadow_p_bone.is_mmd_shadow_bone = True
-        shadow_p_bone.mmd_shadow_bone_type = mmd_shadow_bone_type
-
-        c = shadow_p_bone.constraints.new('COPY_ROTATION')
-        c.target = arm
-        c.subtarget = bone_name
-        c.target_space = 'LOCAL'
-        c.owner_space = 'LOCAL'
-        if invert:
-            c.invert_x = True
-            c.invert_y = True
-            c.invert_z = True
-
-        c = shadow_p_bone.constraints.new('COPY_LOCATION')
-        c.target = arm
-        c.subtarget = bone_name
-        c.target_space = 'LOCAL'
-        c.owner_space = 'LOCAL'
-        if invert:
-            c.invert_x = True
-            c.invert_y = True
-            c.invert_z = True
-
-        return shadow_p_bone
-
-    def __get_at_constraints(self):
-        rot_constraint = None
-        loc_constraint = None
-        parent_constraint = None
-        for c in self.__bone.constraints:
-            if c.name == self.AT_ROTATION_CONSTRAINT_NAME:
-                rot_constraint = c
-            elif c.name == self.AT_LOCATION_CONSTRAINT_NAME:
-                loc_constraint = c
-            elif c.name == self.AT_PARENT_CONSTRAINT_NAME:
-                parent_constraint = c
-        return (rot_constraint, loc_constraint, parent_constraint)
-
-    def __remove_constraints(self):
-        rot_constraint, loc_constraint, parent_constraint = self.__get_at_constraints()
-        if rot_constraint:
-            self.__bone.constraints.remove(rot_constraint)
-        if loc_constraint:
-            self.__bone.constraints.remove(loc_constraint)
-        if parent_constraint:
-            self.__bone.constraints.remove(parent_constraint)
-        self.__bone.bone.use_inherit_rotation = True
-
-    def __create_constraints(self):
-        arm = self.__bone.id_data
-        rot_constraint, loc_constraint, parent_constraint = self.__get_at_constraints()
-        if rot_constraint and loc_constraint:
-            return (rot_constraint, loc_constraint, parent_constraint)
-
-        if rot_constraint:
-            self.__bone.constraints.remove(rot_constraint)
-
-        if loc_constraint:
-            self.__bone.constraints.remove(loc_constraint)
-
-        if parent_constraint:
-            self.__bone.constraints.remove(parent_constraint)
-
-        rot_constraint = self.__bone.constraints.new('CHILD_OF')
-        rot_constraint.mute = True
-        rot_constraint.name = self.AT_ROTATION_CONSTRAINT_NAME
-        rot_constraint.target = arm
-        rot_constraint.use_location_x = False
-        rot_constraint.use_location_y = False
-        rot_constraint.use_location_z = False
-        rot_constraint.use_rotation_x = True
-        rot_constraint.use_rotation_y = True
-        rot_constraint.use_rotation_z = True
-        rot_constraint.use_scale_x = False
-        rot_constraint.use_scale_y = False
-        rot_constraint.use_scale_z = False
-
-        loc_constraint = self.__bone.constraints.new('CHILD_OF')
-        loc_constraint.mute = True
-        loc_constraint.name = self.AT_LOCATION_CONSTRAINT_NAME
-        loc_constraint.target = arm
-        loc_constraint.use_location_x = True
-        loc_constraint.use_location_y = True
-        loc_constraint.use_location_z = True
-        loc_constraint.use_rotation_x = False
-        loc_constraint.use_rotation_y = False
-        loc_constraint.use_rotation_z = False
-        loc_constraint.use_scale_x = False
-        loc_constraint.use_scale_y = False
-        loc_constraint.use_scale_z = False
-
-        parent_constraint = None
-        if self.__bone.parent:
-            parent_constraint = self.__bone.constraints.new('CHILD_OF')
-            parent_constraint.mute = False
-            parent_constraint.name = self.AT_PARENT_CONSTRAINT_NAME
-            parent_constraint.target = arm
-            parent_constraint.subtarget = self.__bone.parent.name
-            parent_constraint.use_location_x = False
-            parent_constraint.use_location_y = False
-            parent_constraint.use_location_z = False
-            parent_constraint.use_rotation_x = True
-            parent_constraint.use_rotation_y = True
-            parent_constraint.use_rotation_z = True
-            parent_constraint.use_scale_x = False
-            parent_constraint.use_scale_y = False
-            parent_constraint.use_scale_z = False
-            parent_constraint.inverse_matrix = mathutils.Matrix(self.__bone.parent.bone.matrix_local).inverted()
-            self.__bone.bone.use_inherit_rotation = False
-
-        return (rot_constraint, loc_constraint, parent_constraint)

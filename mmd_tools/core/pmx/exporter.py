@@ -268,10 +268,10 @@ class __PmxExporter:
                 if p_bone.is_mmd_shadow_bone:
                     continue
                 bone = data.edit_bones[p_bone.name]
-                pmx_bone = pmx.Bone()
-                pmx_bone.name = p_bone.mmd_bone.name_j or bone.name
-
                 mmd_bone = p_bone.mmd_bone
+                pmx_bone = pmx.Bone()
+                pmx_bone.name = mmd_bone.name_j or bone.name
+
                 pmx_bone.hasAdditionalRotate = mmd_bone.has_additional_rotation
                 pmx_bone.hasAdditionalLocation = mmd_bone.has_additional_location
                 pmx_bone.additionalTransform = [None, mmd_bone.additional_transform_influence]
@@ -280,21 +280,21 @@ class __PmxExporter:
                     if fnBone:
                         pmx_bone.additionalTransform[0] = fnBone.pose_bone
 
-                pmx_bone.name_e = p_bone.mmd_bone.name_e or ''
+                pmx_bone.name_e = mmd_bone.name_e or ''
                 pmx_bone.location = world_mat * mathutils.Vector(bone.head) * self.__scale * self.TO_PMX_MATRIX
                 pmx_bone.parent = bone.parent
-                pmx_bone.transform_order = mmd_bone.transform_order
                 pmx_bone.visible = mmd_bone.is_visible
                 pmx_bone.isControllable = mmd_bone.is_controllable
                 pmx_bone.isMovable = not all(p_bone.lock_location)
                 pmx_bone.isRotatable = not all(p_bone.lock_rotation)
+                pmx_bone.transform_order = mmd_bone.transform_order
                 pmx_bone.transAfterPhis = mmd_bone.transform_after_dynamics
                 pmx_bones.append(pmx_bone)
                 self.__bone_name_table.append(p_bone.name)
                 boneMap[bone] = pmx_bone
                 r[bone.name] = len(pmx_bones) - 1
 
-                if bone.use_connect and arm.pose.bones[bone.parent.name].mmd_bone.is_tip:
+                if bone.use_connect and p_bone.parent.mmd_bone.is_tip:
                     logging.debug(' * fix location of bone %s, parent %s is tip', bone.name, bone.parent.name)
                     pmx_bone.location = boneMap[bone.parent].location
 
@@ -305,7 +305,7 @@ class __PmxExporter:
                         pmx_bone.displayConnection = child
                         break
                 if not pmx_bone.displayConnection:
-                    if p_bone.mmd_bone.is_tip:
+                    if mmd_bone.is_tip:
                         pmx_bone.displayConnection = -1
                     else:
                         tail_loc = world_mat * mathutils.Vector(bone.tail) * self.__scale * self.TO_PMX_MATRIX

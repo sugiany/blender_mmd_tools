@@ -27,40 +27,42 @@ class MMDBonePanel(Panel):
             layout.label('MMD Shadow Bone!', icon='INFO')
             return
 
-        c = layout.column(align=True)
+        mmd_bone = pose_bone.mmd_bone
 
+        c = layout.column(align=True)
         c.label('Information:')
-        c.prop(pose_bone.mmd_bone, 'name_j')
-        c.prop(pose_bone.mmd_bone, 'name_e')
-        c.label(text='ID: %d'%(pose_bone.mmd_bone.bone_id))
+        c.prop(mmd_bone, 'name_j')
+        c.prop(mmd_bone, 'name_e')
+        c.label(text='ID: %d'%(mmd_bone.bone_id))
 
         c = layout.column(align=True)
         row = c.row()
-        row.prop(pose_bone.mmd_bone, 'transform_order')
-        row.prop(pose_bone.mmd_bone, 'transform_after_dynamics')
-        row.prop(pose_bone.mmd_bone, 'is_tip')
+        row.prop(mmd_bone, 'transform_order')
+        row.prop(mmd_bone, 'transform_after_dynamics')
         row = c.row()
-        row.prop(pose_bone.mmd_bone, 'is_visible')
-        row.prop(pose_bone.mmd_bone, 'is_controllable')
-        #row.prop(pose_bone.mmd_bone, 'use_tail_location')
+        row.prop(mmd_bone, 'is_visible')
+        row.prop(mmd_bone, 'is_controllable')
+        row = c.row()
+        row.prop(mmd_bone, 'is_tip')
+        #row.prop(mmd_bone, 'use_tail_location')
 
         c = layout.column(align=True)
         row = c.row()
         row.active = len([i for i in pose_bone.constraints if i.type == 'IK']) > 0
-        row.prop(pose_bone.mmd_bone, 'ik_rotation_constraint')
+        row.prop(mmd_bone, 'ik_rotation_constraint')
 
         c = layout.column(align=True)
-        c.prop(pose_bone.mmd_bone, 'enabled_fixed_axis')
+        c.prop(mmd_bone, 'enabled_fixed_axis')
         row = c.row()
-        row.active = pose_bone.mmd_bone.enabled_fixed_axis
-        row.column(align=True).prop(pose_bone.mmd_bone, 'fixed_axis', text='')
+        row.active = mmd_bone.enabled_fixed_axis
+        row.column(align=True).prop(mmd_bone, 'fixed_axis', text='')
 
         c = layout.column(align=True)
-        c.prop(pose_bone.mmd_bone, 'enabled_local_axes')
+        c.prop(mmd_bone, 'enabled_local_axes')
         row = c.row()
-        row.active = pose_bone.mmd_bone.enabled_local_axes
-        row.column(align=True).prop(pose_bone.mmd_bone, 'local_axis_x')
-        row.column(align=True).prop(pose_bone.mmd_bone, 'local_axis_z')
+        row.active = mmd_bone.enabled_local_axes
+        row.column(align=True).prop(mmd_bone, 'local_axis_x')
+        row.column(align=True).prop(mmd_bone, 'local_axis_z')
 
 
 class MMDBoneATPanel(Panel):
@@ -88,22 +90,18 @@ class MMDBoneATPanel(Panel):
             layout.label('MMD Shadow Bone!', icon='INFO')
             return
 
-        c = layout.column(align=True)
+        mmd_bone = pose_bone.mmd_bone
 
-        if pose_bone.mmd_bone.is_additional_transform_dirty:
-            c.label(text='Changes has not been applied.', icon='ERROR')
+        c = layout.column(align=True)
         row = c.row()
-        row.prop(pose_bone.mmd_bone, 'has_additional_rotation', text='Rotation')
-        row.prop(pose_bone.mmd_bone, 'has_additional_location', text='Location')
+        row.prop(mmd_bone, 'has_additional_rotation', text='Rotation')
+        row.prop(mmd_bone, 'has_additional_location', text='Location')
 
         c = layout.column(align=True)
-        c.prop_search(pose_bone.mmd_bone, 'additional_transform_bone', pose_bone.id_data.pose, 'bones', icon='BONE_DATA', text='')
+        c.prop_search(mmd_bone, 'additional_transform_bone', pose_bone.id_data.pose, 'bones', icon='BONE_DATA', text='')
+        c.prop(mmd_bone, 'additional_transform_influence', text='Influence', slider=True)
+        if mmd_bone.is_additional_transform_dirty:
+            c.label(text='Changes has not been applied.', icon='ERROR')
+        else:
+            c.label()
 
-        # mmd_bone = MMDBone(pose_bone)
-        # if mmd_bone.has_additional_transform_constraint():
-        #     constraint = mmd_bone.get_additional_transform_constraint()
-        #     c.prop_search(constraint, 'subtarget', constraint.target.pose, 'bones', icon='BONE_DATA', text='Additional Transform Bone')
-        # else:
-        #     c.operator('mmd_tools.bone_add_additional_transform')
-
-        c.prop(pose_bone.mmd_bone, 'additional_transform_influence', text='Influence', slider=True)
