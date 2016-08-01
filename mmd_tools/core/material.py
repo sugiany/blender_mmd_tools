@@ -267,6 +267,7 @@ class FnMaterial(object):
         mat = self.__material
         mmd_mat = mat.mmd_material
         mat.alpha = mmd_mat.alpha
+        mat.specular_intensity = 0.8*mmd_mat.alpha
 
     def update_specular_color(self):
         mat = self.__material
@@ -278,10 +279,6 @@ class FnMaterial(object):
         mmd_mat = mat.mmd_material
         shininess = mmd_mat.shininess
         mat.specular_hardness = shininess
-        if shininess > 0:
-            mat.specular_intensity = 0.5
-        else:
-            mat.specular_intensity = 0
 
     def update_is_double_sided(self):
         mat = self.__material

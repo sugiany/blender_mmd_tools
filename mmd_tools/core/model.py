@@ -854,9 +854,12 @@ class Model:
             i.rotation_euler = r.to_euler(i.rotation_mode)
 
     def cleanAdditionalTransformConstraints(self):
-        FnBone.clean_additional_transformation(self.armature())
+        self.__detached_call(FnBone.clean_additional_transformation)
 
     def applyAdditionalTransformConstraints(self):
+        self.__detached_call(FnBone.apply_additional_transformation)
+
+    def __detached_call(self, exec_func):
         arm = self.armature()
         # detach armature modifier for improving performance
         detached = []
@@ -866,14 +869,8 @@ class Model:
                     m.object = None
                     detached.append(m)
         try:
-            self.__applyAdditionalTransformConstraints(arm)
+            exec_func(arm)
         finally:
             for m in detached: # store back
                 m.object = arm
-
-    def __applyAdditionalTransformConstraints(self, arm):
-        fnBone = FnBone()
-        for bone in arm.pose.bones[:]:
-            fnBone.pose_bone = bone
-            fnBone.apply_additional_transformation()
 
