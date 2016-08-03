@@ -216,3 +216,56 @@ class MoveModelMeshDown(Operator):
             _swap_prefixes(current_mesh, next_mesh)
 
         return { 'FINISHED' }
+
+class ChangeMMDIKLoopFactor(Operator):
+    bl_idname = 'mmd_tools.change_mmd_ik_loop_factor'
+    bl_label = 'Change MMD IK Loop Factor'
+    bl_description = 'Change scaling factor of MMD IK loop and update iteration of IK constraints on active armature'
+    bl_options = {'PRESET'}
+
+    mmd_ik_loop_factor = bpy.props.IntProperty(
+        name='MMD IK Loop Factor',
+        description='Scaling factor of MMD IK loop',
+        min=1,
+        soft_max=10,
+        max=100,
+        options={'SKIP_SAVE'},
+        )
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        return obj and obj.type == 'ARMATURE'
+
+    def invoke(self, context, event):
+        arm = context.active_object
+        self.mmd_ik_loop_factor = max(arm.get('mmd_ik_loop_factor', 1), 1)
+        vm = context.window_manager
+        return vm.invoke_props_dialog(self)
+
+    def execute(self, context):
+        arm = context.active_object
+
+        if '_RNA_UI' not in arm:
+            arm['_RNA_UI'] = {}
+        rna_ui = arm['_RNA_UI']
+        if 'mmd_ik_loop_factor' not in rna_ui:
+            rna_ui['mmd_ik_loop_factor'] = {}
+        prop = rna_ui['mmd_ik_loop_factor']
+        prop['min'] = 1
+        prop['soft_min'] = 1
+        prop['soft_max'] = 10
+        prop['max'] = 100
+        prop['description'] = 'Scaling factor of MMD IK loop'
+
+        old_factor = max(arm.get('mmd_ik_loop_factor', 1), 1)
+        new_factor = arm['mmd_ik_loop_factor'] = self.mmd_ik_loop_factor
+        for b in arm.pose.bones:
+            for c in b.constraints:
+                if c.type != 'IK':
+                    continue
+                iterations = int(c.iterations * new_factor / old_factor)
+                self.report({ 'INFO' }, 'Update %s of %s: %d -> %d'%(c.name, b.name, c.iterations, iterations))
+                c.iterations = iterations
+        return { 'FINISHED' }
+

@@ -8,6 +8,7 @@ __properties = {
     bpy.types.Object: {
         'mmd_type': bpy.props.EnumProperty(
             name='Type',
+            description='Internal MMD type of this object (DO NOT CHANGE IT DIRECTLY)',
             default='NONE',
             items=[
                 ('NONE', 'None', '', 1),

@@ -194,7 +194,6 @@ class MMDRigidBody(PropertyGroup):
         step=0.1,
         get=_get_size,
         set=_set_size,
-        options={'SKIP_SAVE'},
         )
 
 class MMDJoint(PropertyGroup):

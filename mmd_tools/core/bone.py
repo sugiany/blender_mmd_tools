@@ -104,7 +104,6 @@ class FnBone(object):
 
             if need_mode_change:
                 bpy.ops.object.mode_set(mode='OBJECT')
-                bpy.ops.object.mode_set(mode='EDIT')
 
         pose_bones = armature.pose.bones
         for sb in shadow_bone_pool:

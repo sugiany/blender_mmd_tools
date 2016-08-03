@@ -402,6 +402,7 @@ class __PmxExporter:
         """
         pmx_bones = self.__model.bones
         arm = self.__armature
+        ik_loop_factor = max(arm.get('mmd_ik_loop_factor', 1), 1)
         pose_bones = arm.pose.bones
         for bone in pose_bones:
             if bone.is_mmd_shadow_bone:
@@ -420,7 +421,7 @@ class __PmxExporter:
                     pmx_ik_bone = pmx_bones[ik_bone_index]
                     logging.debug('  - IK bone: %s, IK Target: %s', pmx_ik_bone.name, ik_target_bone.name)
                     pmx_ik_bone.isIK = True
-                    pmx_ik_bone.loopCount = c.iterations
+                    pmx_ik_bone.loopCount = max(int(c.iterations/ik_loop_factor), 1)
                     pmx_ik_bone.rotationConstraint = bone.mmd_bone.ik_rotation_constraint
                     pmx_ik_bone.target = bone_map[ik_target_bone.name]
                     pmx_ik_bone.ik_links = self.__exportIKLinks(bone, pmx_bones, bone_map, [], c.chain_count)

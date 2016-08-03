@@ -205,7 +205,13 @@ class FnMaterial(object):
             texture_slot.use = False
         else:
             texture_slot.use = True
-            texture_slot.blend_type = ('MULTIPLY', 'ADD', 'SUBTRACT')[sphere_texture_type-1]
+            texture_slot.blend_type = ('MULTIPLY', 'ADD', 'MULTIPLY')[sphere_texture_type-1]
+            if sphere_texture_type == 3:
+                texture_slot.texture_coords = 'UV'
+                #TODO use UV1 if available
+                #texture_slot.uv_layer = 'UVMap'
+            else:
+                texture_slot.texture_coords = 'NORMAL'
 
     def remove_sphere_texture(self):
         self.__remove_texture(self.__SPHERE_TEX_SLOT)

@@ -91,12 +91,20 @@ def _toggleShowNamesOfJoints(self, context):
     for i in objects:
         i.show_name = root.mmd_root.show_names_of_joints
 
-def _setVisibilityOfMMDRigArmature(obj, v):
+def _setVisibilityOfMMDRigArmature(prop, v):
+    obj = prop.id_data
     rig = mmd_model.Model(obj)
     arm = rig.armature()
+    if arm is None:
+        return
     if bpy.context.active_object == arm:
         bpy.context.scene.objects.active = obj
     arm.hide = not v
+
+def _getVisibilityOfMMDRigArmature(prop):
+    rig = mmd_model.Model(prop.id_data)
+    arm = rig.armature()
+    return not (arm is None or arm.hide)
 
 def _setActiveRigidbodyObject(prop, v):
     obj = bpy.context.scene.objects[v]
@@ -269,8 +277,8 @@ class MMDRoot(PropertyGroup):
     show_armature = BoolProperty(
         name='Show Armature',
         description='Show the armature object of the MMD model',
-        get=lambda x: not mmd_model.Model(x.id_data).armature().hide,
-        set=lambda x, v: _setVisibilityOfMMDRigArmature(x.id_data, v),
+        get=_getVisibilityOfMMDRigArmature,
+        set=_setVisibilityOfMMDRigArmature,
         )
 
     show_names_of_rigid_bodies = BoolProperty(
