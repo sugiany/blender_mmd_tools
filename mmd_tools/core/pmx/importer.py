@@ -612,7 +612,7 @@ class PMXImporter:
         if not hasattr(mesh, 'has_custom_normals'):
             logging.info(' * No support for custom normals!!')
             return
-        logging.info('Setting custom normals!!')
+        logging.info('Setting custom normals...')
         custom_normals = [(mathutils.Vector(v.normal).xzy).normalized() for v in self.__model.vertices]
         mesh.normals_split_custom_set_from_vertices(custom_normals)
         mesh.use_auto_smooth = True
@@ -642,6 +642,7 @@ class PMXImporter:
         self.__fixRepeatedMorphName()
 
         types = args.get('types', set())
+        clean_model = args.get('clean_model', False)
         self.__scale = args.get('scale', 1.0)
         self.__use_mipmap = args.get('use_mipmap', True)
         self.__sph_blend_factor = args.get('sph_blend_factor', 1.0)
@@ -659,6 +660,8 @@ class PMXImporter:
         self.__createObjects()
 
         if 'MESH' in types:
+            if clean_model:
+                _PMXCleaner.clean(self.__model, 'MORPHS' not in types)
             self.__createMeshObject()
             self.__importVertices()
             self.__importMaterials()
@@ -708,3 +711,75 @@ class PMXImporter:
         logging.info('----------------------------------------')
         logging.info(' mmd_tools.import_pmx module')
         logging.info('****************************************')
+
+class _PMXCleaner:
+    @classmethod
+    def clean(cls, pmx_model, mesh_only):
+        logging.info('Cleaning PMX data...')
+        pmx_materials = pmx_model.materials
+        pmx_faces = pmx_model.faces
+        pmx_vertices = pmx_model.vertices
+
+        # clean face/vertex
+        index_map = {}
+        used_faces = set()
+        new_face_count = 0
+        face_iter = iter(pmx_faces)
+        for mat in pmx_materials:
+            new_vertex_count = 0
+            for i in range(int(mat.vertex_count/3)):
+                f = next(face_iter)
+
+                f_key = frozenset(f)
+                if len(f_key) != 3 or f_key in used_faces:
+                    continue
+                used_faces.add(f_key)
+
+                for v in f:
+                    index_map[v] = pmx_vertices[v]
+                pmx_faces[new_face_count] = list(f)
+                new_face_count += 1
+                new_vertex_count += 3
+            mat.vertex_count = new_vertex_count
+        face_iter = None
+        if new_face_count == len(pmx_faces):
+            logging.info('   (faces is clean)')
+        else:
+            logging.warning('   - removed %d faces', len(pmx_faces)-new_face_count)
+            del pmx_faces[new_face_count:]
+
+        is_index_clean = len(index_map) == len(pmx_vertices)
+        if is_index_clean:
+            logging.info('   (vertices is clean)')
+        else:
+            new_vertex_count = 0
+            for k, v in sorted(index_map.items()):
+                pmx_vertices[new_vertex_count] = v
+                index_map[k] = new_vertex_count
+                new_vertex_count += 1
+            logging.warning('   - removed %d vertices', len(pmx_vertices)-new_vertex_count)
+            del pmx_vertices[new_vertex_count:]
+
+            # update vertex indices of faces
+            for f in pmx_faces:
+                f[:] = [index_map[v] for v in f]
+
+        if mesh_only:
+            logging.info('   - Done (mesh only)!!')
+            return
+
+        if not is_index_clean:
+            # clean vertex/uv morphs
+            def __update_index(x):
+                x.index = index_map.get(x.index, None)
+                return x.index is not None
+            for m in pmx_model.morphs:
+                if not isinstance(m, pmx.VertexMorph) and not isinstance(m, pmx.UVMorph):
+                    continue
+                old_len = len(m.offsets)
+                m.offsets = [x for x in m.offsets if __update_index(x)]
+                counts = old_len - len(m.offsets)
+                if counts:
+                    logging.warning('   - removed %d offsets(%d) in morph %s', counts, old_len, m.name)
+        logging.info('   - Done!!')
+

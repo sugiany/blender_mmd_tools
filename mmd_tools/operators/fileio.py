@@ -81,6 +81,11 @@ class ImportPmx(Operator, ImportHelper):
         description='Scaling factor for importing the model',
         default=0.2,
         )
+    clean_model = bpy.props.BoolProperty(
+        name='Clean Model',
+        description='Remove unused vertices and duplicated/invalid faces',
+        default=True,
+        )
     renameBones = bpy.props.BoolProperty(
         name='Rename bones',
         description='Rename the bones to be more blender suitable',
@@ -128,6 +133,7 @@ class ImportPmx(Operator, ImportHelper):
                 filepath=self.filepath,
                 types=self.types,
                 scale=self.scale,
+                clean_model=self.clean_model,
                 rename_LR_bones=self.renameBones,
                 use_mipmap=self.use_mipmap,
                 sph_blend_factor=self.sph_blend_factor,
