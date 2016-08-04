@@ -736,7 +736,7 @@ class _PMXCleaner:
                 used_faces.add(f_key)
 
                 for v in f:
-                    index_map[v] = pmx_vertices[v]
+                    index_map[v] = v
                 pmx_faces[new_face_count] = list(f)
                 new_face_count += 1
                 new_vertex_count += 3
@@ -753,9 +753,10 @@ class _PMXCleaner:
             logging.info('   (vertices is clean)')
         else:
             new_vertex_count = 0
-            for k, v in sorted(index_map.items()):
-                pmx_vertices[new_vertex_count] = v
-                index_map[k] = new_vertex_count
+            for v in sorted(index_map):
+                if v != new_vertex_count:
+                    pmx_vertices[new_vertex_count] = pmx_vertices[v]
+                    index_map[v] = new_vertex_count
                 new_vertex_count += 1
             logging.warning('   - removed %d vertices', len(pmx_vertices)-new_vertex_count)
             del pmx_vertices[new_vertex_count:]
