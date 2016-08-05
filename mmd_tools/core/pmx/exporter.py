@@ -54,11 +54,11 @@ class __PmxExporter:
         [0.0, 1.0, 0.0, 0.0],
         [0.0, 0.0, 0.0, 1.0]])
     CATEGORIES = {
-            'SYSTEM': pmx.Morph.CATEGORY_SYSTEM,
-            'EYEBROW': pmx.Morph.CATEGORY_EYEBROW,
-            'EYE': pmx.Morph.CATEGORY_EYE,
-            'MOUTH': pmx.Morph.CATEGORY_MOUTH,
-            }
+        'SYSTEM': pmx.Morph.CATEGORY_SYSTEM,
+        'EYEBROW': pmx.Morph.CATEGORY_EYEBROW,
+        'EYE': pmx.Morph.CATEGORY_EYE,
+        'MOUTH': pmx.Morph.CATEGORY_MOUTH,
+        }
 
     def __init__(self):
         self.__model = None
@@ -263,11 +263,14 @@ class __PmxExporter:
         sorted_bones = sorted(pose_bones, key=lambda x: vtx_grps.get(x.name, _Dummy).index)
         #sorted_bones = sorted(pose_bones, key=self.__countBoneDepth)
 
-        with bpyutils.edit_object(arm) as data:
+        pmx_matrix = self.TO_PMX_MATRIX * world_mat * self.__scale
+        def __to_pmx_location(loc):
+            return pmx_matrix * mathutils.Vector(loc)
+        if True: # no need to enter edit mode
             for p_bone in sorted_bones:
                 if p_bone.is_mmd_shadow_bone:
                     continue
-                bone = data.edit_bones[p_bone.name]
+                bone = p_bone.bone
                 mmd_bone = p_bone.mmd_bone
                 pmx_bone = pmx.Bone()
                 pmx_bone.name = mmd_bone.name_j or bone.name
@@ -281,7 +284,7 @@ class __PmxExporter:
                         pmx_bone.additionalTransform[0] = fnBone.pose_bone
 
                 pmx_bone.name_e = mmd_bone.name_e or ''
-                pmx_bone.location = world_mat * mathutils.Vector(bone.head) * self.__scale * self.TO_PMX_MATRIX
+                pmx_bone.location = __to_pmx_location(p_bone.head)
                 pmx_bone.parent = bone.parent
                 pmx_bone.visible = mmd_bone.is_visible
                 pmx_bone.isControllable = mmd_bone.is_controllable
@@ -308,7 +311,7 @@ class __PmxExporter:
                     if mmd_bone.is_tip:
                         pmx_bone.displayConnection = -1
                     else:
-                        tail_loc = world_mat * mathutils.Vector(bone.tail) * self.__scale * self.TO_PMX_MATRIX
+                        tail_loc = __to_pmx_location(p_bone.tail)
                         pmx_bone.displayConnection = tail_loc - pmx_bone.location
 
                 #add fixed and local axes
@@ -325,7 +328,7 @@ class __PmxExporter:
                     logging.debug('the parent of %s:%s: %s', idx, i.name, i.parent)
                 if isinstance(i.displayConnection, pmx.Bone):
                     i.displayConnection = pmx_bones.index(i.displayConnection)
-                elif isinstance(i.displayConnection, bpy.types.EditBone):
+                elif isinstance(i.displayConnection, bpy.types.Bone):
                     i.displayConnection = pmx_bones.index(boneMap[i.displayConnection])
 
                 pose_bone = i.additionalTransform[0]
@@ -336,8 +339,8 @@ class __PmxExporter:
                 pmx_bone = pmx.Bone()
                 pmx_bone.name = u'全ての親'
                 pmx_bone.name_e = 'Root'
-                pmx_bone.location = world_mat * mathutils.Vector([0,0,0]) * self.__scale * self.TO_PMX_MATRIX
-                tail_loc = world_mat * mathutils.Vector([0,0,1]) * self.__scale * self.TO_PMX_MATRIX
+                pmx_bone.location = __to_pmx_location([0,0,0])
+                tail_loc = __to_pmx_location([0,0,1])
                 pmx_bone.displayConnection = tail_loc - pmx_bone.location
                 pmx_bones.append(pmx_bone)
 

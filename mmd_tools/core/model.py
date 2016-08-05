@@ -517,9 +517,9 @@ class Model:
         for i in self.joints():
             self.__restoreTransforms(i)
 
-        if arm is not None:
-            with bpyutils.edit_object(arm):
-                pass # XXX update armature only
+        if arm is not None: # update armature
+            arm.update_tag()
+            bpy.context.scene.frame_set(bpy.context.scene.frame_current)
 
         mmd_root = self.rootObject().mmd_root
         if mmd_root.show_temporary_objects:

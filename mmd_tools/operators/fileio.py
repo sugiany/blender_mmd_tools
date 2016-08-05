@@ -304,17 +304,12 @@ class ExportPmx(Operator, ExportHelper):
             self.report({ 'WARNING' }, "Active editing morphs were cleared")
             # return { 'CANCELLED' }
         rig = mmd_model.Model(root)
+        arm = rig.armature()
+        orig_pose_position = None
+        if arm: # use 'REST' pose before exporting
+            orig_pose_position = arm.data.pose_position
+            arm.data.pose_position = 'REST'
         rig.clean()
-        # Clear the pose before exporting
-        if rig.armature():
-            prev_show = root.mmd_root.show_armature
-            root.mmd_root.show_armature = True
-            selectAObject(rig.armature())
-            bpy.ops.object.mode_set(mode='POSE')
-            bpy.ops.pose.select_all(action='SELECT')
-            bpy.ops.pose.transforms_clear()
-            bpy.ops.object.mode_set(mode='OBJECT')
-            root.mmd_root.show_armature = prev_show
         try:
             pmx_exporter.export(
                 filepath=self.filepath,
@@ -332,6 +327,8 @@ class ExportPmx(Operator, ExportHelper):
             logging.error(err_msg)
             self.report({'ERROR'}, err_msg)
         finally:
+            if orig_pose_position:
+                arm.data.pose_position = orig_pose_position
             if self.save_log:
                 logger.removeHandler(handler)
 
