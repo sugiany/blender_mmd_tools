@@ -17,16 +17,6 @@ from mmd_tools import utils
 #===========================================
 # Callback functions
 #===========================================
-def _toggleVisibilityOfMeshes(self, context):
-    root = self.id_data
-    rig = mmd_model.Model(root)
-    objects = list(rig.meshes())
-    hide = not self.show_meshes
-    if hide and context.active_object in objects:
-        context.scene.objects.active = root
-    for i in objects:
-        i.hide = hide
-
 def _toggleUseToonTexture(self, context):
     root = self.id_data
     rig = mmd_model.Model(root)
@@ -47,48 +37,56 @@ def _toggleUseSphereTexture(self, context):
                 continue
             FnMaterial(m).use_sphere_texture(use_sphere)
 
-def _toggleVisibilityOfRigidBodies(self, context):
+def _toggleVisibilityOfMeshes(self, context):
+    obj = context.active_object
     root = self.id_data
     rig = mmd_model.Model(root)
-    objects = list(rig.rigidBodies())
-    hide = not self.show_rigid_bodies
-    if hide and context.active_object in objects:
-        context.scene.objects.active = root
-    for i in objects:
+    hide = not self.show_meshes
+    for i in rig.meshes():
         i.hide = hide
+    if hide and obj.hide:
+        context.scene.objects.active = root
+
+def _toggleVisibilityOfRigidBodies(self, context):
+    obj = context.active_object
+    root = self.id_data
+    rig = mmd_model.Model(root)
+    hide = not self.show_rigid_bodies
+    for i in rig.rigidBodies():
+        i.hide = hide
+    if hide and obj.hide:
+        context.scene.objects.active = root
 
 def _toggleVisibilityOfJoints(self, context):
+    obj = context.active_object
     root = self.id_data
     rig = mmd_model.Model(root)
-    objects = list(rig.joints())
     hide = not self.show_joints
-    if hide and context.active_object in objects:
-        context.scene.objects.active = root
-    for i in objects:
+    for i in rig.joints():
         i.hide = hide
+    if hide and obj.hide:
+        context.scene.objects.active = root
 
 def _toggleVisibilityOfTemporaryObjects(self, context):
+    obj = context.active_object
     root = self.id_data
     rig = mmd_model.Model(root)
-    objects = list(rig.temporaryObjects())
     hide = not self.show_temporary_objects
-    if hide and context.active_object in objects:
-        context.scene.objects.active = root
-    for i in objects:
+    for i in rig.temporaryObjects(rigid_track_only=True):
         i.hide = hide
+    if hide and obj.hide:
+        context.scene.objects.active = root
 
 def _toggleShowNamesOfRigidBodies(self, context):
     root = self.id_data
     rig = mmd_model.Model(root)
-    objects = list(rig.rigidBodies())
-    for i in objects:
+    for i in rig.rigidBodies():
         i.show_name = root.mmd_root.show_names_of_rigid_bodies
 
 def _toggleShowNamesOfJoints(self, context):
     root = self.id_data
     rig = mmd_model.Model(root)
-    objects = list(rig.joints())
-    for i in objects:
+    for i in rig.joints():
         i.show_name = root.mmd_root.show_names_of_joints
 
 def _setVisibilityOfMMDRigArmature(prop, v):
