@@ -38,43 +38,39 @@ def _toggleUseSphereTexture(self, context):
             FnMaterial(m).use_sphere_texture(use_sphere)
 
 def _toggleVisibilityOfMeshes(self, context):
-    obj = context.active_object
     root = self.id_data
     rig = mmd_model.Model(root)
     hide = not self.show_meshes
     for i in rig.meshes():
         i.hide = hide
-    if hide and obj.hide:
+    if hide and context.active_object is None:
         context.scene.objects.active = root
 
 def _toggleVisibilityOfRigidBodies(self, context):
-    obj = context.active_object
     root = self.id_data
     rig = mmd_model.Model(root)
     hide = not self.show_rigid_bodies
     for i in rig.rigidBodies():
         i.hide = hide
-    if hide and obj.hide:
+    if hide and context.active_object is None:
         context.scene.objects.active = root
 
 def _toggleVisibilityOfJoints(self, context):
-    obj = context.active_object
     root = self.id_data
     rig = mmd_model.Model(root)
     hide = not self.show_joints
     for i in rig.joints():
         i.hide = hide
-    if hide and obj.hide:
+    if hide and context.active_object is None:
         context.scene.objects.active = root
 
 def _toggleVisibilityOfTemporaryObjects(self, context):
-    obj = context.active_object
     root = self.id_data
     rig = mmd_model.Model(root)
     hide = not self.show_temporary_objects
     for i in rig.temporaryObjects(rigid_track_only=True):
         i.hide = hide
-    if hide and obj.hide:
+    if hide and context.active_object is None:
         context.scene.objects.active = root
 
 def _toggleShowNamesOfRigidBodies(self, context):

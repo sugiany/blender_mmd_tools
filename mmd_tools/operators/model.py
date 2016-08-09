@@ -14,11 +14,10 @@ class CleanRiggingObjects(Operator):
     bl_options = {'PRESET'}
 
     def execute(self, context):
-        obj = context.active_object
-        root = mmd_model.Model.findRoot(obj)
+        root = mmd_model.Model.findRoot(context.active_object)
         rig = mmd_model.Model(root)
         rig.clean()
-        context.scene.objects.active = obj
+        context.scene.objects.active = root
         return {'FINISHED'}
 
 class BuildRig(Operator):
@@ -28,11 +27,10 @@ class BuildRig(Operator):
     bl_options = {'PRESET'}
 
     def execute(self, context):
-        obj = context.active_object
-        root = mmd_model.Model.findRoot(obj)
+        root = mmd_model.Model.findRoot(context.active_object)
         rig = mmd_model.Model(root)
         rig.build()
-        context.scene.objects.active = obj
+        context.scene.objects.active = root
         return {'FINISHED'}
 
 class CleanAdditionalTransformConstraints(Operator):
