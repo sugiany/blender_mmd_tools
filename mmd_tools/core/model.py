@@ -601,6 +601,8 @@ class Model:
         for i in self.joints():
             self.__backupTransforms(i)
             rbc = i.rigid_body_constraint
+            if rbc is None:
+                continue
             obj1, obj2 = rbc.object1, rbc.object2
             if obj2 in no_parents:
                 if obj1 not in no_parents and obj2 not in parented:
@@ -788,6 +790,8 @@ class Model:
         jointMap = {}
         for joint in self.joints():
             rbc = joint.rigid_body_constraint
+            if rbc is None:
+                continue
             rbc.disable_collisions = False
             jointMap[frozenset((rbc.object1, rbc.object2))] = joint
 
@@ -871,9 +875,12 @@ class Model:
 
     def buildJoints(self):
         for i in self.joints():
-            m = self.__rigid_body_matrix_map.get(i.rigid_body_constraint.object1, None)
+            rbc = i.rigid_body_constraint
+            if rbc is None:
+                continue
+            m = self.__rigid_body_matrix_map.get(rbc.object1, None)
             if m is None:
-                m = self.__rigid_body_matrix_map.get(i.rigid_body_constraint.object2, None)
+                m = self.__rigid_body_matrix_map.get(rbc.object2, None)
                 if m is None:
                     continue
             t, r, s = (m * i.matrix_local).decompose()
