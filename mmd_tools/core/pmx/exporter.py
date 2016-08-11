@@ -742,6 +742,10 @@ class __PmxExporter:
         rigid_map = {}
         rigid_cnt = 0
         for obj in rigid_bodies:
+            rb = obj.rigid_body
+            if rb is None:
+                logging.warning(' * Settings of rigid body "%s" not found, skipped!', obj.name)
+                continue
             p_rigid = pmx.Rigid()
             p_rigid.name = obj.mmd_rigid.name
             p_rigid.name_e = obj.mmd_rigid.name_e
@@ -771,7 +775,6 @@ class __PmxExporter:
                     mask += (1<<i)
             p_rigid.collision_group_mask = mask
 
-            rb = obj.rigid_body
             p_rigid.mass = rb.mass
             p_rigid.friction = rb.friction
             p_rigid.bounce = rb.restitution
@@ -786,6 +789,9 @@ class __PmxExporter:
     def __exportJoints(self, joints, rigid_map):
         for joint in joints:
             rbc = joint.rigid_body_constraint
+            if rbc is None:
+                logging.warning(' * Settings of joint "%s" not found, skipped!', joint.name)
+                continue
             p_joint = pmx.Joint()
             mmd_joint = joint.mmd_joint
             p_joint.name = mmd_joint.name_j

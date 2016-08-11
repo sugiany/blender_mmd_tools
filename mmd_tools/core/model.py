@@ -635,6 +635,9 @@ class Model:
 
     def updateRigid(self, rigid_obj):
         assert(rigid_obj.mmd_type == 'RIGID_BODY')
+        rb = rigid_obj.rigid_body
+        if rb is None:
+            return
 
         rigid = rigid_obj.mmd_rigid
         rigid_type = int(rigid.type)
@@ -643,9 +646,9 @@ class Model:
         bone_name = relation.subtarget
 
         if rigid_type == rigid_body.MODE_STATIC:
-            rigid_obj.rigid_body.kinematic = True
+            rb.kinematic = True
         else:
-            rigid_obj.rigid_body.kinematic = False
+            rb.kinematic = False
 
         if arm is not None and bone_name != '':
             target_bone = arm.pose.bones[bone_name]
@@ -708,7 +711,8 @@ class Model:
                 else:
                     empty = target_bone.constraints['mmd_tools_rigid_track'].target
                     ori_rigid_obj = self.__empty_parent_map[empty]
-                    if rigid_obj.rigid_body.mass > ori_rigid_obj.rigid_body.mass:
+                    ori_rb = ori_rigid_obj.rigid_body
+                    if ori_rb and rb.mass > ori_rb.mass:
                         logging.debug('        * Bone (%s): change target from [%s] to [%s]',
                             target_bone.name, ori_rigid_obj.name, rigid_obj.name)
                         # re-parenting
@@ -728,7 +732,7 @@ class Model:
                 bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
             rigid_obj.hide = t
 
-        rigid_obj.rigid_body.collision_shape = rigid.shape
+        rb.collision_shape = rigid.shape
 
     def __getRigidRange(self, obj):
         return (mathutils.Vector(obj.bound_box[0]) - mathutils.Vector(obj.bound_box[6])).length

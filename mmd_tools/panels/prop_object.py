@@ -83,7 +83,7 @@ class MMDRigidPanel(_PanelBase, Panel):
 
         row = layout.row()
         if obj.rigid_body is None:
-            row.operator(bpy.ops.rigidbody.object_add.idname(), icon='MESH_ICOSPHERE')
+            row.operator('rigidbody.object_add', icon='MESH_ICOSPHERE')
             return
 
         c = row.column()
@@ -126,7 +126,7 @@ class MMDJointPanel(_PanelBase, Panel):
 
         c = layout.column()
         if rbc is None:
-            c.operator(bpy.ops.rigidbody.constraint_add.idname(), icon='CONSTRAINT')
+            c.operator('rigidbody.constraint_add', icon='CONSTRAINT').type='GENERIC_SPRING'
         else:
             c.prop(rbc, 'object1')
             c.prop(rbc, 'object2')

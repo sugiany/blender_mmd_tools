@@ -595,7 +595,10 @@ class UL_rigidbodies(UL_ObjectsMixIn, UIList):
     icon = 'MESH_ICOSPHERE'
 
     def draw_item_special(self, context, layout, item):
-        if not item.mmd_rigid.bone:
+        rb = item.rigid_body
+        if rb is None:
+            layout.label(icon='ERROR')
+        elif not item.mmd_rigid.bone:
             layout.label(icon='BONE_DATA')
 
 class MMDRigidbodySelectMenu(Menu):
