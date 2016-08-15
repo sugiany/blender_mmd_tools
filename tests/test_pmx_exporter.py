@@ -621,7 +621,7 @@ class TestPmxExporter(unittest.TestCase):
                     renameBones=False,
                     )
                 bpy.context.scene.update()
-                self.__mute_constraints()
+                #self.__mute_constraints()
             except Exception:
                 self.fail('Exception happened during import %s'%filepath)
             else:

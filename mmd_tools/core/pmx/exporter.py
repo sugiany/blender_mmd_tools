@@ -9,6 +9,7 @@ import mathutils
 import bpy
 import bmesh
 
+from collections import OrderedDict
 from mmd_tools.core import pmx
 from mmd_tools.core.bone import FnBone
 from mmd_tools.core.material import FnMaterial
@@ -64,7 +65,6 @@ class __PmxExporter:
         self.__model = None
         self.__bone_name_table = []
         self.__material_name_table = []
-        self.__material_name_map = {} # Used to map MMD material names to Blender names
         self.__vertex_index_map = {} # used for exporting uv morphs
 
     @staticmethod
@@ -73,9 +73,9 @@ class __PmxExporter:
         return [u, 1.0-v]
 
     def __exportMeshes(self, meshes, bone_map):
-        mat_map = {}
+        mat_map = OrderedDict()
         for mesh in meshes:
-            for index, mat_faces in mesh.material_faces.items():
+            for index, mat_faces in sorted(mesh.material_faces.items(), key=lambda x: x[0]):
                 name = mesh.materials[index].name
                 if name not in mat_map:
                     mat_map[name] = []
@@ -228,9 +228,8 @@ class __PmxExporter:
             p_mat.toon_texture =  self.__exportTexture(mmd_mat.toon_texture)
             p_mat.is_shared_toon_texture = False
 
-        # self.__material_name_table.append(material.name) # We should create the material name table AFTER sorting the materials
+        self.__material_name_table.append(material.name)
         self.__model.materials.append(p_mat)
-        self.__material_name_map[p_mat.name] = material.name
 
     @classmethod
     def __countBoneDepth(cls, bone):
@@ -551,7 +550,7 @@ class __PmxExporter:
         faces = self.__model.faces
         offset = 0
         distances = []
-        for mat in self.__model.materials:
+        for mat, bl_mat_name in zip(self.__model.materials, self.__material_name_table):
             d = 0
             face_num = int(mat.vertex_count / 3)
             for i in range(offset, offset + face_num):
@@ -559,49 +558,17 @@ class __PmxExporter:
                 d += (mathutils.Vector(vertices[face[0]].co) - center).length
                 d += (mathutils.Vector(vertices[face[1]].co) - center).length
                 d += (mathutils.Vector(vertices[face[2]].co) - center).length
-            distances.append((d/mat.vertex_count, mat, offset, face_num))
+            distances.append((d/mat.vertex_count, mat, offset, face_num, bl_mat_name))
             offset += face_num
         sorted_faces = []
         sorted_mat = []
-        for mat, offset, vert_count in [(x[1], x[2], x[3]) for x in sorted(distances, key=lambda x: x[0])]:
+        self.__material_name_table.clear()
+        for d, mat, offset, vert_count, bl_mat_name in sorted(distances, key=lambda x: x[0]):
             sorted_faces.extend(faces[offset:offset+vert_count])
             sorted_mat.append(mat)
-            bl_mat_name = self.__material_name_map[mat.name]
             self.__material_name_table.append(bl_mat_name)
         self.__model.materials = sorted_mat
         self.__model.faces = sorted_faces
-
-    def __keepMaterialOrder(self, meshes):
-        """
-        Sort materials to keep the original order in the meshes
-        """
-        pmx_mat_names = []
-        for mesh in meshes:
-            for mat in mesh.materials:
-                self.__material_name_table.append(mat.name)
-                pmx_mat_name = mat.mmd_material.name_j or mat.name
-                pmx_mat_names.append(pmx_mat_name)
-        try:
-            offset = 0
-            new_order = []
-            faces = self.__model.faces
-            for mat in self.__model.materials:
-                num_faces = int(mat.vertex_count / 3)
-                new_index = pmx_mat_names.index(mat.name)
-                new_order.append((new_index, mat, offset, num_faces)) 
-                offset += num_faces
-
-            sorted_faces = []
-            sorted_mat = []
-            for mat, offset, face_count in [(x[1], x[2], x[3]) for x in sorted(new_order, key=lambda x: x[0])]:
-                sorted_faces.extend(faces[offset:offset+face_count])
-                sorted_mat.append(mat)
-
-            self.__model.materials = sorted_mat
-            self.__model.faces = sorted_faces
-                
-        except ValueError:
-            logging.warning('Problem keeping material order')
 
     @staticmethod
     def makeVMDBoneLocationMatrix(blender_bone): #TODO may move to vmd exporter function
@@ -907,19 +874,7 @@ class __PmxExporter:
         logging.debug('   - Done (polygons:%d)', len(mesh.polygons))
         return custom_normals
 
-    def __loadMeshData(self, meshObj, bone_map):
-        # Prepare the mesh object
-        with bpyutils.select_object(meshObj):
-            if meshObj.data.shape_keys is None:
-                bpy.ops.object.shape_key_add()
-            if meshObj.data.uv_textures.active is None:
-                bpy.ops.mesh.uv_texture_add()
-
-        shape_key_weights = []
-        for i in meshObj.data.shape_keys.key_blocks:
-            shape_key_weights.append(i.value)
-            i.value = 0.0
-
+    def __doLoadMeshData(self, meshObj, bone_map, key_blocks):
         vertex_group_names = {i:x.name for i, x in enumerate(meshObj.vertex_groups) if x.name in bone_map}
         vg_edge_scale = meshObj.vertex_groups.get('mmd_edge_scale', None)
 
@@ -954,7 +909,7 @@ class __PmxExporter:
 
         # calculate offsets
         shape_key_names = []
-        for i in meshObj.data.shape_keys.key_blocks[1:]:
+        for i in key_blocks[1:]:
             shape_key_names.append(i.name)
             i.value = 1.0
             mesh = meshObj.to_mesh(bpy.context.scene, True, 'PREVIEW', False)
@@ -972,7 +927,14 @@ class __PmxExporter:
 
         # load face data
         materials = {}
-        for face, uv in zip(base_mesh.tessfaces, base_mesh.tessface_uv_textures.active.data):
+        uv_data = base_mesh.tessface_uv_textures.active
+        if uv_data:
+            uv_data = uv_data.data
+        else:
+            class _DummyUV:
+                uv1 = uv2 = uv3 = (0, 0)
+            uv_data = iter(lambda: _DummyUV, None)
+        for face, uv in zip(base_mesh.tessfaces, uv_data):
             if len(face.vertices) != 3:
                 raise Exception
             idx = face.index * 3
@@ -986,15 +948,42 @@ class __PmxExporter:
                 materials[face.material_index] = []
             materials[face.material_index].append(t)
 
-        for i, sk in enumerate(meshObj.data.shape_keys.key_blocks):
-            sk.value = shape_key_weights[i]
-
         return _Mesh(
             base_mesh,
             materials,
             shape_key_names,
             vertex_group_names,
             base_mesh.materials)
+
+    def __loadMeshData(self, meshObj, bone_map):
+        assert(len(meshObj.data.materials) > 0)
+        show_only_shape_key = meshObj.show_only_shape_key
+        meshObj.show_only_shape_key = False
+
+        shape_key_weights = []
+        key_blocks = ()
+        if meshObj.data.shape_keys:
+            key_blocks = meshObj.data.shape_keys.key_blocks
+        for i in key_blocks:
+            shape_key_weights.append(i.value)
+            i.value = 0.0
+
+        muted_modifiers = []
+        for m in meshObj.modifiers:
+            if m.type != 'ARMATURE' or m.object is None:
+                continue
+            if m.object.data.pose_position == 'REST':
+                muted_modifiers.append((m, m.show_viewport))
+                m.show_viewport = False
+
+        try:
+            return self.__doLoadMeshData(meshObj, bone_map, key_blocks)
+        finally:
+            meshObj.show_only_shape_key = show_only_shape_key
+            for i, sk in enumerate(key_blocks):
+                sk.value = shape_key_weights[i]
+            for m, show in muted_modifiers:
+                m.show_viewport = show
 
 
     def execute(self, filepath, **args):
@@ -1026,7 +1015,7 @@ class __PmxExporter:
         self.__filepath = filepath
 
         self.__scale = 1.0/float(args.get('scale', 0.2))
-        self.sortMaterials = args.get('sort_materials', False)
+        sort_materials = args.get('sort_materials', False)
 
 
         nameMap = self.__exportBones(meshes)
@@ -1034,19 +1023,12 @@ class __PmxExporter:
 
         mesh_data = []
         for i in meshes:
-            show_only_shape_key = i.show_only_shape_key
-            try:
-                i.show_only_shape_key = False
-                mesh_data.append(self.__loadMeshData(i, nameMap))
-            finally:
-                i.show_only_shape_key = show_only_shape_key
+            mesh_data.append(self.__loadMeshData(i, nameMap))
 
         self.__exportMeshes(mesh_data, nameMap)
         self.__exportVertexMorphs(mesh_data, root)
-        if self.sortMaterials:
+        if sort_materials:
             self.__sortMaterials()
-        else:
-            self.__keepMaterialOrder(mesh_data)
         rigid_map = self.__exportRigidBodies(rigid_bodeis, nameMap)
         self.__exportJoints(joints, rigid_map)
         if root is not None:
