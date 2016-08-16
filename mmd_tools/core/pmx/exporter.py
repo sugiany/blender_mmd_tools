@@ -47,6 +47,19 @@ class _Mesh:
         logging.debug('remove mesh data: %s', str(self.mesh_data))
         bpy.data.meshes.remove(self.mesh_data)
 
+class _DefaultMaterial:
+    def __init__(self):
+        mat = bpy.data.materials.new('')
+        #mat.mmd_material.diffuse_color = (0, 0, 0)
+        #mat.mmd_material.specular_color = (0, 0, 0)
+        #mat.mmd_material.ambient_color = (0, 0, 0)
+        self.material = mat
+        logging.debug('create default material: %s', str(self.material))
+    def __del__(self):
+        if self.material:
+            logging.debug('remove default material: %s', str(self.material))
+            bpy.data.materials.remove(self.material)
+
 
 class __PmxExporter:
     TO_PMX_MATRIX = mathutils.Matrix([
@@ -66,11 +79,17 @@ class __PmxExporter:
         self.__bone_name_table = []
         self.__material_name_table = []
         self.__vertex_index_map = {} # used for exporting uv morphs
+        self.__default_material = None
 
     @staticmethod
     def flipUV_V(uv):
         u, v = uv
         return [u, 1.0-v]
+
+    def __getDefaultMaterial(self):
+        if self.__default_material is None:
+            self.__default_material = _DefaultMaterial()
+        return self.__default_material.material
 
     def __exportMeshes(self, meshes, bone_map):
         mat_map = OrderedDict()
@@ -948,6 +967,14 @@ class __PmxExporter:
                 materials[face.material_index] = []
             materials[face.material_index].append(t)
 
+        # assign default material
+        if len(base_mesh.materials) < len(materials):
+            base_mesh.materials.append(self.__getDefaultMaterial())
+        else:
+            for i, m in enumerate(base_mesh.materials):
+                if m is None:
+                    base_mesh.materials[i] = self.__getDefaultMaterial()
+
         return _Mesh(
             base_mesh,
             materials,
@@ -956,7 +983,6 @@ class __PmxExporter:
             base_mesh.materials)
 
     def __loadMeshData(self, meshObj, bone_map):
-        assert(len(meshObj.data.materials) > 0)
         show_only_shape_key = meshObj.show_only_shape_key
         meshObj.show_only_shape_key = False
 
