@@ -115,17 +115,20 @@ class VMDImporter:
             bpy.ops.object.mode_set(mode='OBJECT')
             for i in hiddenBones:
                 i.hide = True
-            
+
         boneAnim = self.__vmdFile.boneAnimation
 
         pose_bones = armObj.pose.bones
         if self.__bone_mapper:
             pose_bones = self.__bone_mapper(armObj)
+        bone_name_table = {}
         for name, keyFrames in boneAnim.items():
             bone = pose_bones.get(name, None)
             if bone is None:
                 print("WARNING: not found bone %s"%str(name))
                 continue
+            assert(bone_name_table.get(bone.name, name) == name)
+            bone_name_table[bone.name] = name
 
             keyFrames.sort(key=lambda x:x.frame_number)
             frameNumbers = map(lambda x: x.frame_number, keyFrames)
@@ -149,7 +152,10 @@ class VMDImporter:
             m = rePath.match(fcurve.data_path)
             if m and m.group(2) in ['location', 'rotation_quaternion']:
                 bone = armObj.pose.bones[m.group(1)]
-                keyFrames = boneAnim[bone.get('name_j', bone.name)]
+                bone_name = bone_name_table.get(bone.name, None)
+                if bone_name is None:
+                    continue
+                keyFrames = boneAnim[bone_name]
                 if m.group(2) == 'location':
                     idx = [0, 2, 1][fcurve.array_index]
                 else:
