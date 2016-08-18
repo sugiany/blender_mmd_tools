@@ -2,6 +2,8 @@
 import struct
 import collections
 
+class InvalidFileError(Exception):
+    pass
 
 ## vmd仕様の文字列をstringに変換
 def _toShiftJisString(byteString):
@@ -14,13 +16,20 @@ def _toShiftJisString(byteString):
 
 
 class Header:
+    VMD_SIGN = b'Vocaloid Motion Data 0002'
     def __init__(self):
         self.signature = None
         self.model_name = ''
 
     def load(self, fin):
         self.signature, = struct.unpack('<30s', fin.read(30))
+        if self.signature[:len(self.VMD_SIGN)] != self.VMD_SIGN:
+            raise InvalidFileError('File signature "%s" is invalid.'%self.signature)
         self.model_name = _toShiftJisString(struct.unpack('<20s', fin.read(20))[0])
+
+    def save(self, fin):
+        fin.write(struct.pack('<30s', self.VMD_SIGN))
+        fin.write(struct.pack('<20s', self.model_name.encode('shift_jis')))
 
     def __repr__(self):
         return '<Header model_name %s>'%(self.model_name)
@@ -39,6 +48,12 @@ class BoneFrameKey:
         self.rotation = list(struct.unpack('<ffff', fin.read(4*4)))
         self.interp = list(struct.unpack('<64b', fin.read(64)))
 
+    def save(self, fin):
+        fin.write(struct.pack('<L', self.frame_number))
+        fin.write(struct.pack('<fff', *self.location))
+        fin.write(struct.pack('<ffff', *self.rotation))
+        fin.write(struct.pack('<64b', *self.interp))
+
     def __repr__(self):
         return '<BoneFrameKey frame %s, loa %s, rot %s>'%(
             str(self.frame_number),
@@ -55,6 +70,10 @@ class ShapeKeyFrameKey:
     def load(self, fin):
         self.frame_number, = struct.unpack('<L', fin.read(4))
         self.weight, = struct.unpack('<f', fin.read(4))
+
+    def save(self, fin):
+        fin.write(struct.pack('<L', self.frame_number))
+        fin.write(struct.pack('<f', self.weight))
 
     def __repr__(self):
         return '<ShapeKeyFrameKey frame %s, weight %s>'%(
@@ -83,6 +102,15 @@ class CameraKeyFrameKey:
         self.persp, = struct.unpack('<b', fin.read(1))
         self.persp = (self.persp == 1)
 
+    def save(self, fin):
+        fin.write(struct.pack('<L', self.frame_number))
+        fin.write(struct.pack('<f', self.distance))
+        fin.write(struct.pack('<fff', *self.location))
+        fin.write(struct.pack('<fff', *self.rotation))
+        fin.write(struct.pack('<24b', *self.interp))
+        fin.write(struct.pack('<L', self.angle))
+        fin.write(struct.pack('<b', 1 if self.persp else 0))
+
     def __repr__(self):
         return '<CameraKeyFrameKey frame %s, distance %s, loc %s, rot %s, angle %s, persp %s>'%(
             str(self.frame_number),
@@ -104,6 +132,11 @@ class LampKeyFrameKey:
         self.frame_number, = struct.unpack('<L', fin.read(4))
         self.color = list(struct.unpack('<fff', fin.read(4*3)))
         self.direction = list(struct.unpack('<fff', fin.read(4*3)))
+
+    def save(self, fin):
+        fin.write(struct.pack('<L', self.frame_number))
+        fin.write(struct.pack('<fff', *self.color))
+        fin.write(struct.pack('<fff', *self.direction))
 
     def __repr__(self):
         return '<LampKeyFrameKey frame %s, color %s, direction %s>'%(
@@ -130,7 +163,16 @@ class _AnimationBase(collections.defaultdict):
             frameKey.load(fin)
             self[name].append(frameKey)
 
-            
+    def save(self, fin):
+        count = sum([len(i) for i in self.values()])
+        fin.write(struct.pack('<L', count))
+        for name, frameKeys in self.items():
+            name_data = struct.pack('<15s', name.encode('shift_jis'))
+            for frameKey in frameKeys:
+                fin.write(name_data)
+                frameKey.save(fin)
+
+
 class BoneAnimation(_AnimationBase):
     def __init__(self):
         _AnimationBase.__init__(self)
@@ -138,7 +180,7 @@ class BoneAnimation(_AnimationBase):
     @staticmethod
     def frameClass():
         return BoneFrameKey
-        
+
 
 class ShapeKeyAnimation(_AnimationBase):
     def __init__(self):
@@ -166,6 +208,11 @@ class CameraAnimation(list):
             frameKey.load(fin)
             self.append(frameKey)
 
+    def save(self, fin):
+        fin.write(struct.pack('<L', len(self)))
+        for frameKey in self:
+            frameKey.save(fin)
+
 
 class LampAnimation(list):
     def __init__(self):
@@ -183,6 +230,11 @@ class LampAnimation(list):
             frameKey = cls()
             frameKey.load(fin)
             self.append(frameKey)
+
+    def save(self, fin):
+        fin.write(struct.pack('<L', len(self)))
+        for frameKey in self:
+            frameKey.save(fin)
 
 
 class File:
@@ -213,3 +265,20 @@ class File:
                 self.lampAnimation.load(fin)
             except struct.error:
                 pass # no valid camera/lamp data
+
+    def save(self, **args):
+        path = args.get('filepath', self.filepath)
+
+        header = self.header or Header()
+        boneAnimation = self.boneAnimation or BoneAnimation()
+        shapeKeyAnimation = self.shapeKeyAnimation or ShapeKeyAnimation()
+        cameraAnimation = self.cameraAnimation or CameraAnimation()
+        lampAnimation = self.lampAnimation or LampAnimation()
+
+        with open(path, 'wb') as fin:
+            header.save(fin)
+            boneAnimation.save(fin)
+            shapeKeyAnimation.save(fin)
+            cameraAnimation.save(fin)
+            lampAnimation.save(fin)
+
