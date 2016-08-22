@@ -268,6 +268,16 @@ class ExportPmx(Operator, ExportHelper):
                      'E.g. blush meshes'),
         default=False,
         )
+    sort_vertices = bpy.props.EnumProperty(
+        name='Sort Vertices',
+        description='Choose the method to sort vertices',
+        items=[
+            ('NONE', 'None', 'No sorting', 0),
+            ('BLENDER', 'Blender', 'Use blender\'s internal vertex order', 1),
+            ('CUSTOM', 'Custom', 'Use custom vertex weight of vertex group "mmd_vertex_order"', 2),
+            ],
+        default='NONE',
+        )
 
     log_level = bpy.props.EnumProperty(
         name='Log level',
@@ -321,6 +331,7 @@ class ExportPmx(Operator, ExportHelper):
                 joints=rig.joints(),
                 copy_textures=self.copy_textures,
                 sort_materials=self.sort_materials,
+                sort_vertices=self.sort_vertices,
                 )
         except Exception as e:
             err_msg = traceback.format_exc()

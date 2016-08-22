@@ -19,12 +19,13 @@ import mmd_tools.core.model as mmd_model
 
 
 class _Vertex:
-    def __init__(self, co, groups, offsets, old_index, edge_scale):
+    def __init__(self, co, groups, offsets, old_index, edge_scale, vertex_order):
         self.co = copy.deepcopy(co)
         self.groups = copy.copy(groups) # [(group_number, weight), ...]
         self.offsets = copy.deepcopy(offsets)
         self.old_index = old_index # used for exporting uv morphs
         self.edge_scale = edge_scale
+        self.vertex_order = vertex_order # used for controlling vertex order
         self.index = None
         self.uv = None
         self.normal = None
@@ -80,6 +81,7 @@ class __PmxExporter:
         self.__material_name_table = []
         self.__vertex_index_map = {} # used for exporting uv morphs
         self.__default_material = None
+        self.__vertex_order_map = None # used for controlling vertex order
 
     @staticmethod
     def flipUV_V(uv):
@@ -91,6 +93,23 @@ class __PmxExporter:
             self.__default_material = _DefaultMaterial()
         return self.__default_material.material
 
+    def __sortVertices(self):
+        logging.info(' - Sorting vertices ...')
+        weight_items = self.__vertex_order_map.items()
+        sorted_indices = [i[0] for i in sorted(weight_items, key=lambda x: x[1].vertex_order)]
+        vertices = self.__model.vertices
+        self.__model.vertices = [vertices[i] for i in sorted_indices]
+
+        # update indices
+        index_map = {x:i for i, x in enumerate(sorted_indices)}
+        for v in self.__vertex_order_map.values(): # for vertex morphs
+            v.index = index_map[v.index]
+        for k, v in self.__vertex_index_map.items(): # for uv morphs
+            v[:] = [index_map[i] for i in v]
+        for f in self.__model.faces:
+            f[:] = [index_map[i] for i in f]
+        logging.debug('   - Done (count:%d)', len(self.__vertex_order_map))
+
     def __exportMeshes(self, meshes, bone_map):
         mat_map = OrderedDict()
         for mesh in meshes:
@@ -99,6 +118,10 @@ class __PmxExporter:
                 if name not in mat_map:
                     mat_map[name] = []
                 mat_map[name].append((mat_faces, mesh.vertex_group_names))
+
+        sort_vertices = self.__vertex_order_map is not None
+        if sort_vertices:
+            self.__vertex_order_map.clear()
 
         # export vertices
         for mat_name, mat_meshes in mat_map.items():
@@ -115,6 +138,8 @@ class __PmxExporter:
                     v.index = len(self.__model.vertices)
                     if v.old_index is not None:
                         self.__vertex_index_map[v.old_index].append(v.index)
+                    if sort_vertices:
+                        self.__vertex_order_map[v.index] = v
 
                     pv = pmx.Vertex()
                     pv.co = list(v.co)
@@ -159,6 +184,9 @@ class __PmxExporter:
                     self.__model.faces.append([x.index for x in face.vertices])
                 face_count += len(mat_faces)
             self.__exportMaterial(bpy.data.materials[mat_name], face_count)
+
+        if sort_vertices:
+            self.__sortVertices()
 
     def __exportTexture(self, filepath):
         if filepath.strip() == '':
@@ -896,6 +924,7 @@ class __PmxExporter:
     def __doLoadMeshData(self, meshObj, bone_map, key_blocks):
         vertex_group_names = {i:x.name for i, x in enumerate(meshObj.vertex_groups) if x.name in bone_map}
         vg_edge_scale = meshObj.vertex_groups.get('mmd_edge_scale', None)
+        vg_vertex_order = meshObj.vertex_groups.get('mmd_vertex_order', None)
 
         pmx_matrix = self.TO_PMX_MATRIX * meshObj.matrix_world * self.__scale
         sx, sy, sz = meshObj.matrix_world.to_scale()
@@ -910,20 +939,44 @@ class __PmxExporter:
         base_mesh.transform(pmx_matrix)
         base_mesh.update(calc_tessface=True)
 
+        sort_vertices = self.__vertex_order_map is not None
         has_uv_morphs = self.__vertex_index_map is None # currently support for first mesh only
         if has_uv_morphs:
             self.__vertex_index_map = dict([(v.index, []) for v in base_mesh.vertices])
 
+
+        def _get_weight(vertex_group, vertex, default_weight):
+            for i in vertex.groups:
+                if i.group == vertex_group.index:
+                    return vertex_group.weight(vertex.index)
+            return default_weight
+
+        get_edge_scale = None
+        if vg_edge_scale:
+            get_edge_scale = lambda x: _get_weight(vg_edge_scale, x, 1)
+        else:
+            get_edge_scale = lambda x: 1
+
+        get_vertex_order = None
+        if sort_vertices:
+            mesh_id = self.__vertex_order_map.setdefault('mesh_id', 0)
+            self.__vertex_order_map['mesh_id'] += 1
+            if vg_vertex_order and self.__vertex_order_map['method'] == 'CUSTOM':
+                get_vertex_order = lambda x: (mesh_id, _get_weight(vg_vertex_order, x, 2), x.index)
+            else:
+                get_vertex_order = lambda x: (mesh_id, x.index)
+        else:
+            get_vertex_order = lambda x: None
+
         base_vertices = {}
         for v in base_mesh.vertices:
-            # Check that the vertex is in the vg_edge_scale
-            export_edge_scale = vg_edge_scale and vg_edge_scale.index in [x.group for x in v.groups]
             base_vertices[v.index] = [_Vertex(
                 v.co,
                 [(x.group, x.weight) for x in v.groups if x.weight > 0 and x.group in vertex_group_names],
                 {},
                 v.index if has_uv_morphs else None,
-                vg_edge_scale.weight(v.index) if export_edge_scale else 1,
+                get_edge_scale(v),
+                get_vertex_order(v),
                 )]
 
         # calculate offsets
@@ -1042,6 +1095,9 @@ class __PmxExporter:
 
         self.__scale = 1.0/float(args.get('scale', 0.2))
         sort_materials = args.get('sort_materials', False)
+        sort_vertices = args.get('sort_vertices', 'NONE')
+        if sort_vertices != 'NONE':
+            self.__vertex_order_map = {'method':sort_vertices}
 
 
         nameMap = self.__exportBones(meshes)
