@@ -340,3 +340,34 @@ class ExportPmx(Operator, ExportHelper):
         wm = context.window_manager
         wm.fileselect_add(self)
         return {'RUNNING_MODAL'}
+
+class ExportVmd(Operator, ExportHelper):
+    bl_idname = 'mmd_tools.export_vmd'
+    bl_label = 'Export VMD file (.vmd)'
+    bl_description = '(WIP)'
+    bl_options = {'PRESET'}
+
+    filename_ext = '.vmd'
+    filter_glob = bpy.props.StringProperty(default='*.vmd', options={'HIDDEN'})
+
+
+    @classmethod
+    def poll(cls, context):
+        return False
+
+    def execute(self, context):
+
+        try:
+            pass #TODO
+        except Exception as e:
+            err_msg = traceback.format_exc()
+            logging.error(err_msg)
+            self.report({'ERROR'}, err_msg)
+
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        wm.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+

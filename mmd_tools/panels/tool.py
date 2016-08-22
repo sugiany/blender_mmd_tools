@@ -26,39 +26,42 @@ class MMDToolsObjectPanel(_PanelBase, Panel):
         col = layout.column(align=True)
         col.label('Edit:')
         row = col.row(align=True)
-        row.operator(operators.model.CreateMMDModelRoot.bl_idname, text='Create Model')
-        row.operator(operators.fileio.ImportPmx.bl_idname, text='Import Model')
+        row.operator('mmd_tools.create_mmd_model_root_object', text='Create Model', icon='OUTLINER_OB_ARMATURE')
+
         col = layout.column(align=True)
         col.operator(operators.material.ConvertMaterialsForCycles.bl_idname, text='Convert Materials For Cycles')
         col.operator('mmd_tools.separate_by_materials', text='Separate By Materials')
         col.operator(operators.misc.JoinMeshes.bl_idname)
         col.operator(operators.misc.AttachMeshesToMMD.bl_idname)
 
-        if active_obj is None:
-            return
-
         root = mmd_model.Model.findRoot(active_obj)
         if root:
-            # col = self.layout.column(align=True)
-            # col.label('Options:')
-            # col.prop(root.mmd_root, 'advanced_mode')
-            col = self.layout.column(align=True)            
-            col.label('Rigidbody:')
-            row = col.row(align=True)
-            row.operator('mmd_tools.build_rig')
-            row.operator('mmd_tools.clean_rig')
+            row = layout.split(percentage=0.5, align=False)
+
+            col = row.column(align=True)
+            col.label('Bone Constraints:', icon='CONSTRAINT_BONE')
+            col.operator('mmd_tools.apply_additioinal_transform', text='Apply')
+            col.operator('mmd_tools.clean_additioinal_transform', text='Clean')
+
+            col = row.column(align=True)
+            sub_row = col.row(align=True)
+            sub_row.label('Rigidbody:', icon='PHYSICS')
             if not root.mmd_root.is_built:
-                col.label(text='Press the "Build" button before playing the physical animation.', icon='ERROR')
+                sub_row.label(icon='ERROR')
+            col.operator('mmd_tools.build_rig')
+            col.operator('mmd_tools.clean_rig')
 
-            col.label('Bone Constraints:')
-            row = col.row(align=True)
-            row.operator('mmd_tools.apply_additioinal_transform', text='Apply')
-            row.operator('mmd_tools.clean_additioinal_transform', text='Clean')
+        row = layout.row()
 
-        col = self.layout.column(align=True)
-        col.label('Import/Export:')
-        col.operator(operators.fileio.ImportVmd.bl_idname, text='Import Motion')
-        col.operator(operators.fileio.ExportPmx.bl_idname, text='Export Model')
+        col = row.column(align=True)
+        col.label('Model:', icon='OUTLINER_OB_ARMATURE')
+        col.operator('mmd_tools.import_model', text='Import')
+        col.operator('mmd_tools.export_pmx', text='Export')
+
+        col = row.column(align=True)
+        col.label('Motion:', icon='ANIM')
+        col.operator('mmd_tools.import_vmd', text='Import')
+        col.operator('mmd_tools.export_vmd', text='Export')
 
 
 class MMD_ROOT_UL_display_item_frames(UIList):

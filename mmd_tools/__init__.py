@@ -71,6 +71,7 @@ def menu_func_import(self, context):
 
 def menu_func_export(self, context):
     self.layout.operator(operators.fileio.ExportPmx.bl_idname, text="MikuMikuDance model (.pmx)")
+    self.layout.operator(operators.fileio.ExportVmd.bl_idname, text="MikuMikuDance Motion (.vmd)")
 
 def menu_func_armature(self, context):
     self.layout.operator(operators.model.CreateMMDModelRoot.bl_idname, text='Create MMD Model')
