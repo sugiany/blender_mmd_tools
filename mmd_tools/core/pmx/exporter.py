@@ -166,17 +166,22 @@ class __PmxExporter:
                             bone_map[vertex_group_names[vg1[0]]],
                             bone_map[vertex_group_names[vg2[0]]]
                             ]
-                        weight.weights = [vg1[1]]
+                        w1, w2 = vg1[1], vg2[1]
+                        weight.weights = [w1/(w1+w2)]
                         pv.weight = weight
                     else:
                         weight = pmx.BoneWeight()
                         weight.type = pmx.BoneWeight.BDEF4
                         weight.bones = [-1, -1, -1, -1]
                         weight.weights = [0.0, 0.0, 0.0, 0.0]
+                        w_all = 0.0
                         for i in range(min(len(v.groups), 4)):
                             gn, w = v.groups[i]
                             weight.bones[i] = bone_map[vertex_group_names[gn]]
                             weight.weights[i] = w
+                            w_all += w
+                        for i in range(4):
+                            weight.weights[i] /= w_all
                         pv.weight = weight
                     self.__model.vertices.append(pv)
 
