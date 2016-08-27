@@ -7,6 +7,9 @@ from mmd_tools.core.bone import FnBone
 
 def _updateMMDBoneAdditionalTransform(prop, context):
     prop['is_additional_transform_dirty'] = True
+    p_bone = context.active_pose_bone
+    if p_bone and p_bone.mmd_bone.as_pointer() == prop.as_pointer():
+        FnBone.apply_additional_transformation(prop.id_data)
 
 def _getAdditionalTransformBone(prop):
     arm = prop.id_data
@@ -146,7 +149,8 @@ class MMDBone(PropertyGroup):
         name='Additional Transform Bone',
         description='Additional transform bone',
         set=_setAdditionalTransformBone,
-        get=_getAdditionalTransformBone
+        get=_getAdditionalTransformBone,
+        update=_updateMMDBoneAdditionalTransform,
         )
 
     additional_transform_bone_id = IntProperty(
