@@ -193,6 +193,7 @@ def import_pmd_to_pmx(filepath):
         pmx_mat.specular = mat.specular
         pmx_mat.shininess = mat.shininess
         pmx_mat.ambient = mat.ambient
+        pmx_mat.is_double_sided = False
         pmx_mat.enabled_self_shadow = True # pmd doesn't support this
         pmx_mat.enabled_self_shadow_map = abs(mat.diffuse[3] - 0.98) > 1e-7 # consider precision error
         pmx_mat.enabled_toon_edge = (mat.edge_flag != 0)
