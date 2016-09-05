@@ -483,13 +483,11 @@ class Model:
 
         pose_bones = []
         arm = self.armature()
-        track_to_bone_map = {}
         if arm is not None:
             pose_bones = arm.pose.bones
         for i in pose_bones:
             if 'mmd_tools_rigid_track' in i.constraints:
                 const = i.constraints['mmd_tools_rigid_track']
-                track_to_bone_map[const.target] = i
                 i.constraints.remove(const)
 
         self.__removeChildrenOfTemporaryGroupObject() # for speeding up only
@@ -499,15 +497,16 @@ class Model:
                 bpy.context.scene.objects.unlink(i)
                 bpy.data.objects.remove(i)
             elif i.mmd_type == 'TRACK_TARGET':
-                rigid = i.parent
-                bone = track_to_bone_map.get(i)
-                logging.info('Create a "CHILD_OF" constraint for %s', rigid.name)
-                rigid.mmd_rigid.bone = bone.name
                 bpy.context.scene.objects.unlink(i)
                 bpy.data.objects.remove(i)
 
+        rigid_track_counts = 0
         for i in self.rigidBodies():
             rigid_type = int(i.mmd_rigid.type)
+            if 'mmd_tools_rigid_parent' not in i.constraints:
+                rigid_track_counts += 1
+                logging.info('%3d# Create a "CHILD_OF" constraint for %s', rigid_track_counts, i.name)
+                i.mmd_rigid.bone = i.mmd_rigid.bone
             relation = i.constraints['mmd_tools_rigid_parent']
             relation.mute = True
             if rigid_type == rigid_body.MODE_STATIC:
@@ -619,6 +618,9 @@ class Model:
         self.__fake_parent_map = None
         self.__rigid_body_matrix_map = None
 
+        # update changes
+        bpy.context.scene.frame_set(bpy.context.scene.frame_current)
+
         # parenting empty to rigid object at once for speeding up
         for empty, rigid_obj in self.__empty_parent_map.items():
             matrix_world = empty.matrix_world
@@ -693,13 +695,14 @@ class Model:
                         'mmd_bonetrack',
                         None)
                     bpy.context.scene.objects.link(empty)
-                    empty.location = arm.matrix_world * target_bone.tail
+                    empty.location = target_bone.tail
                     empty.empty_draw_size = 0.1
                     empty.empty_draw_type = 'ARROWS'
                     empty.mmd_type = 'TRACK_TARGET'
                     empty.hide = True
+                    empty.parent = self.temporaryGroupObject()
 
-                    rigid_obj.mmd_rigid.bone = relation.subtarget
+                    rigid_obj.mmd_rigid.bone = bone_name
                     rigid_obj.constraints.remove(relation)
 
                     self.__empty_parent_map[empty] = rigid_obj
@@ -716,7 +719,7 @@ class Model:
                         logging.debug('        * Bone (%s): change target from [%s] to [%s]',
                             target_bone.name, ori_rigid_obj.name, rigid_obj.name)
                         # re-parenting
-                        rigid_obj.mmd_rigid.bone = relation.subtarget
+                        rigid_obj.mmd_rigid.bone = bone_name
                         rigid_obj.constraints.remove(relation)
                         self.__empty_parent_map[empty] = rigid_obj
                         # revert change
