@@ -217,6 +217,31 @@ class PMXImporter:
             r.append(pose_bones[i])
         return r
 
+    @staticmethod
+    def __convertIKLimitAngles(min_angle, max_angle, pose_bone):
+        mat = mathutils.Matrix([
+            [1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0],
+            [0.0, 1.0, 0.0]])
+
+        def __align_rotation(rad):
+            from math import pi
+            base_rad = -pi/2 if rad < 0 else pi/2
+            return int(0.5 + rad/base_rad) * base_rad
+
+        rot = pose_bone.bone.matrix_local.to_euler()
+        rot.x = __align_rotation(rot.x)
+        rot.y = __align_rotation(rot.y)
+        rot.z = __align_rotation(rot.z)
+        m = rot.to_matrix().transposed() * mat * -1
+
+        new_min_angle = m * mathutils.Vector(min_angle)
+        new_max_angle = m * mathutils.Vector(max_angle)
+        for i in range(3):
+            if new_min_angle[i] > new_max_angle[i]:
+                new_min_angle[i], new_max_angle[i] = new_max_angle[i], new_min_angle[i]
+        return new_min_angle, new_max_angle
+
     def __applyIk(self, index, pmx_bone, pose_bones):
         """ create a IK bone constraint
          If the IK bone and the target bone is separated, a dummy IK target bone is created as a child of the IK bone.
@@ -256,25 +281,27 @@ class PMXImporter:
                 ikConst.chain_count -= 1
             if i.maximumAngle is not None:
                 bone = pose_bones[i.target]
+                minimum, maximum = self.__convertIKLimitAngles(i.minimumAngle, i.maximumAngle, bone)
+
                 bone.use_ik_limit_x = True
                 bone.use_ik_limit_y = True
                 bone.use_ik_limit_z = True
-                bone.ik_max_x = -i.minimumAngle[0]
-                bone.ik_max_y = i.maximumAngle[1]
-                bone.ik_max_z = i.maximumAngle[2]
-                bone.ik_min_x = -i.maximumAngle[0]
-                bone.ik_min_y = i.minimumAngle[1]
-                bone.ik_min_z = i.minimumAngle[2]
+                bone.ik_max_x = maximum[0]
+                bone.ik_max_y = maximum[1]
+                bone.ik_max_z = maximum[2]
+                bone.ik_min_x = minimum[0]
+                bone.ik_min_y = minimum[1]
+                bone.ik_min_z = minimum[2]
 
                 c = bone.constraints.new(type='LIMIT_ROTATION')
                 c.name = 'mmd_ik_limit_override'
                 c.owner_space = 'WORLD' # 'WORLD' / 'LOCAL'
-                c.max_x = -i.minimumAngle[0]
-                c.max_y = i.maximumAngle[1]
-                c.max_z = i.maximumAngle[2]
-                c.min_x = -i.maximumAngle[0]
-                c.min_y = i.minimumAngle[1]
-                c.min_z = i.minimumAngle[2]
+                c.max_x = maximum[0]
+                c.max_y = maximum[1]
+                c.max_z = maximum[2]
+                c.min_x = minimum[0]
+                c.min_y = minimum[1]
+                c.min_z = minimum[2]
                 c.use_limit_x = bone.ik_max_x != c.max_x or bone.ik_min_x != c.min_x
                 c.use_limit_y = bone.ik_max_y != c.max_y or bone.ik_min_y != c.min_y
                 c.use_limit_z = bone.ik_max_z != c.max_z or bone.ik_min_z != c.min_z

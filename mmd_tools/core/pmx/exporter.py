@@ -398,6 +398,31 @@ class __PmxExporter:
             self.__model.bones = pmx_bones
         return r
 
+    @staticmethod
+    def __convertIKLimitAngles(min_angle, max_angle, pose_bone):
+        mat = mathutils.Matrix([
+            [1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0],
+            [0.0, 1.0, 0.0]])
+
+        def __align_rotation(rad):
+            from math import pi
+            base_rad = -pi/2 if rad < 0 else pi/2
+            return int(0.5 + rad/base_rad) * base_rad
+
+        rot = pose_bone.bone.matrix_local.to_euler()
+        rot.x = __align_rotation(rot.x)
+        rot.y = __align_rotation(rot.y)
+        rot.z = __align_rotation(rot.z)
+        m = mat * rot.to_matrix().transposed().inverted() * -1
+
+        new_min_angle = m * mathutils.Vector(min_angle)
+        new_max_angle = m * mathutils.Vector(max_angle)
+        for i in range(3):
+            if new_min_angle[i] > new_max_angle[i]:
+                new_min_angle[i], new_max_angle[i] = new_max_angle[i], new_min_angle[i]
+        return new_min_angle, new_max_angle
+
     def __exportIKLinks(self, pose_bone, pmx_bones, bone_map, ik_links, count):
         if count <= 0:
             return ik_links
@@ -409,8 +434,8 @@ class __PmxExporter:
             minimum = []
             maximum = []
             if pose_bone.use_ik_limit_x:
-                minimum.append(-pose_bone.ik_max_x)
-                maximum.append(-pose_bone.ik_min_x)
+                minimum.append(pose_bone.ik_min_x)
+                maximum.append(pose_bone.ik_max_x)
             else:
                 minimum.append(0.0)
                 maximum.append(0.0)
@@ -432,8 +457,8 @@ class __PmxExporter:
             ik_limit_override = pose_bone.constraints.get('mmd_ik_limit_override', None)
             if ik_limit_override:
                 if ik_limit_override.use_limit_x:
-                    minimum[0] = -ik_limit_override.max_x
-                    maximum[0] = -ik_limit_override.min_x
+                    minimum[0] = ik_limit_override.min_x
+                    maximum[0] = ik_limit_override.max_x
                 if ik_limit_override.use_limit_y:
                     minimum[1] = ik_limit_override.min_y
                     maximum[1] = ik_limit_override.max_y
@@ -441,8 +466,9 @@ class __PmxExporter:
                     minimum[2] = ik_limit_override.min_z
                     maximum[2] = ik_limit_override.max_z
 
-            ik_link.minimumAngle = minimum
-            ik_link.maximumAngle = maximum
+            minimum, maximum = self.__convertIKLimitAngles(minimum, maximum, pose_bone)
+            ik_link.minimumAngle = list(minimum)
+            ik_link.maximumAngle = list(maximum)
 
         if pose_bone.parent is not None:
             return self.__exportIKLinks(pose_bone.parent, pmx_bones, bone_map, ik_links + [ik_link], count - 1)
