@@ -13,9 +13,9 @@ from collections import OrderedDict
 from mmd_tools.core import pmx
 from mmd_tools.core.bone import FnBone
 from mmd_tools.core.material import FnMaterial
+from mmd_tools.core.vmd.exporter import VMDExporter
 from mmd_tools import bpyutils
 from mmd_tools.utils import saferelpath
-import mmd_tools.core.model as mmd_model
 
 
 class _Vertex:
@@ -56,6 +56,7 @@ class _DefaultMaterial:
         #mat.mmd_material.ambient_color = (0, 0, 0)
         self.material = mat
         logging.debug('create default material: %s', str(self.material))
+
     def __del__(self):
         if self.material:
             logging.debug('remove default material: %s', str(self.material))
@@ -104,7 +105,7 @@ class __PmxExporter:
         index_map = {x:i for i, x in enumerate(sorted_indices)}
         for v in self.__vertex_order_map.values(): # for vertex morphs
             v.index = index_map[v.index]
-        for k, v in self.__vertex_index_map.items(): # for uv morphs
+        for v in self.__vertex_index_map.values(): # for uv morphs
             v[:] = [index_map[i] for i in v]
         for f in self.__model.faces:
             f[:] = [index_map[i] for i in f]
@@ -325,6 +326,7 @@ class __PmxExporter:
                 mmd_bone = p_bone.mmd_bone
                 pmx_bone = pmx.Bone()
                 pmx_bone.name = mmd_bone.name_j or bone.name
+                pmx_bone.name_e = mmd_bone.name_e or bone.name
 
                 pmx_bone.hasAdditionalRotate = mmd_bone.has_additional_rotation
                 pmx_bone.hasAdditionalLocation = mmd_bone.has_additional_location
@@ -334,7 +336,6 @@ class __PmxExporter:
                     if fnBone:
                         pmx_bone.additionalTransform[0] = fnBone.pose_bone
 
-                pmx_bone.name_e = mmd_bone.name_e or ''
                 pmx_bone.location = __to_pmx_location(p_bone.head)
                 pmx_bone.parent = bone.parent
                 pmx_bone.visible = mmd_bone.is_visible
@@ -648,32 +649,6 @@ class __PmxExporter:
         self.__model.materials = sorted_mat
         self.__model.faces = sorted_faces
 
-    @staticmethod
-    def makeVMDBoneLocationMatrix(blender_bone): #TODO may move to vmd exporter function
-        mat = mathutils.Matrix([
-                [blender_bone.x_axis.x, blender_bone.x_axis.y, blender_bone.x_axis.z, 0.0],
-                [blender_bone.y_axis.x, blender_bone.y_axis.y, blender_bone.y_axis.z, 0.0],
-                [blender_bone.z_axis.x, blender_bone.z_axis.y, blender_bone.z_axis.z, 0.0],
-                [0.0, 0.0, 0.0, 1.0]
-                ])
-        mat2 = mathutils.Matrix([
-            [1.0, 0.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [0.0, 1.0, 0.0, 0.0],
-            [0.0, 0.0, 0.0, 1.0]])
-        return mat2 * mat.inverted()
-
-    @staticmethod
-    def convertToVMDBoneRotation(blender_bone, rotation): #TODO may move to vmd exporter function
-        mat = mathutils.Matrix()
-        mat[0][0], mat[1][0], mat[2][0] = blender_bone.x_axis.x, blender_bone.y_axis.x, blender_bone.z_axis.x
-        mat[0][1], mat[1][1], mat[2][1] = blender_bone.x_axis.y, blender_bone.y_axis.y, blender_bone.z_axis.y
-        mat[0][2], mat[1][2], mat[2][2] = blender_bone.x_axis.z, blender_bone.y_axis.z, blender_bone.z_axis.z
-        (vec, angle) = rotation.to_axis_angle()
-        vec = mat.inverted() * vec
-        v = mathutils.Vector((-vec.x, -vec.z, -vec.y))
-        return mathutils.Quaternion(v, angle).normalized()
-
     def __export_bone_morphs(self, root):
         mmd_root = root.mmd_root
         if len(mmd_root.bone_morphs) == 0:
@@ -696,9 +671,9 @@ class __PmxExporter:
                 if blender_bone is None:
                     logging.warning('Bone Morph (%s): Bone %s was not found.', morph.name, data.bone)
                     continue
-                mat = self.makeVMDBoneLocationMatrix(blender_bone)
+                mat = VMDExporter.makeVMDBoneLocationMatrix(blender_bone)
                 morph_data.location_offset = mat * mathutils.Vector(data.location) * self.__scale
-                rw, rx, ry, rz = self.convertToVMDBoneRotation(blender_bone, data.rotation)
+                rw, rx, ry, rz = VMDExporter.convertToVMDBoneRotation(blender_bone, data.rotation)
                 morph_data.rotation_offset = (rx, ry, rz, rw)
                 bone_morph.offsets.append(morph_data)
             self.__model.morphs.append(bone_morph)
@@ -792,14 +767,15 @@ class __PmxExporter:
                 logging.warning(' * Settings of rigid body "%s" not found, skipped!', obj.name)
                 continue
             p_rigid = pmx.Rigid()
-            p_rigid.name = obj.mmd_rigid.name
-            p_rigid.name_e = obj.mmd_rigid.name_e
+            mmd_rigid = obj.mmd_rigid
+            p_rigid.name = mmd_rigid.name
+            p_rigid.name_e = mmd_rigid.name_e
             p_rigid.location = mathutils.Vector(obj.location) * self.__scale * self.TO_PMX_MATRIX
             p_rigid.rotation = mathutils.Vector(obj.rotation_euler) * self.TO_PMX_MATRIX * -1
-            p_rigid.mode = int(obj.mmd_rigid.type)
+            p_rigid.mode = int(mmd_rigid.type)
 
-            rigid_shape = obj.mmd_rigid.shape
-            shape_size = mathutils.Vector(mmd_model.getRigidBodySize(obj))
+            rigid_shape = mmd_rigid.shape
+            shape_size = mathutils.Vector(mmd_rigid.size)
             if rigid_shape == 'SPHERE':
                 p_rigid.type = 0
                 p_rigid.size = shape_size * self.__scale
@@ -812,10 +788,10 @@ class __PmxExporter:
             else:
                 raise Exception('Invalid rigid body type: %s %s', obj.name, rigid_shape)
 
-            p_rigid.bone = bone_map.get(obj.mmd_rigid.bone, -1)
-            p_rigid.collision_group_number = obj.mmd_rigid.collision_group_number
+            p_rigid.bone = bone_map.get(mmd_rigid.bone, -1)
+            p_rigid.collision_group_number = mmd_rigid.collision_group_number
             mask = 0
-            for i, v in enumerate(obj.mmd_rigid.collision_group_mask):
+            for i, v in enumerate(mmd_rigid.collision_group_mask):
                 if not v:
                     mask += (1<<i)
             p_rigid.collision_group_mask = mask

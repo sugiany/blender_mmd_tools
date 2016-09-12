@@ -194,9 +194,8 @@ class AddMaterialOffset(Operator):
 
     @classmethod
     def poll(cls, context):
-        root = mmd_model.Model.findRoot(context.active_object)
-        return root and mmd_model.Model(root).firstMesh()
-    
+        return mmd_model.Model.findRoot(context.active_object)
+
     def execute(self, context):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
@@ -237,8 +236,7 @@ class RemoveMaterialOffset(Operator):
 
     @classmethod
     def poll(cls, context):
-        root = mmd_model.Model.findRoot(context.active_object)
-        return root and mmd_model.Model(root).firstMesh()
+        return mmd_model.Model.findRoot(context.active_object)
 
     def execute(self, context):
         obj = context.active_object
@@ -285,8 +283,7 @@ class ApplyMaterialOffset(Operator):
 
     @classmethod
     def poll(cls, context):
-        root = mmd_model.Model.findRoot(context.active_object)
-        return root and mmd_model.Model(root).firstMesh()
+        return mmd_model.Model.findRoot(context.active_object)
 
     def execute(self, context):
         obj = context.active_object
@@ -356,8 +353,7 @@ class CreateWorkMaterial(Operator):
 
     @classmethod
     def poll(cls, context):
-        root = mmd_model.Model.findRoot(context.active_object)
-        return root and mmd_model.Model(root).firstMesh()
+        return mmd_model.Model.findRoot(context.active_object)
 
     def execute(self, context):
         obj = context.active_object
@@ -416,8 +412,7 @@ class ClearTempMaterials(Operator):
 
     @classmethod
     def poll(cls, context):
-        root = mmd_model.Model.findRoot(context.active_object)
-        return root and mmd_model.Model(root).firstMesh()
+        return mmd_model.Model.findRoot(context.active_object)
 
     def execute(self, context):
         obj = context.active_object
@@ -986,4 +981,3 @@ class RemoveMorph(Operator):
                 
             
         return { 'FINISHED' }
-    

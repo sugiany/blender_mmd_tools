@@ -350,12 +350,6 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
                 draw_func(context, rig, col, morph)
 
     def _draw_material_data(self, context, rig, col, morph):
-        meshObj = rig.firstMesh()
-
-        if meshObj is None:
-            c = col.column(align=True)
-            c.label("The model mesh can't be found", icon='ERROR')
-            return
         c = col.column(align=True)
         c.label('Material Offsets (%d)'%len(morph.data))
         row = c.row()
@@ -380,8 +374,12 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
         c_mat.prop_search(data, 'related_mesh', bpy.data, 'meshes')
         # Switch to the related mesh here if found
         relMesh = rig.findMesh(data.related_mesh)
-        meshObj = relMesh or meshObj
-        
+        meshObj = relMesh or rig.firstMesh()
+        if meshObj is None:
+            c = col.column(align=True)
+            c.label("The model mesh can't be found", icon='ERROR')
+            return
+
         c_mat.prop_search(data, 'material', meshObj.data, 'materials')
 
         base_mat_name = data.material
@@ -494,12 +492,6 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
         c1.prop(data, 'rotation')
 
     def _draw_uv_data(self, context, rig, col, morph):
-        meshObj = rig.firstMesh()
-        if meshObj is None:
-            c = col.column(align=True)
-            c.label("The model mesh can't be found", icon='ERROR')
-            return
-
         c = col.column(align=True)
         row = c.row(align=True)
         row.operator(operators.morph.ViewUVMorph.bl_idname, text='View')

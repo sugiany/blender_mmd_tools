@@ -394,6 +394,8 @@ class Model:
         """
         Helper method to find a mesh by name
         """
+        if mesh_name == '':
+            return None
         for mesh in self.meshes():
             if mesh.name == mesh_name or mesh.data.name == mesh_name:
                 return mesh
@@ -403,16 +405,19 @@ class Model:
         """
         Helper method to find the mesh by index
         """
+        if i < 0:
+            return None
         for i, mesh in enumerate(self.meshes()):
             if i == index:
                 return mesh
-
         return None
 
     def getMeshIndex(self, mesh_name):
         """
         Helper method to get the index of a mesh. Returns -1 if not found
         """
+        if mesh_name == '':
+            return -1
         for i, mesh in enumerate(self.meshes()):
             if mesh.name == mesh_name or mesh.data.name == mesh_name:
                 return i
@@ -524,6 +529,7 @@ class Model:
         for i in self.joints():
             self.__restoreTransforms(i)
 
+        arm = self.armature()
         if arm is not None: # update armature
             arm.update_tag()
             bpy.context.scene.frame_set(bpy.context.scene.frame_current)

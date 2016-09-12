@@ -52,9 +52,9 @@ class PMXImporter:
 
         self.__vertexGroupTable = None
         self.__textureTable = None
+        self.__rigidTable = None
 
         self.__boneTable = []
-        self.__rigidTable = []
         self.__materialTable = []
         self.__imageTable = {}
 
@@ -146,6 +146,9 @@ class PMXImporter:
                     self.__vertexGroupTable[bone].add(index=[i], weight=weight, type='REPLACE')
             else:
                 raise Exception('unkown bone weight type.')
+
+        vg_edge_scale.lock_weight = True
+        vg_vertex_order.lock_weight = True
 
     def __importTextures(self):
         pmxModel = self.__model
@@ -382,9 +385,9 @@ class PMXImporter:
             #    b_bone.lock_scale = [True, True, True]
 
     def __importRigids(self):
-        self.__rigidTable = []
         start_time = time.time()
-        for rigid in self.__model.rigids:
+        self.__rigidTable = {}
+        for i, rigid in enumerate(self.__model.rigids):
             loc = mathutils.Vector(rigid.location) * self.TO_BLE_MATRIX * self.__scale
             rot = mathutils.Vector(rigid.rotation) * self.TO_BLE_MATRIX * -1
             if rigid.type == pmx.Rigid.TYPE_BOX:
@@ -411,7 +414,7 @@ class PMXImporter:
                 bone = None if rigid.bone == -1 or rigid.bone is None else self.__boneTable[rigid.bone].name,
                 )
             obj.hide = True
-            self.__rigidTable.append(obj)
+            self.__rigidTable[i] = obj
 
         logging.debug('Finished importing rigid bodies in %f seconds.', time.time() - start_time)
 
@@ -427,8 +430,8 @@ class PMXImporter:
                 location = loc,
                 rotation = rot,
                 size = 0.5 * self.__scale,
-                rigid_a = self.__rigidTable[joint.src_rigid],
-                rigid_b = self.__rigidTable[joint.dest_rigid],
+                rigid_a = self.__rigidTable.get(joint.src_rigid, None),
+                rigid_b = self.__rigidTable.get(joint.dest_rigid, None),
                 maximum_location = mathutils.Vector(joint.maximum_location) * self.TO_BLE_MATRIX * self.__scale,
                 minimum_location = mathutils.Vector(joint.minimum_location) * self.TO_BLE_MATRIX * self.__scale,
                 maximum_rotation = mathutils.Vector(joint.minimum_rotation) * self.TO_BLE_MATRIX * -1,

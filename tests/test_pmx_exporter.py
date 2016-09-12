@@ -126,7 +126,7 @@ class TestPmxExporter(unittest.TestCase):
         for mat0, mat1 in zip(source_table, result_table):
             msg = mat0.name
             self.assertEqual(mat0.name, mat1.name)
-            self.assertEqual(mat0.name_e or mat0.name, mat1.name_e or mat1.name, msg)
+            self.assertEqual(mat0.name_e or mat0.name, mat1.name_e, msg)
             self.assertEqual(mat0.diffuse, mat1.diffuse, msg)
             self.assertEqual(mat0.specular, mat1.specular, msg)
             self.assertEqual(mat0.shininess, mat1.shininess, msg)
@@ -220,7 +220,7 @@ class TestPmxExporter(unittest.TestCase):
         for bone0, bone1 in zip(source_bones, result_bones):
             msg = bone0.name
             self.assertEqual(bone0.name, bone1.name)
-            self.assertEqual(bone0.name_e, bone1.name_e, msg)
+            self.assertEqual(bone0.name_e or bone0.name, bone1.name_e, msg)
             self.assertLess(self.__vector_error(bone0.location, bone1.location), 1e-6, msg)
 
             parent0 = self.__get_bone_name(bone0.parent, source_bones)
@@ -269,14 +269,14 @@ class TestPmxExporter(unittest.TestCase):
                 maximumAngle0 = link0.maximumAngle
                 maximumAngle1 = link1.maximumAngle
                 if maximumAngle0 and maximumAngle1:
-                    self.assertLess(self.__vector_error(maximumAngle0, maximumAngle1), 1e-9, msg)
+                    self.assertLess(self.__vector_error(maximumAngle0, maximumAngle1), 1e-6, msg)
                 else:
                     self.assertEqual(maximumAngle0, maximumAngle1, msg)
 
                 minimumAngle0 = link0.minimumAngle
                 minimumAngle1 = link1.minimumAngle
                 if minimumAngle0 and minimumAngle1:
-                    self.assertLess(self.__vector_error(minimumAngle0, minimumAngle1), 1e-9, msg)
+                    self.assertLess(self.__vector_error(minimumAngle0, minimumAngle1), 1e-6, msg)
                 else:
                     self.assertEqual(minimumAngle0, minimumAngle1, msg)
 
