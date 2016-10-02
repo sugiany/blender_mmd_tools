@@ -181,7 +181,7 @@ class FnBone(object):
 
 class _AT_ShadowBoneRemove:
     def __init__(self, bone_name):
-        self.__shadow_bone_names = ('_dummy.' + bone_name, '_shadow.' + bone_name)
+        self.__shadow_bone_names = ('_dummy_' + bone_name, '_shadow_' + bone_name)
 
     def update_edit_bones(self, edit_bones):
         remove_edit_bones(edit_bones, self.__shadow_bone_names)
@@ -191,8 +191,8 @@ class _AT_ShadowBoneRemove:
 
 class _AT_ShadowBoneCreate:
     def __init__(self, bone_name, target_bone_name):
-        self.__dummy_bone_name = '_dummy.' + bone_name
-        self.__shadow_bone_name = '_shadow.' + bone_name
+        self.__dummy_bone_name = '_dummy_' + bone_name
+        self.__shadow_bone_name = '_shadow_' + bone_name
         self.__bone_name = bone_name
         self.__target_bone_name = target_bone_name
         self.__constraint_pool = []

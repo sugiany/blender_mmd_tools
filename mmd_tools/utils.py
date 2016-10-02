@@ -67,13 +67,14 @@ def selectSingleBone(context, armature, bone_name, reset_pose=False):
 __CONVERT_NAME_TO_L_REGEXP = re.compile('^(.*)左(.*)$')
 __CONVERT_NAME_TO_R_REGEXP = re.compile('^(.*)右(.*)$')
 ## 日本語で左右を命名されている名前をblender方式のL(R)に変更する
-def convertNameToLR(name):
+def convertNameToLR(name, use_underscore):
     m = __CONVERT_NAME_TO_L_REGEXP.match(name)
+    delimiter = '_' if use_underscore else '.'
     if m:
-        name = m.group(1) + m.group(2) + '.L'
+        name = m.group(1) + m.group(2) + delimiter + 'L'
     m = __CONVERT_NAME_TO_R_REGEXP.match(name)
     if m:
-        name = m.group(1) + m.group(2) + '.R'
+        name = m.group(1) + m.group(2) + delimiter + 'R'
     return name
 
 ## src_vertex_groupのWeightをdest_vertex_groupにaddする
