@@ -16,6 +16,15 @@ def __exposeNodeTreeOutput(out_socket, name, node_output, shader):
     shader.links.new(i, out_socket)
     shader.outputs[t].name = name
 
+def __getMaterialOutput(nodes):
+    for node in nodes:
+        if isinstance(node, bpy.types.ShaderNodeOutputMaterial):
+            return node
+
+    o = nodes.new('ShaderNodeOutputMaterial')
+    o.name = 'Material Output'
+    return o
+
 def create_MMDAlphaShader():
     bpy.context.scene.render.engine = 'CYCLES'
 
@@ -140,9 +149,7 @@ def convertToCyclesShader(obj):
             if i.material.alpha < 1.0:
                 alpha_shader.inputs[1].default_value = i.material.alpha
 
-        if 'Material Output' not in i.material.node_tree.nodes:
-            o = i.material.node_tree.nodes.new('ShaderNodeOutputMaterial')
-            o.name = 'Material Output'
-        i.material.node_tree.links.new(i.material.node_tree.nodes['Material Output'].inputs['Surface'], outplug)
-        i.material.node_tree.nodes['Material Output'].location.x = shader.location.x + 500
-        i.material.node_tree.nodes['Material Output'].location.y = shader.location.y - 150
+        material_output = __getMaterialOutput(i.material.node_tree.nodes)
+        i.material.node_tree.links.new(material_output.inputs['Surface'], outplug)
+        material_output.location.x = shader.location.x + 500
+        material_output.location.y = shader.location.y - 150
