@@ -349,6 +349,26 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             if draw_func:
                 draw_func(context, rig, col, morph)
 
+    def _draw_vertex_data(self, context, rig, col, morph):
+        found_before = False
+        for mesh in rig.meshes():
+            idx = mesh.data.shape_keys.key_blocks.find(morph.name)
+            if idx >= 0:
+                if not found_before:
+                    mesh.active_shape_key_index = idx
+                    sk = mesh.data.shape_keys.key_blocks[morph.name]
+                    row = col.row()
+                    row.label('Key: ')
+                    row.prop(sk, 'value')
+                    found_before = True
+                else:
+                    # When separating the mesh, the shape keys are duplicated
+                    # But we can't know which is the right one
+                    row = col.row()
+                    row.label('Multiple meshes detected. This slider may not work', icon='ERROR')
+                    return
+
+
     def _draw_material_data(self, context, rig, col, morph):
         c = col.column(align=True)
         c.label('Material Offsets (%d)'%len(morph.data))
