@@ -86,11 +86,21 @@ class ImportPmx(Operator, ImportHelper):
         description='Remove unused vertices and duplicated/invalid faces',
         default=True,
         )
-    renameBones = bpy.props.BoolProperty(
-        name='Rename bones',
-        description='Rename the bones to be more blender suitable',
+    rename_bones = bpy.props.BoolProperty(
+        name='Rename Bones - L / R Suffix',
+        description='Use Blender naming conventions for Left / Right paired bones',
         default=True,
         )
+    use_underscore = bpy.props.BoolProperty(
+        name="Rename Bones - Use Underscore",
+        description='Will not use dot, e.g. if renaming bones, will use _R instead of .R',
+        default=False,
+        )
+    translate_to_english = bpy.props.BoolProperty(
+        name="Rename Bones To English",
+        description='Translate bone names from Japanese to English',
+        default=False,
+        )    
     use_mipmap = bpy.props.BoolProperty(
         name='use MIP maps for UV textures',
         description='Specify if mipmaps will be generated',
@@ -134,7 +144,9 @@ class ImportPmx(Operator, ImportHelper):
                 types=self.types,
                 scale=self.scale,
                 clean_model=self.clean_model,
-                rename_LR_bones=self.renameBones,
+                rename_LR_bones=self.rename_bones,
+                use_underscore=self.use_underscore,
+                translate_to_english=self.translate_to_english,
                 use_mipmap=self.use_mipmap,
                 sph_blend_factor=self.sph_blend_factor,
                 spa_blend_factor=self.spa_blend_factor,

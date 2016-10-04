@@ -12,6 +12,7 @@ import mmd_tools.core.model as mmd_model
 import mmd_tools.core.pmx as pmx
 from mmd_tools.core.material import FnMaterial
 from mmd_tools import utils
+from mmd_tools import translations
 from mmd_tools import bpyutils
 from mmd_tools.core.vmd.importer import VMDImporter
 
@@ -653,13 +654,20 @@ class PMXImporter:
         mesh.use_auto_smooth = True
         logging.info('   - Done!!')
 
-    def __renameLRBones(self):
+    def __renameLRBones(self, use_underscore):
         pose_bones = self.__armObj.pose.bones
         for i in pose_bones:
             if i.is_mmd_shadow_bone:
                 continue
-            self.__rig.renameBone(i.name, utils.convertNameToLR(i.name))
+            self.__rig.renameBone(i.name, utils.convertNameToLR(i.name, use_underscore))
             # self.__meshObj.vertex_groups[i.mmd_bone.name_j].name = i.name
+            
+    def __translateBoneNames(self):
+        pose_bones = self.__armObj.pose.bones
+        for i in pose_bones:
+            if i.is_mmd_shadow_bone:
+                continue
+            self.__rig.renameBone(i.name, translations.translateFromJp(i.name))
 
     def __fixRepeatedMorphName(self):
         used_names_map = {}
@@ -711,7 +719,10 @@ class PMXImporter:
                 self.__importVertexGroup()
             self.__importBones()
             if args.get('rename_LR_bones', False):
-                self.__renameLRBones()
+                use_underscore = args.get('use_underscore', False)
+                self.__renameLRBones(use_underscore)
+            if args.get('translate_to_english', False):
+                self.__translateBoneNames()
             self.__rig.applyAdditionalTransformConstraints()
 
         if 'PHYSICS' in types:
