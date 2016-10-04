@@ -405,7 +405,7 @@ class Model:
         """
         Helper method to find the mesh by index
         """
-        if i < 0:
+        if index < 0:
             return None
         for i, mesh in enumerate(self.meshes()):
             if i == index:
