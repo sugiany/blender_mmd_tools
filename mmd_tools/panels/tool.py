@@ -352,7 +352,7 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
     def _draw_vertex_data(self, context, rig, col, morph):
         found_before = False
         for mesh in rig.meshes():
-            idx = mesh.data.shape_keys.key_blocks.find(morph.name)
+            idx = mesh.data.shape_keys.key_blocks.find(morph.name) if mesh.data.shape_keys else -1
             if idx >= 0:
                 if not found_before:
                     mesh.active_shape_key_index = idx
