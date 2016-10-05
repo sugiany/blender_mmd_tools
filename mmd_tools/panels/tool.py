@@ -230,13 +230,13 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
         elif item.type == 'MORPH':
             row.prop(item, 'morph_type', text='')
             row.prop_search(item, 'name', mmd_root, item.morph_type, icon='SHAPEKEY_DATA', text='')
-            if item.morph_type != 'vertex_morphs':
-                return
-            for i in rig.meshes():
-                if i.data.shape_keys is not None and item.name in i.data.shape_keys.key_blocks:
-                    row = col.row(align=True)
-                    row.label(i.name+':')
-                    row.prop(i.data.shape_keys.key_blocks[item.name], 'value')
+#             if item.morph_type != 'vertex_morphs':
+#                 return
+#             for i in rig.meshes():
+#                 if i.data.shape_keys is not None and item.name in i.data.shape_keys.key_blocks:
+#                     row = col.row(align=True)
+#                     row.label(i.name+':')
+#                     row.prop(i.data.shape_keys.key_blocks[item.name], 'value')
 
 
 
@@ -348,6 +348,17 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             draw_func = getattr(self, '_draw_%s_data'%mmd_root.active_morph_type[:-7], None)
             if draw_func:
                 draw_func(context, rig, col, morph)
+
+    def _draw_vertex_data(self, context, rig, col, morph):
+        obj = context.active_object
+        mesh = obj if obj.type == 'MESH' and obj.mmd_type == 'NONE' else None 
+        idx = mesh.data.shape_keys.key_blocks.find(morph.name) if mesh and mesh.data.shape_keys else -1
+        if idx >= 0:
+            sk = mesh.data.shape_keys.key_blocks[morph.name]
+            row = col.row()
+            row.label(mesh.name+':')
+            row.prop(sk, 'value')
+
 
     def _draw_material_data(self, context, rig, col, morph):
         c = col.column(align=True)
