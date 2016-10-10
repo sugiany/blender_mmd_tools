@@ -47,7 +47,7 @@ class MMDModelObjectPanel(_PanelBase, Panel):
 
 class MMDRigidPanel(_PanelBase, Panel):
     bl_idname = 'RIGID_PT_mmd_tools_bone'
-    bl_label = 'MMD Rigidbody'
+    bl_label = 'MMD Rigid Body'
 
     @classmethod
     def poll(cls, context):
@@ -113,7 +113,7 @@ class MMDRigidPanel(_PanelBase, Panel):
 
 class MMDJointPanel(_PanelBase, Panel):
     bl_idname = 'JOINT_PT_mmd_tools_bone'
-    bl_label = 'MMD Joint Tools'
+    bl_label = 'MMD Joint'
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = 'object'
