@@ -303,7 +303,7 @@ class MMDRoot(PropertyGroup):
 
     scale = FloatProperty(
         name='Scale',
-        description='Scaling factor on importing',
+        description='Imported scale factor to reverse on export',
         min=0.1,
         default=1,
         )

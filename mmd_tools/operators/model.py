@@ -9,8 +9,8 @@ import mmd_tools.core.model as mmd_model
 
 class CleanRiggingObjects(Operator):
     bl_idname = 'mmd_tools.clean_rig'
-    bl_label = 'Clean'
-    bl_description = 'Clean temporary objects of rigging'
+    bl_label = 'Clean Rig'
+    bl_description = 'Delete temporary physics objects of selected object and revert physics to default MMD state'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -22,8 +22,8 @@ class CleanRiggingObjects(Operator):
 
 class BuildRig(Operator):
     bl_idname = 'mmd_tools.build_rig'
-    bl_label = 'Build'
-    bl_description = 'Build the physics of rigging'
+    bl_label = 'Build Rig'
+    bl_description = 'Translate physics of selected object into format usable by Blender'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -36,7 +36,7 @@ class BuildRig(Operator):
 class CleanAdditionalTransformConstraints(Operator):
     bl_idname = 'mmd_tools.clean_additioinal_transform'
     bl_label = 'Clean Additional Transform'
-    bl_description = 'Clean additional transform constraints and shadow bones of rigging'
+    bl_description = 'Delete shadow bones of selected object and revert bones to default MMD state'
     bl_options = {'PRESET'}
 
     @classmethod
@@ -54,7 +54,7 @@ class CleanAdditionalTransformConstraints(Operator):
 class ApplyAdditionalTransformConstraints(Operator):
     bl_idname = 'mmd_tools.apply_additioinal_transform'
     bl_label = 'Apply Additional Transform'
-    bl_description = 'Apply additional move/rotate settings of rigging'
+    bl_description = 'Translate appended bones of selected object for Blender'
     bl_options = {'PRESET'}
 
     @classmethod

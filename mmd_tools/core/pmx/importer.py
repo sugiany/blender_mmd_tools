@@ -333,7 +333,6 @@ class PMXImporter:
                 mmd_bone.is_tip = True
                 logging.debug('bone %s is a special tip bone. DisplayConnection: %s', pmx_bone.name, str(pmx_bone.displayConnection))
             elif not isinstance(pmx_bone.displayConnection, int):
-                mmd_bone.use_tail_location = True
                 logging.debug('bone %s is using a vector tail', pmx_bone.name)
             else:
                 logging.debug('bone %s is not using a vector tail and is not a tip bone. DisplayConnection: %s', 

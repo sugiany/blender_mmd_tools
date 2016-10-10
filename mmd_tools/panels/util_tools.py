@@ -14,7 +14,10 @@ class UL_Materials(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if self.layout_type in {'DEFAULT'}:    
             if item:        
-                layout.label(text=item.name, translate=False, icon='MATERIAL')
+                row = layout.row(align=True)
+                item_prop = getattr(item, 'mmd_material')
+                row.prop(item_prop, 'name_j', text='', emboss=False, icon='MATERIAL')
+                row.prop(item_prop, 'name_e', text='', emboss=True)
             else:
                 layout.label(text='UNSET', translate=False, icon='ERROR')
         elif self.layout_type in {'COMPACT'}:

@@ -111,9 +111,9 @@ class AddRigidBody(Operator):
         name='Rigid Type',
         description='Select rigid type',
         items = [
-            (str(rigid_body.MODE_STATIC), 'Static', '', 1),
-            (str(rigid_body.MODE_DYNAMIC), 'Dynamic', '', 2),
-            (str(rigid_body.MODE_DYNAMIC_BONE), 'Dynamic&BoneTrack', '', 3),
+            (str(rigid_body.MODE_STATIC), 'Bone', '', 1),
+            (str(rigid_body.MODE_DYNAMIC), 'Physics', '', 2),
+            (str(rigid_body.MODE_DYNAMIC_BONE), 'Physics + Bone', '', 3),
             ],
         )
     rigid_shape = bpy.props.EnumProperty(

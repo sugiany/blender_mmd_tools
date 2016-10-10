@@ -59,7 +59,7 @@ class MMDRigidPanel(_PanelBase, Panel):
 
         layout = self.layout
         c = layout.column()
-        c.prop(obj, 'name')
+        c.prop(obj.mmd_rigid, 'name_j')
         c.prop(obj.mmd_rigid, 'name_e')
 
         c = layout.column(align=True)
@@ -90,11 +90,19 @@ class MMDRigidPanel(_PanelBase, Panel):
         c.prop(obj.rigid_body, 'mass')
         c.prop(obj.mmd_rigid, 'collision_group_number')
         c = row.column()
-        c.prop(obj.rigid_body, 'restitution', text='Bounciness')
+        c.prop(obj.rigid_body, 'restitution')
         c.prop(obj.rigid_body, 'friction')
 
         c = layout.column()
-        c.prop(obj.mmd_rigid, 'collision_group_mask')
+        #c.prop(obj.mmd_rigid, 'collision_group_mask')
+        col = c.column(align=True)
+        col.label('Collision Group Mask:')
+        row = col.row(align=True)
+        for i in range(0, 8):
+            row.prop(obj.mmd_rigid, 'collision_group_mask', index=i, text=str(i), toggle=True)
+        row = col.row(align=True)
+        for i in range(8, 16):
+            row.prop(obj.mmd_rigid, 'collision_group_mask', index=i, text=str(i), toggle=True)
 
         c = layout.column()
         c.label('Damping')

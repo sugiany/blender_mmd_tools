@@ -220,7 +220,7 @@ class MoveModelMeshDown(Operator):
 class ChangeMMDIKLoopFactor(Operator):
     bl_idname = 'mmd_tools.change_mmd_ik_loop_factor'
     bl_label = 'Change MMD IK Loop Factor'
-    bl_description = 'Change scaling factor of MMD IK loop and update iteration of IK constraints on active armature'
+    bl_description = "Multiplier for all bones' IK iterations in Blender"
     bl_options = {'PRESET'}
 
     mmd_ik_loop_factor = bpy.props.IntProperty(

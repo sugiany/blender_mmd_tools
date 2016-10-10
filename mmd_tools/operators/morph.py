@@ -57,7 +57,7 @@ class _AddMorphBase(object):
         name='Category',
         description='Select category',
         items = [
-            ('SYSTEM', 'System', '', 0),
+            ('SYSTEM', 'Hidden', '', 0),
             ('EYEBROW', 'Eye Brow', '', 1),
             ('EYE', 'Eye', '', 2),
             ('MOUTH', 'Mouth', '', 3),

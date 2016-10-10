@@ -74,12 +74,6 @@ class MMDBone(PropertyGroup):
         default=False,
         )
 
-    use_tail_location = BoolProperty(
-        name='Use Tail',
-        description='Use tail location',
-        default=False,
-        )
-
     enabled_fixed_axis = BoolProperty(
         name='Fixed Axis',
         description='Use fixed axis',

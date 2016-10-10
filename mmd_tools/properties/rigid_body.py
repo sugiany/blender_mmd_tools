@@ -126,12 +126,20 @@ def _set_size(prop, value):
                 v.co = [x0, y0, z0]
         mesh.update()
 
+def _get_rigid_name(prop):
+    return prop.get('name', '')
+
+def _set_rigid_name(prop, value):
+    prop['name'] = value
+
 
 class MMDRigidBody(PropertyGroup):
     name_j = StringProperty(
         name='Name',
         description='Japanese Name',
         default='',
+        get=_get_rigid_name,
+        set=_set_rigid_name,
         )
 
     name_e = StringProperty(
@@ -160,9 +168,12 @@ class MMDRigidBody(PropertyGroup):
         name='Rigid Type',
         description='Select rigid type',
         items = [
-            (str(rigid_body.MODE_STATIC), 'Static', '', 1),
-            (str(rigid_body.MODE_DYNAMIC), 'Dynamic', '', 2),
-            (str(rigid_body.MODE_DYNAMIC_BONE), 'Dynamic&BoneTrack', '', 3),
+            (str(rigid_body.MODE_STATIC), 'Bone',
+                "Rigid body's orientation completely determined by attached bone", 1),
+            (str(rigid_body.MODE_DYNAMIC), 'Physics',
+                "Attached bone's orientation completely determined by rigid body", 2),
+            (str(rigid_body.MODE_DYNAMIC_BONE), 'Physics + Bone',
+                "Bone determined by combination of parent and attached rigid body", 3),
             ],
         )
 

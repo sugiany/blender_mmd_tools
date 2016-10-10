@@ -44,12 +44,13 @@ class MMDToolsObjectPanel(_PanelBase, Panel):
             col.operator('mmd_tools.clean_additioinal_transform', text='Clean')
 
             col = row.column(align=True)
+            col.active = context.scene.rigidbody_world is not None and context.scene.rigidbody_world.enabled
             sub_row = col.row(align=True)
             sub_row.label('Rigidbody:', icon='PHYSICS')
             if not root.mmd_root.is_built:
                 sub_row.label(icon='ERROR')
-            col.operator('mmd_tools.build_rig')
-            col.operator('mmd_tools.clean_rig')
+            col.operator('mmd_tools.build_rig', text='Build')
+            col.operator('mmd_tools.clean_rig', text='Clean')
 
         row = layout.row()
 
@@ -70,7 +71,7 @@ class MMD_ROOT_UL_display_item_frames(UIList):
         frame = item
 
         if self.layout_type in {'DEFAULT'}:
-            row = layout.split(percentage=0.4, align=True)
+            row = layout.split(percentage=0.5, align=True)
             if frame.is_special:
                 row.label(text=frame.name, translate=False, icon_value=icon)
                 row = row.row(align=True)
@@ -90,7 +91,7 @@ class MMD_ROOT_UL_display_items(UIList):
         name="Morph Filter",
         description='Only show items matching this category',
         items = [
-            ('SYSTEM', 'System', '', 0),
+            ('SYSTEM', 'Hidden', '', 0),
             ('EYEBROW', 'Eye Brow', '', 1),
             ('EYE', 'Eye', '', 2),
             ('MOUTH', 'Mouth', '', 3),
@@ -101,8 +102,7 @@ class MMD_ROOT_UL_display_items(UIList):
         )
 
     @staticmethod
-    def draw_bone_item(layout, armature, bone_name):
-        layout.label(text=bone_name, translate=False, icon='BONE_DATA')
+    def draw_bone_special(layout, armature, bone_name):
         if armature is None:
             return
         row = layout.row(align=True)
@@ -121,7 +121,8 @@ class MMD_ROOT_UL_display_items(UIList):
 
         if self.layout_type in {'DEFAULT'}:
             if item.type == 'BONE':
-                MMD_ROOT_UL_display_items.draw_bone_item(layout, mmd_model.Model(item.id_data).armature(), item.name)
+                layout.prop(item, 'name', text='', emboss=False, icon='BONE_DATA')
+                MMD_ROOT_UL_display_items.draw_bone_special(layout, mmd_model.Model(item.id_data).armature(), item.name)
             else:
                 row = layout.split(percentage=0.6, align=True)
                 row.prop(item, 'name', text='', emboss=False, icon='SHAPEKEY_DATA')
@@ -159,7 +160,7 @@ class MMD_ROOT_UL_display_items(UIList):
 
 class MMDDisplayItemsPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_display_items'
-    bl_label = 'Display Items'
+    bl_label = 'Display Panel'
     bl_options = {'DEFAULT_CLOSED'}
 
     def draw(self, context):
@@ -217,17 +218,16 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
             return # If the list is empty we should stop drawing the panel here
         item = frame.items[frame.active_item]
         row = col.row(align=True)
-        row.prop(item, 'type', text='')
         if item.type == 'BONE':
             armature = rig.armature()
             if armature is None:
                 row.label('Armature not found', icon='ERROR')
                 return
+            row = row.split(percentage=0.67, align=True)
             row.prop_search(item, 'name', armature.pose, 'bones', icon='BONE_DATA', text='')
-
-            row = col.row(align=True)
             row.operator(operators.display_item.SelectCurrentDisplayItem.bl_idname, text='Select')
         elif item.type == 'MORPH':
+            row = row.split(percentage=0.33, align=True)
             row.prop(item, 'morph_type', text='')
             row.prop_search(item, 'name', mmd_root, item.morph_type, icon='SHAPEKEY_DATA', text='')
 #             if item.morph_type != 'vertex_morphs':
@@ -259,7 +259,10 @@ class UL_Morphs(UIList):
             
 class UL_MaterialMorphOffsets(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        if self.layout_type in {'DEFAULT'}:            
+        if self.layout_type in {'DEFAULT'}:
+            if item.material == '':
+                layout.label(text='All Materials', translate=False, icon='MATERIAL')
+                return
             layout.label(text=item.material, translate=False, icon='MATERIAL')
         elif self.layout_type in {'COMPACT'}:
             pass
@@ -280,8 +283,9 @@ class UL_UVMorphOffsets(UIList):
 
 class UL_BoneMorphOffsets(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        if self.layout_type in {'DEFAULT'}:            
-            MMD_ROOT_UL_display_items.draw_bone_item(layout, mmd_model.Model(item.id_data).armature(), item.bone)
+        if self.layout_type in {'DEFAULT'}:
+            layout.prop(item, 'bone', text='', emboss=False, icon='BONE_DATA')
+            MMD_ROOT_UL_display_items.draw_bone_special(layout, mmd_model.Model(item.id_data).armature(), item.bone)
         elif self.layout_type in {'COMPACT'}:
             pass
         elif self.layout_type in {'GRID'}:
@@ -292,8 +296,7 @@ class UL_GroupMorphOffsets(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if self.layout_type in {'DEFAULT'}:
             row = layout.split(percentage=0.4, align=True)
-            row.label(item.name, translate=False, icon='SHAPEKEY_DATA')
-            #row.prop(item, 'name', text='', emboss=False, icon='SHAPEKEY_DATA')
+            row.prop(item, 'name', text='', emboss=False, icon='SHAPEKEY_DATA')
             row = row.row(align=True)
             row.prop(item, 'morph_type', text='', emboss=False, icon_value=icon)
             if item.name in getattr(item.id_data.mmd_root, item.morph_type):
@@ -404,7 +407,7 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             c = col.column(align=True)
             row = c.row(align=True)
             if base_mat_name == '':
-                row.label('This offset affects to all materials', icon='INFO')
+                row.label('This offset affects all materials', icon='INFO')
             else:
                 row.operator(operators.morph.CreateWorkMaterial.bl_idname)
                 row.operator(operators.morph.ClearTempMaterials.bl_idname, text='Clear')
@@ -563,8 +566,12 @@ class UL_ObjectsMixIn(object):
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
-            layout.prop(item, 'name', text='', emboss=False, icon=self.icon)
-            self.draw_item_special(context, layout, item)
+            row = layout.split(percentage=0.5, align=True)
+            item_prop = getattr(item, self.prop_name)
+            row.prop(item_prop, 'name_j', text='', emboss=False, icon=self.icon)
+            row = row.row(align=True)
+            row.prop(item_prop, 'name_e', text='', emboss=True)
+            self.draw_item_special(context, row, item)
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'
             layout.label(text='', icon=self.icon)
@@ -599,6 +606,7 @@ class UL_ObjectsMixIn(object):
 class UL_rigidbodies(UL_ObjectsMixIn, UIList):
     mmd_type = 'RIGID_BODY'
     icon = 'MESH_ICOSPHERE'
+    prop_name = 'mmd_rigid'
 
     def draw_item_special(self, context, layout, item):
         rb = item.rigid_body
@@ -664,6 +672,7 @@ class MMDRigidbodySelectorPanel(_PanelBase, Panel):
 class UL_joints(UL_ObjectsMixIn, UIList):
     mmd_type = 'JOINT'
     icon = 'CONSTRAINT'
+    prop_name = 'mmd_joint'
 
     def draw_item_special(self, context, layout, item):
         rbc = item.rigid_body_constraint

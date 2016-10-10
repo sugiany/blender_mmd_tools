@@ -60,7 +60,7 @@ class _MorphBase:
         name='Category',
         description='Select category',
         items = [
-            ('SYSTEM', 'System', '', 0),
+            ('SYSTEM', 'Hidden', '', 0),
             ('EYEBROW', 'Eye Brow', '', 1),
             ('EYE', 'Eye', '', 2),
             ('MOUTH', 'Mouth', '', 3),
@@ -216,8 +216,8 @@ class MaterialMorphData(PropertyGroup):
         )
 
     shininess = FloatProperty(
-        name='Shininess',
-        description='Shininess',
+        name='Reflect',
+        description='Reflect',
         soft_min=0,
         soft_max=500,
         step=100.0,

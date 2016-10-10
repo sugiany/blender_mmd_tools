@@ -768,7 +768,7 @@ class __PmxExporter:
                 continue
             p_rigid = pmx.Rigid()
             mmd_rigid = obj.mmd_rigid
-            p_rigid.name = mmd_rigid.name
+            p_rigid.name = mmd_rigid.name_j
             p_rigid.name_e = mmd_rigid.name_e
             p_rigid.location = mathutils.Vector(obj.location) * self.__scale * self.TO_PMX_MATRIX
             p_rigid.rotation = mathutils.Vector(obj.rotation_euler) * self.TO_PMX_MATRIX * -1

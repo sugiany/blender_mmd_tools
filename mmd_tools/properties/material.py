@@ -144,8 +144,8 @@ class MMDMaterial(PropertyGroup):
         )
 
     shininess = FloatProperty(
-        name='Shininess',
-        description='How hard (sharp) the specular reflection is',
+        name='Reflect',
+        description='Sharpness of reflected highlights',
         min=0,
         soft_max=512,
         step=100.0,
@@ -155,28 +155,28 @@ class MMDMaterial(PropertyGroup):
 
     is_double_sided = BoolProperty(
         name='Double Sided',
-        description='The face is double sided or single sided',
+        description='Both sides of mesh should be rendered',
         default=True,
         update=_updateIsDoubleSided,
         )
 
     enabled_drop_shadow = BoolProperty(
-        name='Drop Shadow',
-        description='Use drop shadow',
+        name='Ground Shadow',
+        description='Display ground shadow',
         default=True,
         update=_updateDropShadow,
         )
 
     enabled_self_shadow_map = BoolProperty(
         name='Self Shadow Map',
-        description='Use self shadow map',
+        description='Object can become shadowed by other objects',
         default=True,
         update=_updateSelfShadowMap,
         )
 
     enabled_self_shadow = BoolProperty(
         name='Self Shadow',
-        description='Use self shadow',
+        description='Object can cast shadows',
         default=True,
         update=_updateSelfShadow,
         )

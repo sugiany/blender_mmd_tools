@@ -160,7 +160,7 @@ class Model:
             obj.mmd_rigid.collision_group_mask = collision_group_mask
         if name is not None:
             obj.name = name
-            obj.mmd_rigid.name = name
+            obj.mmd_rigid.name_j = name
         if name_e is not None:
             obj.mmd_rigid.name_e = name_e
 
@@ -179,7 +179,6 @@ class Model:
             rb.restitution = bounce
 
         obj.select = False
-        self.__root.mmd_root.is_built = False
         return obj
 
     def createJoint(self, **kwargs):
@@ -269,7 +268,6 @@ class Model:
 
         obj.parent = self.jointGroupObject()
         obj.select = False
-        self.__root.mmd_root.is_built = False
         return obj
 
     def create_ik_constraint(self, bone, ik_target, threshold=0.1):
@@ -575,6 +573,8 @@ class Model:
     def __backupTransforms(self, obj):
         for attr in ('location', 'rotation_euler'):
             attr_name = '__backup_%s__'%attr
+            if attr_name in obj: # should not happen in normal build/clean cycle
+                continue
             obj[attr_name] = getattr(obj, attr, None)
 
     def __preBuild(self):
