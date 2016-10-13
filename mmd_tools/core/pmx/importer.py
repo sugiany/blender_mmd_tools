@@ -59,6 +59,8 @@ class PMXImporter:
         self.__materialTable = []
         self.__imageTable = {}
 
+        self.__sdefVertices = {} # pmx vertices
+
         self.__materialFaceCountTable = None
 
     @staticmethod
@@ -105,6 +107,14 @@ class PMXImporter:
         self.__meshObj.parent = self.__armObj
         self.__targetScene.objects.link(self.__meshObj)
 
+    def __createBasisShapeKey(self):
+        if self.__meshObj.data.shape_keys:
+            assert(len(self.__meshObj.data.vertices) > 0)
+            assert(len(self.__meshObj.data.shape_keys.key_blocks) > 1)
+            return
+        utils.selectAObject(self.__meshObj)
+        bpy.ops.object.shape_key_add()
+
     def __importVertexGroup(self):
         self.__vertexGroupTable = []
         for i in self.__model.bones:
@@ -134,6 +144,7 @@ class PMXImporter:
             if isinstance(pv.weight.weights, pmx.BoneWeightSDEF):
                 self.__vertexGroupTable[pv.weight.bones[0]].add(index=[i], weight=pv.weight.weights.weight, type='REPLACE')
                 self.__vertexGroupTable[pv.weight.bones[1]].add(index=[i], weight=1.0-pv.weight.weights.weight, type='REPLACE')
+                self.__sdefVertices[i] = pv
             elif len(pv.weight.bones) == 1:
                 bone_index = pv.weight.bones[0]
                 if bone_index >= 0:
@@ -150,6 +161,24 @@ class PMXImporter:
 
         vg_edge_scale.lock_weight = True
         vg_vertex_order.lock_weight = True
+
+    def __storeVerticesSDEF(self):
+        if len(self.__sdefVertices) < 1:
+            return
+
+        self.__createBasisShapeKey()
+        sdefC = self.__meshObj.shape_key_add('mmd_sdef_c')
+        sdefR0 = self.__meshObj.shape_key_add('mmd_sdef_r0')
+        sdefR1 = self.__meshObj.shape_key_add('mmd_sdef_r1')
+        for i, pv in self.__sdefVertices.items():
+            w = pv.weight.weights
+            shapeKeyPoint = sdefC.data[i]
+            shapeKeyPoint.co = mathutils.Vector(w.c) * self.TO_BLE_MATRIX * self.__scale
+            shapeKeyPoint = sdefR0.data[i]
+            shapeKeyPoint.co = mathutils.Vector(w.r0) * self.TO_BLE_MATRIX * self.__scale
+            shapeKeyPoint = sdefR1.data[i]
+            shapeKeyPoint.co = mathutils.Vector(w.r1) * self.TO_BLE_MATRIX * self.__scale
+        logging.info('Stored %d SDEF vertices', len(self.__sdefVertices))
 
     def __importTextures(self):
         pmxModel = self.__model
@@ -522,8 +551,7 @@ class PMXImporter:
     def __importVertexMorphs(self):
         pmxModel = self.__model
         mmd_root = self.__rig.rootObject().mmd_root
-        utils.selectAObject(self.__meshObj)
-        bpy.ops.object.shape_key_add()
+        self.__createBasisShapeKey()
         categories = self.CATEGORIES
         for morph in filter(lambda x: isinstance(x, pmx.VertexMorph), pmxModel.morphs):
             shapeKey = self.__meshObj.shape_key_add(morph.name)
@@ -710,6 +738,7 @@ class PMXImporter:
             self.__importFaces()
             self.__meshObj.data.update()
             self.__assignCustomNormals()
+            self.__storeVerticesSDEF()
 
         if 'ARMATURE' in types:
             # for tracking bone order

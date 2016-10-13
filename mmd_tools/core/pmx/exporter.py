@@ -29,6 +29,7 @@ class _Vertex:
         self.index = None
         self.uv = None
         self.normal = None
+        self.sdef_data = None # (C, R0, R1)
 
 class _Face:
     def __init__(self, vertices):
@@ -169,6 +170,14 @@ class __PmxExporter:
                             ]
                         w1, w2 = vg1[1], vg2[1]
                         weight.weights = [w1/(w1+w2)]
+                        if v.sdef_data:
+                            weight.type = pmx.BoneWeight.SDEF
+                            sdef_weights = pmx.BoneWeightSDEF()
+                            sdef_weights.weight = weight.weights[0]
+                            sdef_weights.c = v.sdef_data[0]
+                            sdef_weights.r0 = v.sdef_data[1]
+                            sdef_weights.r1 = v.sdef_data[2]
+                            weight.weights = sdef_weights
                         pv.weight = weight
                     else:
                         weight = pmx.BoneWeight()
@@ -985,6 +994,26 @@ class __PmxExporter:
                 get_edge_scale(v),
                 get_vertex_order(v),
                 )]
+
+        # restore SDEF data from shape keys
+        sdef_shape_key_names = ('mmd_sdef_c', 'mmd_sdef_r0', 'mmd_sdef_r1')
+        if all([i in key_blocks for i in sdef_shape_key_names]):
+            sdef_counts = 0
+            basis_data = key_blocks[0].data
+            sdef_c_data = key_blocks[sdef_shape_key_names[0]].data
+            sdef_r0_data = key_blocks[sdef_shape_key_names[1]].data
+            sdef_r1_data = key_blocks[sdef_shape_key_names[2]].data
+            for key in base_vertices.keys():
+                c_co = sdef_c_data[key].co
+                if (c_co - basis_data[key].co).length < 0.001:
+                    continue
+                c_co = pmx_matrix * c_co
+                r0_co = pmx_matrix * sdef_r0_data[key].co
+                r1_co = pmx_matrix * sdef_r1_data[key].co
+                base_vertices[key][0].sdef_data = (c_co, r0_co, r1_co)
+                sdef_counts += 1
+            key_blocks = [i for i in key_blocks if i.name not in sdef_shape_key_names]
+            logging.info('Restored %d SDEF vertices', sdef_counts)
 
         # calculate offsets
         shape_key_names = []
