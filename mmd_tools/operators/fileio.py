@@ -4,6 +4,7 @@ import logging
 import re
 import traceback
 import os
+import time
 
 import bpy
 from bpy.types import Operator
@@ -197,6 +198,21 @@ class ImportVmd(Operator, ImportHelper):
             ],
         default='PMX',
         )
+    rename_bones = bpy.props.BoolProperty(
+        name='Rename Bones - L / R Suffix',
+        description='Use Blender naming conventions for Left / Right paired bones',
+        default=True,
+        )
+    use_underscore = bpy.props.BoolProperty(
+        name="Rename Bones - Use Underscore",
+        description='Will not use dot, e.g. if renaming bones, will use _R instead of .R',
+        default=False,
+        )
+    translate_to_english = bpy.props.BoolProperty(
+        name="Rename Bones To English",
+        description='Translate bone names from Japanese to English',
+        default=False,
+        )
     update_scene_settings = bpy.props.BoolProperty(
         name='Update scene settings',
         description='Update frame range and frame rate (30 fps)',
@@ -206,6 +222,19 @@ class ImportVmd(Operator, ImportHelper):
     @classmethod
     def poll(cls, context):
         return len(context.selected_objects) > 0
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, 'scale')
+        layout.prop(self, 'margin')
+
+        layout.prop(self, 'bone_mapper')
+        if self.bone_mapper == 'RENAMED_BONES':
+            layout.prop(self, 'rename_bones')
+            layout.prop(self, 'use_underscore')
+            layout.prop(self, 'translate_to_english')
+
+        layout.prop(self, 'update_scene_settings')
 
     def execute(self, context):
         active_object = context.active_object
@@ -229,8 +258,13 @@ class ImportVmd(Operator, ImportHelper):
         if self.bone_mapper == 'PMX':
             bone_mapper = makePmxBoneMap
         elif self.bone_mapper == 'RENAMED_BONES':
-            bone_mapper = vmd_importer.RenamedBoneMapper
+            bone_mapper = vmd_importer.RenamedBoneMapper(
+                rename_LR_bones=self.rename_bones,
+                use_underscore=self.use_underscore,
+                translate_to_english=self.translate_to_english,
+                ).init
 
+        start_time = time.time()
         importer = vmd_importer.VMDImporter(
             filepath=self.filepath,
             scale=self.scale,
@@ -240,6 +274,8 @@ class ImportVmd(Operator, ImportHelper):
 
         for i in context.selected_objects:
             importer.assign(i)
+        logging.info(' Finished importing motion in %f seconds.', time.time() - start_time)
+
         if self.update_scene_settings:
             auto_scene_setup.setupFrameRanges()
             auto_scene_setup.setupFps()

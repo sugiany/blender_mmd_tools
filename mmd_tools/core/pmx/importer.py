@@ -447,8 +447,8 @@ class PMXImporter:
 
         logging.debug('Finished importing rigid bodies in %f seconds.', time.time() - start_time)
 
-
     def __importJoints(self):
+        start_time = time.time()
         for joint in self.__model.joints:
             loc = mathutils.Vector(joint.location) * self.TO_BLE_MATRIX * self.__scale
             rot = mathutils.Vector(joint.rotation) * self.TO_BLE_MATRIX * -1
@@ -470,6 +470,7 @@ class PMXImporter:
                 )
             obj.hide = True
 
+        logging.debug('Finished importing joints in %f seconds.', time.time() - start_time)
 
     def __importMaterials(self):
         self.__importTextures()

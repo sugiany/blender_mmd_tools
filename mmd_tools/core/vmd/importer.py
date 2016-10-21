@@ -9,13 +9,26 @@ import mmd_tools.core.camera as mmd_camera
 import mmd_tools.core.lamp as mmd_lamp
 import mmd_tools.core.vmd as vmd
 from mmd_tools import utils
+from mmd_tools import translations
+
 
 class RenamedBoneMapper:
-    def __init__(self, armObj):
+    def __init__(self, armObj=None, rename_LR_bones=True, use_underscore=False, translate_to_english=False):
+        self.__pose_bones = armObj.pose.bones if armObj else None
+        self.__rename_LR_bones = rename_LR_bones
+        self.__use_underscore = use_underscore
+        self.__translate_to_english = translate_to_english
+
+    def init(self, armObj):
         self.__pose_bones = armObj.pose.bones
+        return self
 
     def get(self, bone_name, default=None):
-        bl_bone_name = utils.convertNameToLR(bone_name)
+        bl_bone_name = bone_name
+        if self.__rename_LR_bones:
+            bl_bone_name = utils.convertNameToLR(bl_bone_name, self.__use_underscore)
+        if self.__translate_to_english:
+            bl_bone_name = translations.translateFromJp(bl_bone_name)
         return self.__pose_bones.get(bl_bone_name, default)
 
 

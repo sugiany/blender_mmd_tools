@@ -227,9 +227,9 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
             row.prop_search(item, 'name', armature.pose, 'bones', icon='BONE_DATA', text='')
             row.operator(operators.display_item.SelectCurrentDisplayItem.bl_idname, text='Select')
         elif item.type == 'MORPH':
-            row = row.split(percentage=0.33, align=True)
-            row.prop(item, 'morph_type', text='')
+            row = row.split(percentage=0.67, align=True)
             row.prop_search(item, 'name', mmd_root, item.morph_type, icon='SHAPEKEY_DATA', text='')
+            row.prop(item, 'morph_type', text='')
 #             if item.morph_type != 'vertex_morphs':
 #                 return
 #             for i in rig.meshes():
@@ -295,7 +295,7 @@ class UL_BoneMorphOffsets(UIList):
 class UL_GroupMorphOffsets(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if self.layout_type in {'DEFAULT'}:
-            row = layout.split(percentage=0.4, align=True)
+            row = layout.split(percentage=0.5, align=True)
             row.prop(item, 'name', text='', emboss=False, icon='SHAPEKEY_DATA')
             row = row.row(align=True)
             row.prop(item, 'morph_type', text='', emboss=False, icon_value=icon)
@@ -542,10 +542,10 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
         if len(morph.data) == 0:
             return
         c = col.column(align=True)
-        row = c.row(align=True)
         item = morph.data[morph.active_group_data]
-        row.prop(item, 'morph_type', text='')
+        row = c.split(percentage=0.67, align=True)
         row.prop_search(item, 'name', morph.id_data.mmd_root, item.morph_type, icon='SHAPEKEY_DATA', text='')
+        row.prop(item, 'morph_type', text='')
 
 
 class UL_ObjectsMixIn(object):
