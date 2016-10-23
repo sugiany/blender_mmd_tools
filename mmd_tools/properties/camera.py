@@ -18,6 +18,16 @@ def _setMMDCameraAngle(prop, value):
     cam = mmd_camera.MMDCamera(empty).camera()
     cam.data.lens = cam.data.sensor_height/math.tan(value/2)/2
 
+def _getIsPerspective(prop):
+    empty = prop.id_data
+    cam = mmd_camera.MMDCamera(empty).camera()
+    return cam.data.type == 'PERSP'
+
+def _setIsPerspective(prop, value):
+    empty = prop.id_data
+    cam = mmd_camera.MMDCamera(empty).camera()
+    cam.data.type = 'PERSP' if value else 'ORTHO'
+
 
 class MMDCamera(PropertyGroup):
     angle = FloatProperty(
@@ -35,4 +45,6 @@ class MMDCamera(PropertyGroup):
         name='Perspective',
         description='Is perspective',
         default=True,
+        get=_getIsPerspective,
+        set=_setIsPerspective,
         )

@@ -233,11 +233,14 @@ class VMDImporter:
         cameraAnim.sort(key=lambda x:x.frame_number)
         for keyFrame in cameraAnim:
             mmdCamera.mmd_camera.angle = math.radians(keyFrame.angle)
+            mmdCamera.mmd_camera.is_perspective = keyFrame.persp
             cameraObj.location[1] = keyFrame.distance * self.__scale
             mmdCamera.location = mathutils.Vector((keyFrame.location[0], keyFrame.location[2], keyFrame.location[1])) * self.__scale
             mmdCamera.rotation_euler = mathutils.Vector((keyFrame.rotation[0], keyFrame.rotation[2], keyFrame.rotation[1]))
             mmdCamera.keyframe_insert(data_path='mmd_camera.angle',
-                                           frame=keyFrame.frame_number+self.__frame_margin)
+                                      frame=keyFrame.frame_number+self.__frame_margin)
+            mmdCamera.keyframe_insert(data_path='mmd_camera.is_perspective',
+                                      frame=keyFrame.frame_number+self.__frame_margin)
             cameraObj.keyframe_insert(data_path='location', index=1,
                                       frame=keyFrame.frame_number+self.__frame_margin)
             mmdCamera.keyframe_insert(data_path='location',
@@ -245,7 +248,14 @@ class VMDImporter:
             mmdCamera.keyframe_insert(data_path='rotation_euler',
                                       frame=keyFrame.frame_number+self.__frame_margin)
 
-        paths = ['rotation_euler', 'mmd_camera.angle', 'location']
+        paths = ['rotation_euler', 'location', 'mmd_camera.angle']
+        for fcurve in cameraObj.animation_data.action.fcurves:
+            if fcurve.data_path == 'location' and fcurve.array_index == 1:
+                frames = list(fcurve.keyframe_points)
+                frames.sort(key=lambda kp:kp.co.x)
+                for i in range(1, len(cameraAnim)):
+                    interp = cameraAnim[i].interp
+                    self.__setInterpolation([interp[4 + j] for j in [0, 2, 1, 3]], frames[i - 1], frames[i])
         for fcurve in act.fcurves:
             if fcurve.data_path in paths:
                 if fcurve.data_path =='location':

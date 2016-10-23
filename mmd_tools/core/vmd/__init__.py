@@ -100,7 +100,7 @@ class CameraKeyFrameKey:
         self.interp = list(struct.unpack('<24b', fin.read(24)))
         self.angle, = struct.unpack('<L', fin.read(4))
         self.persp, = struct.unpack('<b', fin.read(1))
-        self.persp = (self.persp == 1)
+        self.persp = (self.persp == 0)
 
     def save(self, fin):
         fin.write(struct.pack('<L', self.frame_number))
@@ -109,7 +109,7 @@ class CameraKeyFrameKey:
         fin.write(struct.pack('<fff', *self.rotation))
         fin.write(struct.pack('<24b', *self.interp))
         fin.write(struct.pack('<L', self.angle))
-        fin.write(struct.pack('<b', 1 if self.persp else 0))
+        fin.write(struct.pack('<b', 0 if self.persp else 1))
 
     def __repr__(self):
         return '<CameraKeyFrameKey frame %s, distance %s, loc %s, rot %s, angle %s, persp %s>'%(

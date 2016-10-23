@@ -13,11 +13,14 @@ from bpy_extras.io_utils import ImportHelper, ExportHelper
 from mmd_tools import auto_scene_setup
 from mmd_tools.utils import selectAObject
 from mmd_tools.utils import makePmxBoneMap
+from mmd_tools.core.camera import MMDCamera
+from mmd_tools.core.lamp import MMDLamp
 
 import mmd_tools.core.pmd.importer as pmd_importer
 import mmd_tools.core.pmx.importer as pmx_importer
 import mmd_tools.core.pmx.exporter as pmx_exporter
 import mmd_tools.core.vmd.importer as vmd_importer
+import mmd_tools.core.vmd.exporter as vmd_exporter
 import mmd_tools.core.model as mmd_model
 
 
@@ -403,21 +406,62 @@ class ExportPmx(Operator, ExportHelper):
 class ExportVmd(Operator, ExportHelper):
     bl_idname = 'mmd_tools.export_vmd'
     bl_label = 'Export VMD file (.vmd)'
-    bl_description = '(WIP)'
+    bl_description = 'Export motion data of active object to a VMD file (.vmd)'
     bl_options = {'PRESET'}
 
     filename_ext = '.vmd'
     filter_glob = bpy.props.StringProperty(default='*.vmd', options={'HIDDEN'})
 
+    scale = bpy.props.FloatProperty(
+        name='Scale',
+        description='Scaling factor of the model',
+        default=0.2,
+        )
 
     @classmethod
     def poll(cls, context):
+        obj = context.active_object
+        if obj is None:
+            return False
+
+        if obj.mmd_type == 'ROOT':
+            return True
+        if obj.mmd_type == 'NONE' and obj.type in {'MESH', 'ARMATURE'}:
+            return True
+        if MMDCamera.isMMDCamera(obj) or MMDLamp.isMMDLamp(obj):
+            return True
+
         return False
 
     def execute(self, context):
+        obj = context.active_object
+        params = {
+            'filepath':self.filepath,
+            'scale':self.scale,
+            }
+
+        if obj.mmd_type == 'ROOT':
+            rig = mmd_model.Model(obj)
+            params['mesh'] = rig.firstMesh()
+            params['armature'] = rig.armature()
+            params['model_name'] = obj.mmd_root.name
+        elif obj.type == 'MESH':
+            params['mesh'] = obj
+            params['model_name'] = obj.name
+        elif obj.type == 'ARMATURE':
+            params['armature'] = obj
+            params['model_name'] = obj.name
+        else:
+            for i in context.selected_objects:
+                if MMDCamera.isMMDCamera(i):
+                    params['camera'] = i
+                elif MMDCamera.isMMDLamp(i):
+                    params['lamp'] = i
 
         try:
-            pass #TODO
+            start_time = time.time()
+            vmd_exporter.VMDExporter().export(**params)
+            logging.info(' Finished exporting motion in %f seconds.', time.time() - start_time)
         except Exception as e:
             err_msg = traceback.format_exc()
             logging.error(err_msg)
