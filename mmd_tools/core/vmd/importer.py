@@ -156,10 +156,10 @@ class VMDImporter:
                 bone.location = location
                 bone.rotation_quaternion = rotation
                 bone.keyframe_insert(data_path='location',
-                                     group=name,
+                                     group=bone.name,
                                      frame=frame+self.__frame_margin)
                 bone.keyframe_insert(data_path='rotation_quaternion',
-                                     group=name,
+                                     group=bone.name,
                                      frame=frame+self.__frame_margin)
 
         rePath = re.compile(r'^pose\.bones\["(.+)"\]\.([a-z_]+)$')
