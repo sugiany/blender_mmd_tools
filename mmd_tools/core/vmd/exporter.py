@@ -212,10 +212,9 @@ class VMDExporter:
                 key.location = mat * mathutils.Vector([x[0], y[0], z[0]]) * self.__scale
                 curr_rot = mathutils.Quaternion([rw[0], rx[0], ry[0], rz[0]])
                 curr_rot = self.convertToVMDBoneRotation(bone, curr_rot)
-                if prev_rot is None:
-                    prev_rot = curr_rot
-                else:
+                if prev_rot is not None:
                     curr_rot = self.__minRotationDiff(prev_rot, curr_rot)
+                prev_rot = curr_rot
                 key.rotation = curr_rot[1:] + curr_rot[0:1] # (w, x, y, z) to (x, y, z, w)
                 #FIXME we can only choose one interpolation from (rw, rx, ry, rz) for bone's rotation
                 key.interp = self.__getVMDBoneInterpolation(x[1], z[1], y[1], rw[1]) # x, z, y, q
