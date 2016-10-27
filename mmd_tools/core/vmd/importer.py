@@ -255,7 +255,7 @@ class VMDImporter:
                 frames.sort(key=lambda kp:kp.co.x)
                 for i in range(1, len(cameraAnim)):
                     interp = cameraAnim[i].interp
-                    self.__setInterpolation([interp[4 + j] for j in [0, 2, 1, 3]], frames[i - 1], frames[i])
+                    self.__setInterpolation([interp[16 + j] for j in [0, 2, 1, 3]], frames[i - 1], frames[i])
         for fcurve in act.fcurves:
             if fcurve.data_path in paths:
                 if fcurve.data_path =='location':
