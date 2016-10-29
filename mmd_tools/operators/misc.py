@@ -12,16 +12,60 @@ from mmd_tools.core.material import FnMaterial
 
 PREFIX_PATT = r'(?P<prefix>[0-9A-Z]{3}_)(?P<name>.*)'
 
+class CleanShapeKeys(Operator):
+    bl_idname = 'mmd_tools.clean_shape_keys'
+    bl_label = 'Clean Shape Keys'
+    bl_description = 'Remove unused shape keys of selected mesh objects'
+    bl_options = {'PRESET'}
+
+    @classmethod
+    def poll(cls, context):
+        return len(context.selected_objects) > 0
+
+    @staticmethod
+    def __has_offsets(key_block):
+        if key_block.relative_key == key_block:
+            return True # Basis
+        for v0, v1 in zip(key_block.relative_key.data, key_block.data):
+            if v0.co != v1.co:
+                return True
+        return False
+
+    def execute(self, context):
+        for ob in context.selected_objects:
+            if ob.type != 'MESH' or ob.data.shape_keys is None:
+                continue
+            if not ob.data.shape_keys.use_relative:
+                continue # not be considered yet
+            key_blocks = ob.data.shape_keys.key_blocks
+            counts = len(key_blocks)
+            for kb in key_blocks:
+                if not self.__has_offsets(kb):
+                    ob.shape_key_remove(kb)
+            counts -= len(key_blocks)
+            self.report({ 'INFO' }, 'Removed %d shape keys of object "%s"'%(counts, ob.name))
+        return {'FINISHED'}
+
 class SeparateByMaterials(Operator):
     bl_idname = 'mmd_tools.separate_by_materials'
     bl_label = 'Separate by materials'
     bl_description = 'Separate by materials'
     bl_options = {'PRESET'}
 
+    clean_shape_keys = bpy.props.BoolProperty(
+        name='Clean Shape Keys',
+        description='Remove unused shape keys of separated objects',
+        default=True,
+        )
+
     @classmethod
     def poll(cls, context):
         obj = context.active_object
         return obj and obj.type == 'MESH'
+
+    def invoke(self, context, event):
+        vm = context.window_manager
+        return vm.invoke_props_dialog(self)
 
     def execute(self, context):
         obj = context.active_object
@@ -36,6 +80,8 @@ class SeparateByMaterials(Operator):
             rig = mmd_model.Model(root)
             mat_names = [mat.name for mat in rig.materials()]
         utils.separateByMaterials(obj)
+        if self.clean_shape_keys:
+            bpy.ops.mmd_tools.clean_shape_keys()
         if root:
             rig = mmd_model.Model(root)
             # The material morphs store the name of the mesh, not of the object.
@@ -96,6 +142,7 @@ class JoinMeshes(Operator):
             mesh.select = True
         bpy.context.scene.objects.active = active_mesh
         bpy.ops.object.join()
+        #TODO Restore shape key order
         # Restore the material order
         FnMaterial.fixMaterialOrder(rig.firstMesh(), material_names)
         if len(root.mmd_root.material_morphs) > 0:
