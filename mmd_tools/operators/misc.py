@@ -31,6 +31,21 @@ class CleanShapeKeys(Operator):
                 return True
         return False
 
+    def __shape_key_clean(self, context, obj, key_blocks):
+        for kb in key_blocks:
+            if not self.__has_offsets(kb):
+                obj.shape_key_remove(kb)
+
+    def __shape_key_clean_old(self, context, obj, key_blocks):
+        context.scene.objects.active = obj
+        for i in reversed(range(len(key_blocks))):
+            kb = key_blocks[i]
+            if not self.__has_offsets(kb):
+                obj.active_shape_key_index = i
+                bpy.ops.object.shape_key_remove()
+
+    __do_shape_key_clean = __shape_key_clean_old if bpy.app.version < (2, 75, 0) else __shape_key_clean
+
     def execute(self, context):
         for ob in context.selected_objects:
             if ob.type != 'MESH' or ob.data.shape_keys is None:
@@ -39,9 +54,7 @@ class CleanShapeKeys(Operator):
                 continue # not be considered yet
             key_blocks = ob.data.shape_keys.key_blocks
             counts = len(key_blocks)
-            for kb in key_blocks:
-                if not self.__has_offsets(kb):
-                    ob.shape_key_remove(kb)
+            self.__do_shape_key_clean(context, ob, key_blocks)
             counts -= len(key_blocks)
             self.report({ 'INFO' }, 'Removed %d shape keys of object "%s"'%(counts, ob.name))
         return {'FINISHED'}
@@ -137,12 +150,16 @@ class JoinMeshes(Operator):
         material_names = [mat.name for mat in rig.materials()]
         # Join selected meshes
         bpy.ops.object.select_all(action='DESELECT')
+        act_layer = context.scene.active_layer
         for mesh in meshes_list:
+            mesh.layers[act_layer] = True
+            mesh.hide_select = False
             mesh.hide = False
             mesh.select = True
         bpy.context.scene.objects.active = active_mesh
         bpy.ops.object.join()
-        #TODO Restore shape key order
+        # Restore shape key order
+        FnMorph.fixShapeKeyOrder(active_mesh, [i.name for i in root.mmd_root.vertex_morphs])
         # Restore the material order
         FnMaterial.fixMaterialOrder(rig.firstMesh(), material_names)
         if len(root.mmd_root.material_morphs) > 0:

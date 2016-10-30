@@ -96,6 +96,7 @@ def separateByMaterials(meshObj):
     prev_parent = meshObj.parent
     dummy_parent = bpy.data.objects.new(name='tmp', object_data=None)
     meshObj.parent = dummy_parent
+    meshObj.active_shape_key_index = 0
 
     enterEditMode(meshObj)
     try:

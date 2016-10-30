@@ -1,11 +1,39 @@
+# -*- coding: utf-8 -*-
 
+import bpy
 
 class FnMorph(object):
     
     def __init__(self, morph, model):
         self.__morph = morph
         self.__rig = model
-    
+
+    @classmethod
+    def fixShapeKeyOrder(cls, obj, shape_key_names):
+        assert(bpy.context.scene.objects.active == obj)
+        shape_keys = obj.data.shape_keys
+        if shape_keys is None:
+            return
+        key_blocks = shape_keys.key_blocks
+        if bpy.app.version < (2, 73, 0):
+            len_key_blocks = len(key_blocks)
+            for ii, name in enumerate(reversed(shape_key_names)):
+                idx = key_blocks.find(name)
+                if idx < 0:
+                    continue
+                obj.active_shape_key_index = idx
+                offset = (len_key_blocks - 1 - idx) - ii
+                move_type = 'UP' if offset < 0 else 'DOWN'
+                for move in range(abs(offset)):
+                    bpy.ops.object.shape_key_move(type=move_type)
+        else:
+            for name in shape_key_names:
+                idx = key_blocks.find(name)
+                if idx < 0:
+                    continue
+                obj.active_shape_key_index = idx
+                bpy.ops.object.shape_key_move(type='BOTTOM')
+
     def update_mat_related_mesh(self, new_mesh=None):
         for offset in self.__morph.data:
             # Use the new_mesh if provided  
@@ -24,4 +52,4 @@ class FnMorph(object):
             # Finally update the reference
             if meshObj is not None:
                 offset.related_mesh = meshObj.data.name
-            
+
