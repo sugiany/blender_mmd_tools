@@ -297,6 +297,19 @@ class PMXImporter:
         target_bone = pose_bones[index]
         ik_target = pose_bones[pmx_bone.target]
         ik_bone = ik_target.parent
+        is_valid_ik = False
+        if len(pmx_bone.ik_links) > 0:
+            ik_bone_real = pose_bones[pmx_bone.ik_links[0].target]
+            if ik_bone_real == ik_target:
+                ik_bone_real = ik_bone_real.parent
+            is_valid_ik = (ik_bone == ik_bone_real)
+            if not is_valid_ik:
+                ik_bone = ik_bone_real
+                logging.warning(' * IK bone (%s) error: IK target (%s) should be a child of IK link 0 (%s)',
+                                target_bone.name, ik_target.name, ik_bone.name)
+        if ik_bone is None:
+            logging.warning(' * Invalid IK bone (%s)', target_bone.name)
+            return
 
         c = ik_target.constraints.new(type='DAMPED_TRACK')
         c.name = 'mmd_ik_target_override'
@@ -308,6 +321,7 @@ class PMXImporter:
         ikConst = self.__rig.create_ik_constraint(ik_bone, target_bone)
         ikConst.iterations = pmx_bone.loopCount
         ikConst.chain_count = len(pmx_bone.ik_links)
+        ikConst.mute = not is_valid_ik
         ik_bone.mmd_bone.ik_rotation_constraint = pmx_bone.rotationConstraint
         for i in pmx_bone.ik_links:
             if i.target == pmx_bone.target:

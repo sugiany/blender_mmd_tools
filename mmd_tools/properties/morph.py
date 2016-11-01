@@ -37,7 +37,7 @@ def _set_name(prop, value):
                     shape_key.name = value
                     value = shape_key.name
 
-        if morph_type != 'group_morphs':
+        if 1:#morph_type != 'group_morphs':
             for m in mmd_root.group_morphs:
                 for d in m.data:
                     if d.name == prop_name and d.morph_type == morph_type:
@@ -363,7 +363,7 @@ class GroupMorphOffset(PropertyGroup):
             ('uv_morphs', 'UV', 'UV Morphs', 1),
             ('bone_morphs', 'Bone', 'Bone Morphs', 2),
             ('vertex_morphs', 'Vertex', 'Vertex Morphs', 3),
-            #('group_morphs', 'Group', 'Group Morphs', 4),
+            ('group_morphs', 'Group', 'Group Morphs', 4),
             ],
         default='vertex_morphs',
         )

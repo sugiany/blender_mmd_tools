@@ -498,7 +498,7 @@ class __PmxExporter:
             if bone.is_mmd_shadow_bone:
                 continue
             for c in bone.constraints:
-                if c.type == 'IK':
+                if c.type == 'IK'and not c.mute:
                     logging.debug('  Found IK constraint.')
                     ik_pose_bone = pose_bones[c.subtarget]
                     if ik_pose_bone.mmd_shadow_bone_type == 'IK_TARGET':
@@ -508,6 +508,9 @@ class __PmxExporter:
                         ik_bone_index = bone_map[c.subtarget]
 
                     ik_target_bone = self.__get_ik_target_bone(bone)
+                    if ik_target_bone is None:
+                        logging.warning('  - IK bone: %s, IK Target not found !!!', pmx_ik_bone.name)
+                        continue
                     pmx_ik_bone = pmx_bones[ik_bone_index]
                     logging.debug('  - IK bone: %s, IK Target: %s', pmx_ik_bone.name, ik_target_bone.name)
                     pmx_ik_bone.isIK = True
@@ -715,13 +718,17 @@ class __PmxExporter:
         if len(mmd_root.group_morphs) == 0:
             return
         categories = self.CATEGORIES
-        morph_map = self.__get_pmx_morph_map()
+        start_index = len(self.__model.morphs)
         for morph in mmd_root.group_morphs:
             group_morph = pmx.GroupMorph(
                 name=morph.name,
                 name_e=morph.name_e,
                 category=categories.get(morph.category, pmx.Morph.CATEGORY_OHTER)
             )
+            self.__model.morphs.append(group_morph)
+
+        morph_map = self.__get_pmx_morph_map()
+        for morph, group_morph in zip(mmd_root.group_morphs, self.__model.morphs[start_index:]):
             for data in morph.data:
                 morph_index = morph_map.get((data.morph_type, data.name), -1)
                 if morph_index < 0:
@@ -731,7 +738,6 @@ class __PmxExporter:
                 morph_data.morph = morph_index
                 morph_data.factor = data.factor
                 group_morph.offsets.append(morph_data)
-            self.__model.morphs.append(group_morph)
 
     def __exportDisplayItems(self, root, bone_map):
         res = []
