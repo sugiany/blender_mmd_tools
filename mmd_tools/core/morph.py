@@ -9,7 +9,34 @@ class FnMorph(object):
         self.__rig = model
 
     @classmethod
+    def storeShapeKeyOrder(cls, obj, shape_key_names):
+        if len(shape_key_names) < 1:
+            return
+        assert(bpy.context.scene.objects.active == obj)
+        if obj.data.shape_keys is None:
+            bpy.ops.object.shape_key_add()
+
+        if bpy.app.version < (2, 73, 0):
+            def __move_to_bottom(key_blocks, name):
+                obj.active_shape_key_index = key_blocks.find(name)
+                for move in range(len(key_blocks)-1-obj.active_shape_key_index):
+                    bpy.ops.object.shape_key_move(type='DOWN')
+        else:
+            def __move_to_bottom(key_blocks, name):
+                obj.active_shape_key_index = key_blocks.find(name)
+                bpy.ops.object.shape_key_move(type='BOTTOM')
+
+        key_blocks = obj.data.shape_keys.key_blocks
+        for name in shape_key_names:
+            if name not in key_blocks:
+                obj.shape_key_add(name)
+            elif len(key_blocks) > 1:
+                __move_to_bottom(key_blocks, name)
+
+    @classmethod
     def fixShapeKeyOrder(cls, obj, shape_key_names):
+        if len(shape_key_names) < 1:
+            return
         assert(bpy.context.scene.objects.active == obj)
         shape_keys = obj.data.shape_keys
         if shape_keys is None:

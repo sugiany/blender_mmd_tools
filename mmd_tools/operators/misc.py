@@ -5,6 +5,7 @@ import re
 import bpy
 from bpy.types import Operator
 
+from collections import OrderedDict
 from mmd_tools import utils
 from mmd_tools.core import model as mmd_model
 from mmd_tools.core.morph import FnMorph
@@ -23,24 +24,24 @@ class CleanShapeKeys(Operator):
         return len(context.selected_objects) > 0
 
     @staticmethod
-    def __has_offsets(key_block):
+    def __can_remove(key_block):
         if key_block.relative_key == key_block:
-            return True # Basis
+            return False # Basis
         for v0, v1 in zip(key_block.relative_key.data, key_block.data):
             if v0.co != v1.co:
-                return True
-        return False
+                return False
+        return True
 
     def __shape_key_clean(self, context, obj, key_blocks):
         for kb in key_blocks:
-            if not self.__has_offsets(kb):
+            if self.__can_remove(kb):
                 obj.shape_key_remove(kb)
 
     def __shape_key_clean_old(self, context, obj, key_blocks):
         context.scene.objects.active = obj
         for i in reversed(range(len(key_blocks))):
             kb = key_blocks[i]
-            if not self.__has_offsets(kb):
+            if self.__can_remove(kb):
                 obj.active_shape_key_index = i
                 bpy.ops.object.shape_key_remove()
 
@@ -135,20 +136,17 @@ class JoinMeshes(Operator):
         if root is None:
             self.report({ 'ERROR' }, 'Select a MMD model') 
             return { 'CANCELLED' }
-        
-        # Find all the meshes in mmd_root
-        rig = mmd_model.Model(root)
-        meshes_list = rig.meshes()
-        active_mesh = rig.firstMesh()
 
         if root.mmd_root.editing_morphs > 0:            
             bpy.ops.mmd_tools.clear_temp_materials()
             bpy.ops.mmd_tools.clear_uv_morph_view()        
             self.report({ 'WARNING' }, "Active editing morphs were cleared")
 
-        # Store the current order of the materials
-        material_names = [mat.name for mat in rig.materials()]
-        # Join selected meshes
+        # Find all the meshes in mmd_root
+        rig = mmd_model.Model(root)
+        meshes_list = list(rig.meshes())
+        active_mesh = meshes_list[0]
+
         bpy.ops.object.select_all(action='DESELECT')
         act_layer = context.scene.active_layer
         for mesh in meshes_list:
@@ -157,15 +155,27 @@ class JoinMeshes(Operator):
             mesh.hide = False
             mesh.select = True
         bpy.context.scene.objects.active = active_mesh
+
+        # Store the current order of the materials
+        for m in meshes_list[1:]:
+            for mat in m.data.materials:
+                if mat and mat.name not in active_mesh.data.materials:
+                    active_mesh.data.materials.append(mat)
+
+        # Store the current order of shape keys (vertex morphs)
+        __get_key_blocks = lambda x: x.data.shape_keys.key_blocks if x.data.shape_keys else []
+        shape_key_names = OrderedDict([(kb.name, None) for m in meshes_list for kb in __get_key_blocks(m)])
+        shape_key_names = sorted(shape_key_names.keys(), key=lambda x: root.mmd_root.vertex_morphs.find(x))
+        FnMorph.storeShapeKeyOrder(active_mesh, shape_key_names)
+        active_mesh.active_shape_key_index = 0
+
+        # Join selected meshes
         bpy.ops.object.join()
-        # Restore shape key order
-        FnMorph.fixShapeKeyOrder(active_mesh, [i.name for i in root.mmd_root.vertex_morphs])
-        # Restore the material order
-        FnMaterial.fixMaterialOrder(rig.firstMesh(), material_names)
+
         if len(root.mmd_root.material_morphs) > 0:
             for morph in root.mmd_root.material_morphs:
                 mo = FnMorph(morph, rig)
-                mo.update_mat_related_mesh(rig.firstMesh())
+                mo.update_mat_related_mesh(active_mesh)
 
         utils.clearUnusedMeshes()
         return { 'FINISHED' }
