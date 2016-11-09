@@ -4,6 +4,7 @@ import bpy
 import math
 import re
 import os
+import logging
 
 import mmd_tools.core.camera as mmd_camera
 import mmd_tools.core.lamp as mmd_lamp
@@ -75,27 +76,17 @@ class VMDImporter:
         return mathutils.Quaternion(mat*v, angle).normalized()
 
     @staticmethod
-    def __fixRotations(rotation_ary):
-        rotation_ary = list(rotation_ary)
-        if len(rotation_ary) == 0:
-            return rotation_ary
-
-        pq = rotation_ary.pop(0)
-        res = [pq]
-        for q in rotation_ary:
-            nq = q.copy()
-            nq.negate()
-            t1 = (pq.w-q.w)**2+(pq.x-q.x)**2+(pq.y-q.y)**2+(pq.z-q.z)**2
-            t2 = (pq.w-nq.w)**2+(pq.x-nq.x)**2+(pq.y-nq.y)**2+(pq.z-nq.z)**2
-            # t1 = pq.axis.dot(q.axis)
-            # t2 = pq.axis.dot(nq.axis)
-            if t2 < t1:
-                res.append(nq)
-                pq = nq
-            else:
-                res.append(q)
-                pq = q
-        return res
+    def __minRotationDiff(prev_q, curr_q):
+        pq, q = prev_q, curr_q
+        nq = q.copy()
+        nq.negate()
+        t1 = (pq.w-q.w)**2+(pq.x-q.x)**2+(pq.y-q.y)**2+(pq.z-q.z)**2
+        t2 = (pq.w-nq.w)**2+(pq.x-nq.x)**2+(pq.y-nq.y)**2+(pq.z-nq.z)**2
+        #t1 = pq.rotation_difference(q).angle
+        #t2 = pq.rotation_difference(nq).angle
+        if t2 < t1:
+            return nq
+        return q
 
     @staticmethod
     def __setInterpolation(bezier, kp0, kp1):
@@ -115,76 +106,76 @@ class VMDImporter:
             a = armObj.animation_data_create()
             a.action = act
 
-        if self.__frame_margin > 1:
-            utils.selectAObject(armObj)
-            bpy.context.scene.frame_current = 1
-            bpy.ops.object.mode_set(mode='POSE')
-            hiddenBones = []
-            for i in armObj.data.bones:
-                if i.hide:
-                    hiddenBones.append(i)
-                    i.hide = False
-                i.select = True
-            bpy.ops.pose.transforms_clear()
-            bpy.ops.anim.keyframe_insert_menu(type='LocRotScale', confirm_success=False, always_prompt=False)
-            bpy.ops.object.mode_set(mode='OBJECT')
-            for i in hiddenBones:
-                i.hide = True
-
         boneAnim = self.__vmdFile.boneAnimation
+        extra_frame = 1 if self.__frame_margin > 1 else 0
 
+        action = armObj.animation_data.action
         pose_bones = armObj.pose.bones
         if self.__bone_mapper:
             pose_bones = self.__bone_mapper(armObj)
         bone_name_table = {}
         for name, keyFrames in boneAnim.items():
+            num_frame = len(keyFrames)
+            if num_frame < 1:
+                continue
             bone = pose_bones.get(name, None)
             if bone is None:
-                print("WARNING: not found bone %s"%str(name))
+                logging.warning('WARNING: not found bone %s', name)
                 continue
+            logging.info('(bone) frames:%5d  name: %s', len(keyFrames), name)
             assert(bone_name_table.get(bone.name, name) == name)
             bone_name_table[bone.name] = name
 
-            keyFrames.sort(key=lambda x:x.frame_number)
-            frameNumbers = map(lambda x: x.frame_number, keyFrames)
+            fcurves = [None]*7 # x, y, z, rw, rx, ry, rz
+            default_values = [0]*7
+            data_path = 'pose.bones["%s"].location'%bone.name
+            for axis_i in range(3):
+                fcurves[axis_i] = action.fcurves.new(data_path=data_path, index=axis_i, action_group=bone.name)
+                default_values[axis_i] = bone.location[axis_i]
+            data_path = 'pose.bones["%s"].rotation_quaternion'%bone.name
+            for axis_i in range(4):
+                fcurves[3+axis_i] = action.fcurves.new(data_path=data_path, index=axis_i, action_group=bone.name)
+                default_values[3+axis_i] = bone.rotation_quaternion[axis_i]
+
+            for i, c in enumerate(fcurves):
+                c.keyframe_points.add(extra_frame+num_frame)
+                kp_iter = iter(c.keyframe_points)
+                if extra_frame:
+                    kp = next(kp_iter)
+                    kp.co = (1, default_values[i])
+                    kp.interpolation = 'LINEAR'
+                fcurves[i] = kp_iter
+
             mat = self.makeVMDBoneLocationToBlenderMatrix(bone)
-            locations = map(lambda x: mat * mathutils.Vector(x.location) * self.__scale, keyFrames)
-            rotations = map(lambda x: self.convertVMDBoneRotationToBlender(bone, x.rotation), keyFrames)
-            rotations = self.__fixRotations(rotations)
+            prev_rot = None
+            prev_kps = None
+            vmd_frames = sorted(keyFrames, key=lambda x:x.frame_number)
+            for k, x, y, z, rw, rx, ry, rz in zip(vmd_frames, *fcurves):
+                frame = k.frame_number + self.__frame_margin
+                loc = mat * mathutils.Vector(k.location) * self.__scale
+                curr_rot = self.convertVMDBoneRotationToBlender(bone, k.rotation)
+                if prev_rot is not None:
+                    curr_rot = self.__minRotationDiff(prev_rot, curr_rot)
+                prev_rot = curr_rot
 
-            for frame, location, rotation in zip(frameNumbers, locations, rotations):
-                bone.location = location
-                bone.rotation_quaternion = rotation
-                bone.keyframe_insert(data_path='location',
-                                     group=bone.name,
-                                     frame=frame+self.__frame_margin)
-                bone.keyframe_insert(data_path='rotation_quaternion',
-                                     group=bone.name,
-                                     frame=frame+self.__frame_margin)
+                x.co = (frame, loc[0])
+                y.co = (frame, loc[1])
+                z.co = (frame, loc[2])
+                rw.co = (frame, curr_rot[0])
+                rx.co = (frame, curr_rot[1])
+                ry.co = (frame, curr_rot[2])
+                rz.co = (frame, curr_rot[3])
 
-        rePath = re.compile(r'^pose\.bones\["(.+)"\]\.([a-z_]+)$')
-        for fcurve in act.fcurves:
-            m = rePath.match(fcurve.data_path)
-            if m and m.group(2) in ['location', 'rotation_quaternion']:
-                bone = armObj.pose.bones[m.group(1)]
-                bone_name = bone_name_table.get(bone.name, None)
-                if bone_name is None:
-                    continue
-                keyFrames = boneAnim[bone_name]
-                if m.group(2) == 'location':
-                    idx = [0, 2, 1][fcurve.array_index]
-                else:
-                    idx = 3
-                frames = list(fcurve.keyframe_points)
-                frames.sort(key=lambda kp:kp.co.x)
-                if self.__frame_margin > 1:
-                    del frames[0]
-                for i in range(1, len(keyFrames)):
-                    self.__setInterpolation(keyFrames[i].interp[idx:16:4], frames[i - 1], frames[i])
+                curr_kps = (x, y, z, rw, rx, ry, rz)
+                if prev_kps is not None:
+                    interps = [k.interp[idx:idx+16:4] for idx in (0, 32, 16, 48, 48, 48, 48)] # x, z, y, rw, rx, ry, rz
+                    for interp, prev_kp, kp in zip(interps, prev_kps, curr_kps):
+                        self.__setInterpolation(interp, prev_kp, kp)
+                prev_kps = curr_kps
 
     def __assignToMesh(self, meshObj, action_name=None):
         if meshObj.data.shape_keys is None:
-            print("WARNING: mesh object %s does not have any shape key"%str(meshObj.name))
+            logging.warning('WARNING: mesh object %s does not have any shape key', meshObj.name)
             return
 
         if action_name is not None:
@@ -200,8 +191,9 @@ class VMDImporter:
 
         for name, keyFrames in shapeKeyAnim.items():
             if name not in shapeKeyDict:
-                print("WARNING: not found shape key %s"%str(name))
+                logging.warning('WARNING: not found shape key %s', name)
                 continue
+            logging.info('(mesh) frames:%5d  name: %s', len(keyFrames), name)
             shapeKey = shapeKeyDict[name]
             for i in keyFrames:
                 shapeKey.value = i.weight
@@ -231,6 +223,7 @@ class VMDImporter:
         cameraObj = mmdCameraInstance.camera()
         cameraAnim = self.__vmdFile.cameraAnimation
         cameraAnim.sort(key=lambda x:x.frame_number)
+        logging.info('(camera) frames:%5d  name: %s', len(cameraAnim), mmdCamera.name)
         for keyFrame in cameraAnim:
             mmdCamera.mmd_camera.angle = math.radians(keyFrame.angle)
             mmdCamera.mmd_camera.is_perspective = keyFrame.persp

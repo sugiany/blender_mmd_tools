@@ -34,7 +34,7 @@ class _FCurve:
             return ((20, 20), (107, 107))
 
         dx, dy = kp1.co - kp0.co
-        if abs(dy) < 1e-6 or abs(dx) < 1e-6:
+        if abs(dy) < 1e-6 or abs(dx) < 1.5:
             return ((20, 20), (107, 107))
 
         x1, y1 = kp0.handle_right - kp0.co
@@ -162,6 +162,13 @@ class VMDExporter:
             r_x1, x_y1, y_y1, z_y1, r_y1, x_x2, y_x2, z_x2, r_x2, x_y2, y_y2, z_y2, r_y2,    0,    0,    0,
             ]
 
+    @staticmethod
+    def __pickRotationInterpolation(rotation_interps):
+        for ir in rotation_interps:
+            if ir != ((20, 20), (107, 107)):
+                return ir
+        return ((20, 20), (107, 107))
+
 
     def __exportBoneAnimation(self, armObj):
         if armObj is None:
@@ -217,7 +224,8 @@ class VMDExporter:
                 prev_rot = curr_rot
                 key.rotation = curr_rot[1:] + curr_rot[0:1] # (w, x, y, z) to (x, y, z, w)
                 #FIXME we can only choose one interpolation from (rw, rx, ry, rz) for bone's rotation
-                key.interp = self.__getVMDBoneInterpolation(x[1], z[1], y[1], rw[1]) # x, z, y, q
+                ir = self.__pickRotationInterpolation([rw[1], rx[1], ry[1], rz[1]])
+                key.interp = self.__getVMDBoneInterpolation(x[1], z[1], y[1], ir) # x, z, y, q
                 frame_keys.append(key)
             logging.info('(bone) frames:%5d  name: %s', len(frame_keys), key_name)
         return vmd_bone_anim
@@ -299,7 +307,8 @@ class VMDExporter:
             key.persp = True if persp[0] else False
 
             #FIXME we can only choose one interpolation from (rx, ry, rz) for camera's rotation
-            ix, iy, iz, ir, iD, iF = x[1], z[1], y[1], rx[1], distance[1], fov[1]
+            ir = self.__pickRotationInterpolation([rx[1], ry[1], rz[1]])
+            ix, iy, iz, iD, iF = x[1], z[1], y[1], distance[1], fov[1]
             key.interp = [
                 ix[0][0], ix[1][0], ix[0][1], ix[1][1],
                 iy[0][0], iy[1][0], iy[0][1], iy[1][1],
