@@ -1,0 +1,5 @@
+# Ignore output directory content
+output/*
+
+# except the placeholder
+!*.OUTPUT

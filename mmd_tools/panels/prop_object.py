@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import bpy
 from bpy.types import Panel
 
 import mmd_tools.core.model as mmd_model
@@ -37,11 +38,16 @@ class MMDModelObjectPanel(_PanelBase, Panel):
         c.prop(root.mmd_root, 'name')
         c.prop(root.mmd_root, 'name_e')
         c.prop(root.mmd_root, 'scale')
+        c = layout.column()
+        c.prop_search(root.mmd_root, 'comment_text', search_data=bpy.data, search_property='texts')
+        c.prop_search(root.mmd_root, 'comment_e_text', search_data=bpy.data, search_property='texts')
+        c = layout.column()
+        c.operator('mmd_tools.change_mmd_ik_loop_factor', text='Change MMD IK Loop Factor')
 
 
 class MMDRigidPanel(_PanelBase, Panel):
     bl_idname = 'RIGID_PT_mmd_tools_bone'
-    bl_label = 'MMD Rigidbody'
+    bl_label = 'MMD Rigid Body'
 
     @classmethod
     def poll(cls, context):
@@ -53,31 +59,50 @@ class MMDRigidPanel(_PanelBase, Panel):
 
         layout = self.layout
         c = layout.column()
-        c.prop(obj, 'name')
+        c.prop(obj.mmd_rigid, 'name_j')
         c.prop(obj.mmd_rigid, 'name_e')
 
-        row = layout.row(align=True)
-        row.prop(obj.mmd_rigid, 'type')
+        c = layout.column(align=True)
+        row = c.row(align=True)
+        row.prop(obj.mmd_rigid, 'type', expand=True)
 
         root = mmd_model.Model.findRoot(obj)
-        rig = mmd_model.Model(root)
-        armature = rig.armature()
-        relation = obj.constraints.get('mmd_tools_rigid_parent')
-        if relation is not None:
-            row.prop_search(relation, 'subtarget', text='', search_data=armature.pose, search_property='bones', icon='BONE_DATA')
+        if root is None:
+            row = c.row(align=True)
+            row.enabled = False
+            row.prop(obj.mmd_rigid, 'bone', text='', icon='BONE_DATA')
         else:
+            row = c.row(align=True)
+            armature = mmd_model.Model(root).armature()
             row.prop_search(obj.mmd_rigid, 'bone', text='', search_data=armature.pose, search_property='bones', icon='BONE_DATA')
+
+        c = layout.column(align=True)
+        c.enabled = obj.mode == 'OBJECT'
+        c.row(align=True).prop(obj.mmd_rigid, 'shape', expand=True)
+        c.column(align=True).prop(obj.mmd_rigid, 'size', text='')
+
         row = layout.row()
+        if obj.rigid_body is None:
+            row.operator('rigidbody.object_add', icon='MESH_ICOSPHERE')
+            return
 
         c = row.column()
         c.prop(obj.rigid_body, 'mass')
         c.prop(obj.mmd_rigid, 'collision_group_number')
         c = row.column()
-        c.prop(obj.rigid_body, 'restitution', text='Bounciness')
+        c.prop(obj.rigid_body, 'restitution')
         c.prop(obj.rigid_body, 'friction')
 
         c = layout.column()
-        c.prop(obj.mmd_rigid, 'collision_group_mask')
+        #c.prop(obj.mmd_rigid, 'collision_group_mask')
+        col = c.column(align=True)
+        col.label('Collision Group Mask:')
+        row = col.row(align=True)
+        for i in range(0, 8):
+            row.prop(obj.mmd_rigid, 'collision_group_mask', index=i, text=str(i), toggle=True)
+        row = col.row(align=True)
+        for i in range(8, 16):
+            row.prop(obj.mmd_rigid, 'collision_group_mask', index=i, text=str(i), toggle=True)
 
         c = layout.column()
         c.label('Damping')
@@ -88,7 +113,7 @@ class MMDRigidPanel(_PanelBase, Panel):
 
 class MMDJointPanel(_PanelBase, Panel):
     bl_idname = 'JOINT_PT_mmd_tools_bone'
-    bl_label = 'MMD Joint Tools'
+    bl_label = 'MMD Joint'
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = 'object'
@@ -108,41 +133,46 @@ class MMDJointPanel(_PanelBase, Panel):
         c.prop(obj.mmd_joint, 'name_e')
 
         c = layout.column()
-        c.prop(rbc, 'object1')
-        c.prop(rbc, 'object2')
+        if rbc is None:
+            c.operator('rigidbody.constraint_add', icon='CONSTRAINT').type='GENERIC_SPRING'
+        else:
+            c.prop(rbc, 'object1')
+            c.prop(rbc, 'object2')
+
+            row = layout.row(align=True)
+            col = row.column(align=True)
+            col.label('X-Axis:')
+            col.label('Y-Axis:')
+            col.label('Z-Axis:')
+            col = row.column(align=True)
+            row = col.row(align=True)
+            row.prop(rbc, 'limit_lin_x_lower')
+            row.prop(rbc, 'limit_lin_x_upper')
+            row = col.row(align=True)
+            row.prop(rbc, 'limit_lin_y_lower')
+            row.prop(rbc, 'limit_lin_y_upper')
+            row = col.row(align=True)
+            row.prop(rbc, 'limit_lin_z_lower')
+            row.prop(rbc, 'limit_lin_z_upper')
+
+            row = layout.row(align=True)
+            col = row.column(align=True)
+            col.label('X-Axis:')
+            col.label('Y-Axis:')
+            col.label('Z-Axis:')
+            col = row.column(align=True)
+            row = col.row(align=True)
+            row.prop(rbc, 'limit_ang_x_lower')
+            row.prop(rbc, 'limit_ang_x_upper')
+            row = col.row(align=True)
+            row.prop(rbc, 'limit_ang_y_lower')
+            row.prop(rbc, 'limit_ang_y_upper')
+            row = col.row(align=True)
+            row.prop(rbc, 'limit_ang_z_lower')
+            row.prop(rbc, 'limit_ang_z_upper')
 
         col = layout.column()
-        row = col.row(align=True)
-        row.label('X-Axis:')
-        row.prop(rbc, 'limit_lin_x_lower')
-        row.prop(rbc, 'limit_lin_x_upper')
-        row = col.row(align=True)
-        row.label('Y-Axis:')
-        row.prop(rbc, 'limit_lin_y_lower')
-        row.prop(rbc, 'limit_lin_y_upper')
-        row = col.row(align=True)
-        row.label('Z-Axis:')
-        row.prop(rbc, 'limit_lin_z_lower')
-        row.prop(rbc, 'limit_lin_z_upper')
-
-        col = layout.column()
-        row = col.row(align=True)
-        row.label('X-Axis:')
-        row.prop(rbc, 'limit_ang_x_lower')
-        row.prop(rbc, 'limit_ang_x_upper')
-        row = col.row(align=True)
-        row.label('Y-Axis:')
-        row.prop(rbc, 'limit_ang_y_lower')
-        row.prop(rbc, 'limit_ang_y_upper')
-        row = col.row(align=True)
-        row.label('Z-Axis:')
-        row.prop(rbc, 'limit_ang_z_lower')
-        row.prop(rbc, 'limit_ang_z_upper')
-
-        col = layout.column()
-        col.label('Spring(Linear):')
         row = col.row()
-        row.prop(obj.mmd_joint, 'spring_linear', text='')
-        col.label('Spring(Angular):')
-        row = col.row()
-        row.prop(obj.mmd_joint, 'spring_angular', text='')
+        row.column(align=True).prop(obj.mmd_joint, 'spring_linear')
+        row.column(align=True).prop(obj.mmd_joint, 'spring_angular')
+

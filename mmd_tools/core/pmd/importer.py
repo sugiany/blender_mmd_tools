@@ -12,11 +12,18 @@ import mmd_tools.core.pmx.importer as import_pmx
 import mmd_tools.core.pmd as pmd
 import mmd_tools.core.pmx as pmx
 
+from math import radians
 
-def import_pmd(**kwargs):
+class PMDImporter:
+    def execute(self, **args):
+        args['pmx'] = import_pmd_to_pmx(args['filepath'])
+        importer = import_pmx.PMXImporter()
+        importer.execute(**args)
+
+def import_pmd_to_pmx(filepath):
     """ Import pmd file
     """
-    target_path = kwargs['filepath']
+    target_path = filepath
     pmd_model = pmd.load(target_path)
 
 
@@ -24,11 +31,12 @@ def import_pmd(**kwargs):
     logging.info('****************************************')
     logging.info(' mmd_tools.import_pmd module')
     logging.info('----------------------------------------')
-    logging.info(' Start to convert pmx data into pmd data')
+    logging.info(' Start to convert pmd data into pmx data')
     logging.info('              by the mmd_tools.pmd modlue.')
     logging.info('')
 
     pmx_model = pmx.Model()
+    pmx_model.filepath = filepath
 
     pmx_model.name = pmd_model.name
     pmx_model.name_e = pmd_model.name_e
@@ -48,7 +56,7 @@ def import_pmd(**kwargs):
         pmx_v.normal = v.normal
         pmx_v.uv = v.uv
         pmx_v.additional_uvs= []
-        pmx_v.edge_scale = 1
+        pmx_v.edge_scale = 1 if v.enable_edge == 0 else 0
 
         weight = pmx.BoneWeight()
         if v.bones[0] != v.bones[1]:
@@ -98,13 +106,20 @@ def import_pmd(**kwargs):
             pass
         elif bone.type == 2:
             pmx_bone.transform_order = 1
+        elif bone.type == 3:
+            pmx_bone.isMovable = False
         elif bone.type == 4:
             pmx_bone.isMovable = False
         elif bone.type == 5:
+            pmx_bone.isMovable = False
             pmx_bone.hasAdditionalRotate = True
             pmx_bone.additionalTransform = (bone.ik_bone, 1.0)
+        elif bone.type == 6:
+            pmx_bone.visible = False
+            pmx_bone.isMovable = False
         elif bone.type == 7:
             pmx_bone.visible = False
+            pmx_bone.isMovable = False
         elif bone.type == 8:
             pmx_bone.isMovable = False
             tail_loc=mathutils.Vector(pmd_model.bones[bone.tail_bone].position)
@@ -114,6 +129,7 @@ def import_pmd(**kwargs):
             pmx_bone.axis=list(vec)
         elif bone.type == 9:
             pmx_bone.visible = False
+            pmx_bone.isMovable = False
             pmx_bone.hasAdditionalRotate = True
             pmx_bone.additionalTransform = (bone.tail_bone, float(bone.ik_bone)/100.0)
 
@@ -151,12 +167,13 @@ def import_pmd(**kwargs):
         pmx_bone.isIK = True
         pmx_bone.target = ik.target_bone
         pmx_bone.loopCount = ik.iterations
+        pmx_bone.rotationConstraint = ik.control_weight*4
         for i in ik.ik_child_bones:
             ik_link = pmx.IKLink()
             ik_link.target = i
             if i in knee_bones:
-                ik_link.maximumAngle = [-0.5, 0.0, 0.0]
-                ik_link.minimumAngle = [-180.0, 0.0, 0.0]
+                ik_link.maximumAngle = [radians(-0.5), 0.0, 0.0]
+                ik_link.minimumAngle = [radians(-180.0), 0.0, 0.0]
                 logging.info('  Add knee constraints to %s', i)
             logging.debug('  IKLink: %s(index: %d)', pmx_model.bones[i].name, i)
             pmx_bone.ik_links.append(ik_link)
@@ -173,11 +190,14 @@ def import_pmd(**kwargs):
         pmx_mat.name = '材質%d'%(i+1)
         pmx_mat.name_e = 'Material%d'%(i+1)
         pmx_mat.diffuse = mat.diffuse
-        pmx_mat.specular = mat.specular + [mat.specular_intensity]
+        pmx_mat.specular = mat.specular
+        pmx_mat.shininess = mat.shininess
         pmx_mat.ambient = mat.ambient
+        pmx_mat.is_double_sided = False
         pmx_mat.enabled_self_shadow = True # pmd doesn't support this
         pmx_mat.enabled_self_shadow_map = abs(mat.diffuse[3] - 0.98) > 1e-7 # consider precision error
         pmx_mat.enabled_toon_edge = (mat.edge_flag != 0)
+        pmx_mat.edge_color = [0, 0, 0, 1]
         pmx_mat.vertex_count = mat.vertex_count
         if len(mat.texture_path) > 0:
             tex_path = mat.texture_path
@@ -198,6 +218,22 @@ def import_pmd(**kwargs):
                 texture_map[tex_path] = len(pmx_model.textures) - 1
             pmx_mat.sphere_texture = texture_map[tex_path]
             pmx_mat.sphere_texture_mode = mat.sphere_mode
+        pmx_mat.is_shared_toon_texture = False
+        pmx_mat.toon_texture = -1
+        if mat.toon_index in range(len(pmd_model.toon_textures)):
+            tex_path = pmd_model.toon_textures[mat.toon_index]
+            if tex_path not in texture_map:
+                logging.info('  Create pmx.Texture %s', tex_path)
+                tex = pmx.Texture()
+                tex.path = os.path.normpath(os.path.join(os.path.dirname(target_path), tex_path))
+                if not os.path.exists(tex.path) and re.search(r'toon(0[1-9]|10)\.bmp$', tex_path, flags=re.I):
+                    # If the texture does not exist and the file name is one of {toon01.bmp ~ toon10.bmp},
+                    # then it should be a shared toon texture.
+                    texture_map[tex_path] = (True, int(tex_path[-6:-4])-1)
+                else:
+                    pmx_model.textures.append(tex)
+                    texture_map[tex_path] = (False, len(pmx_model.textures)-1)
+            pmx_mat.is_shared_toon_texture, pmx_mat.toon_texture = texture_map[tex_path]
         pmx_model.materials.append(pmx_mat)
     logging.info('----- Converted %d materials', len(pmx_model.materials))
 
@@ -205,6 +241,7 @@ def import_pmd(**kwargs):
     logging.info('------------------------------')
     logging.info(' Convert Morphs')
     logging.info('------------------------------')
+    morph_index_map = []
     t = list(filter(lambda x: x.type == 0, pmd_model.morphs))
     if len(t) == 0:
         logging.error('Not found the base morph')
@@ -219,6 +256,7 @@ def import_pmd(**kwargs):
         for morph in pmd_model.morphs:
             logging.debug('Vertex Morph: %s', morph.name)
             if morph.type == 0:
+                morph_index_map.append(-1)
                 continue
             pmx_morph = pmx.VertexMorph(morph.name, morph.name_e, morph.type)
             for i in morph.data:
@@ -226,8 +264,33 @@ def import_pmd(**kwargs):
                 mo.index = vertex_map[i.index]
                 mo.offset = i.offset
                 pmx_morph.offsets.append(mo)
+            morph_index_map.append(len(pmx_model.morphs))
             pmx_model.morphs.append(pmx_morph)
     logging.info('----- Converted %d morphs', len(pmx_model.morphs))
+
+    logging.info('')
+    logging.info('------------------------------')
+    logging.info(' Convert Display Items')
+    logging.info('------------------------------')
+    if len(pmd_model.bones) > 0:
+        pmx_model.display[0].data.append((0, 0))
+    if len(morph_index_map) > 0:
+        dsp_face = pmx_model.display[1]
+        for i, morph_index in enumerate(pmd_model.facial_disp_morphs):
+            morph_index = morph_index_map[morph_index]
+            if morph_index >= 0:
+                dsp_face.data.append((1, morph_index))
+    bone_disps_e = pmd_model.bone_disp_names[1]
+    for i, bone_disp_name in enumerate(pmd_model.bone_disp_names[0]):
+        bone_disp_list = pmd_model.bone_disp_lists[bone_disp_name]
+        d = pmx.Display()
+        d.name = bone_disp_name.strip()
+        if bone_disps_e:
+            d.name_e = bone_disps_e[i].strip()
+        for bone_index in bone_disp_list:
+            d.data.append((0, bone_index))
+        pmx_model.display.append(d)
+    logging.info('----- Converted %d display items', len(pmx_model.display))
 
     logging.info('')
     logging.info('------------------------------')
@@ -277,10 +340,10 @@ def import_pmd(**kwargs):
         pmx_joint.location = joint.location
         pmx_joint.rotation = joint.rotation
 
-        pmx_joint.maximum_location = joint.minimum_location
-        pmx_joint.minimum_location = joint.maximum_location
-        pmx_joint.maximum_rotation = joint.minimum_rotation
-        pmx_joint.minimum_rotation = joint.maximum_rotation
+        pmx_joint.maximum_location = joint.maximum_location
+        pmx_joint.minimum_location = joint.minimum_location
+        pmx_joint.maximum_rotation = joint.maximum_rotation
+        pmx_joint.minimum_rotation = joint.minimum_rotation
 
         pmx_joint.spring_constant = joint.spring_constant
         pmx_joint.spring_rotation_constant = joint.spring_rotation_constant
@@ -293,6 +356,4 @@ def import_pmd(**kwargs):
     logging.info(' mmd_tools.import_pmd module')
     logging.info('****************************************')
 
-    importer = import_pmx.PMXImporter()
-    kwargs['pmx'] = pmx_model
-    importer.execute(**kwargs)
+    return pmx_model

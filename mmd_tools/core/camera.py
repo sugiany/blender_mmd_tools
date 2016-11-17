@@ -32,12 +32,8 @@ class MMDCamera:
         empty = bpy.data.objects.new(name='MMD_Camera', object_data=None)
         bpy.context.scene.objects.link(empty)
 
-        empty.rotation_mode = 'YXZ'
-        empty.mmd_type = 'CAMERA'
-        empty.mmd_camera.distance = 0.0
-        empty.mmd_camera.angle = 45
-        empty.mmd_camera.persp = True
         cameraObj.parent = empty
+        cameraObj.data.dof_object = empty
         cameraObj.data.sensor_fit = 'VERTICAL'
         cameraObj.location = mathutils.Vector((0,0,0))
         cameraObj.rotation_mode = 'XYZ'
@@ -46,6 +42,11 @@ class MMDCamera:
         cameraObj.lock_rotation = (True, True, True)
         cameraObj.lock_scale = (True, True, True)
 
+        empty.rotation_mode = 'YXZ'
+        empty.mmd_type = 'CAMERA'
+        empty.mmd_camera.distance = 0.0
+        empty.mmd_camera.angle = math.radians(45)
+        empty.mmd_camera.persp = True
         return MMDCamera(empty)
 
     def object(self):

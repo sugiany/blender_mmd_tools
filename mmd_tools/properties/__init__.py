@@ -8,6 +8,7 @@ __properties = {
     bpy.types.Object: {
         'mmd_type': bpy.props.EnumProperty(
             name='Type',
+            description='Internal MMD type of this object (DO NOT CHANGE IT DIRECTLY)',
             default='NONE',
             items=[
                 ('NONE', 'None', '', 1),
@@ -32,10 +33,7 @@ __properties = {
         'mmd_rigid': bpy.props.PointerProperty(type=rigid_body.MMDRigidBody),
         'mmd_joint': bpy.props.PointerProperty(type=rigid_body.MMDJoint),
         'is_mmd_lamp': bpy.props.BoolProperty(name='is_mmd_lamp', default=False),
-        'is_mmd_rigid_track_target': bpy.props.BoolProperty(name='is_mmd_rigid_track_target', default=False),
         'is_mmd_glsl_light': bpy.props.BoolProperty(name='is_mmd_glsl_light', default=False),
-        'pmx_import_scale': bpy.props.FloatProperty(name='pmx_import_scale'),
-
         },
     bpy.types.Material: {
         'mmd_material': bpy.props.PointerProperty(type=material.MMDMaterial),

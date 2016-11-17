@@ -141,7 +141,7 @@ class Vertex:
 class Material:
     def __init__(self):
         self.diffuse = []
-        self.specular_intensity = 0.5
+        self.shininess = 0
         self.specular = []
         self.ambient = []
         self.toon_index = 0
@@ -153,7 +153,7 @@ class Material:
 
     def load(self, fs):
         self.diffuse = fs.readVector(4)
-        self.specular_intensity = fs.readFloat()
+        self.shininess = fs.readFloat()
         self.specular = fs.readVector(3)
         self.ambient = fs.readVector(3)
         self.toon_index = fs.readByte()
@@ -304,10 +304,10 @@ class Joint:
         self.location = fs.readVector(3)
         self.rotation = fs.readVector(3)
 
-        self.maximum_location = fs.readVector(3)
         self.minimum_location = fs.readVector(3)
-        self.maximum_rotation = fs.readVector(3)
+        self.maximum_location = fs.readVector(3)
         self.minimum_rotation = fs.readVector(3)
+        self.maximum_rotation = fs.readVector(3)
 
         self.spring_constant = fs.readVector(3)
         self.spring_rotation_constant = fs.readVector(3)
@@ -386,7 +386,7 @@ class Model:
             logging.debug('  Vertex Count: %d', mat.vertex_count)
             logging.debug('  Diffuse: (%.2f, %.2f, %.2f, %.2f)', *mat.diffuse)
             logging.debug('  Specular: (%.2f, %.2f, %.2f)', *mat.specular)
-            logging.debug('  Specular Intensity: %f', mat.specular_intensity)
+            logging.debug('  Shininess: %f', mat.shininess)
             logging.debug('  Ambient: (%.2f, %.2f, %.2f)', *mat.ambient)
             logging.debug('  Toon Index: %d', mat.toon_index)
             logging.debug('  Edge Type: %d', mat.edge_flag)
@@ -449,7 +449,7 @@ class Model:
             morph.load(fs)
             self.morphs.append(morph)
             logging.info('Vertex Morph %d: %s', i, morph.name)
-        logging.info('----- Loaded %d materials', len(self.morphs))
+        logging.info('----- Loaded %d morphs', len(self.morphs))
 
         logging.info('')
         logging.info('------------------------------')
@@ -469,6 +469,7 @@ class Model:
             name = fs.readStr(50)
             self.bone_disp_lists[name] = []
             bone_disps.append(name)
+        self.bone_disp_names = [bone_disps, None]
 
         t = fs.readUnsignedInt()
         for i in range(t):
@@ -519,6 +520,7 @@ class Model:
                 t = fs.readStr(50)
                 bone_disps_e.append(t)
                 logging.info(' Bone name(english) %d: %s', i, t)
+            self.bone_disp_names[1] = bone_disps_e
         logging.info('----- Loaded english data.')
 
         logging.info('')
@@ -536,7 +538,12 @@ class Model:
         logging.info('------------------------------')
         logging.info(' Load Rigid Bodies')
         logging.info('------------------------------')
-        rigid_count = fs.readUnsignedInt()
+        try:
+            rigid_count = fs.readUnsignedInt()
+        except struct.error:
+            logging.info('no physics data')
+            logging.info('===============================')
+            return
         self.rigid_bodies = []
         for i in range(rigid_count):
             rigid = RigidBody()

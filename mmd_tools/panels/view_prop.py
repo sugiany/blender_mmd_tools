@@ -41,6 +41,11 @@ class MMDModelObjectDisplayPanel(_PanelBase, Panel):
         c.prop(root.mmd_root, 'show_names_of_rigid_bodies', text='Rigidbody Name')
         c.prop(root.mmd_root, 'show_names_of_joints', text='Joint Name')
 
+        if context.scene.render.engine in {'BLENDER_RENDER', 'BLENDER_GAME'}:
+            row = layout.row(align=True)
+            row.prop(root.mmd_root, 'use_toon_texture', text='Toon Texture')
+            row.prop(root.mmd_root, 'use_sphere_texture', text='Sphere Texture')
+
 
 class MMDViewPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_view'

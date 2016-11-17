@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import re
-import math
+import os
 
 ## 指定したオブジェクトのみを選択状態かつアクティブにする
 def selectAObject(obj):
@@ -32,17 +32,49 @@ def setParentToBone(obj, parent, bone_name):
     bpy.ops.object.parent_set(type='BONE', xmirror=False, keep_transform=False)
     bpy.ops.object.mode_set(mode='OBJECT')
 
+def selectSingleBone(context, armature, bone_name, reset_pose=False):
+    import bpy
+    from mathutils import Vector, Quaternion
+    try:
+        bpy.ops.object.mode_set(mode='OBJECT')
+    except:
+        pass
+    for i in context.scene.objects:
+        i.select = False
+    armature.hide = False
+    armature.select = True
+    armature.layers[context.scene.active_layer] = True
+    context.scene.objects.active = armature
+    if reset_pose:
+        def_loc = Vector((0,0,0))
+        def_rot = Quaternion((1,0,0,0))
+        def_scale = Vector((1,1,1))
+        for p_bone in armature.pose.bones:
+            p_bone.location = def_loc
+            p_bone.rotation_quaternion = def_rot
+            p_bone.scale = def_scale
+    bpy.ops.object.mode_set(mode='POSE')
+    armature_bones = armature.data.bones
+    for i in armature_bones:
+        i.select = (i.name == bone_name)
+        i.select_head = i.select_tail = i.select
+        if i.select:
+            armature_bones.active = i
+            i.hide = False
+            #armature.data.layers[list(i.layers).index(True)] = True
+
 
 __CONVERT_NAME_TO_L_REGEXP = re.compile('^(.*)左(.*)$')
 __CONVERT_NAME_TO_R_REGEXP = re.compile('^(.*)右(.*)$')
 ## 日本語で左右を命名されている名前をblender方式のL(R)に変更する
-def convertNameToLR(name):
+def convertNameToLR(name, use_underscore=False):
     m = __CONVERT_NAME_TO_L_REGEXP.match(name)
+    delimiter = '_' if use_underscore else '.'
     if m:
-        name = m.group(1) + m.group(2) + '.L'
+        name = m.group(1) + m.group(2) + delimiter + 'L'
     m = __CONVERT_NAME_TO_R_REGEXP.match(name)
     if m:
-        name = m.group(1) + m.group(2) + '.R'
+        name = m.group(1) + m.group(2) + delimiter + 'R'
     return name
 
 ## src_vertex_groupのWeightをdest_vertex_groupにaddする
@@ -64,6 +96,7 @@ def separateByMaterials(meshObj):
     prev_parent = meshObj.parent
     dummy_parent = bpy.data.objects.new(name='tmp', object_data=None)
     meshObj.parent = dummy_parent
+    meshObj.active_shape_key_index = 0
 
     enterEditMode(meshObj)
     try:
@@ -85,6 +118,17 @@ def separateByMaterials(meshObj):
             i.name = mat.name
             i.parent = prev_parent
 
+def clearUnusedMeshes():
+    import bpy
+    meshes_to_delete = []
+    for mesh in bpy.data.meshes:
+        if mesh.users == 0:
+            meshes_to_delete.append(mesh)
+
+    for mesh in meshes_to_delete:
+        bpy.data.meshes.remove(mesh)
+    
+
 
 ## Boneのカスタムプロパティにname_jが存在する場合、name_jの値を
 # それ以外の場合は通常のbone名をキーとしたpose_boneへの辞書を作成
@@ -98,3 +142,61 @@ def makePmxBoneMap(armObj):
         boneMap[name] = i
     return boneMap
 
+def uniqueName(name, used_names):
+    if name not in used_names:
+        return name
+    count = 1
+    new_name = orig_name = re.sub(r'\.\d{1,}$', '', name)
+    while new_name in used_names:
+        new_name = '%s.%03d'%(orig_name, count)
+        count += 1
+    return new_name
+
+def int2base(x, base):
+    """
+    Method to convert an int to a base
+    Source: http://stackoverflow.com/questions/2267362
+    """
+    import string
+    digs = string.digits + string.ascii_uppercase
+    if x < 0: sign = -1
+    elif x == 0: return digs[0]
+    else: 
+        sign = 1
+        x *= sign
+        digits = []
+    while x:
+        digits.append(digs[x % base])
+        x = int(x / base)
+    if sign < 0:
+        digits.append('-')
+    digits.reverse()
+    return ''.join(digits)
+
+def saferelpath(path, start, strategy='inside'):
+    """
+    On Windows relpath will raise a ValueError
+    when trying to calculate the relative path to a
+    different drive.
+    This method will behave different depending on the strategy
+    choosen to handle the different drive issue.
+    Strategies:
+    - inside: this will just return the basename of the path given
+    - outside: this will prepend '..' to the basename
+    - absolute: this will return the absolute path instead of a relative.
+    See http://bugs.python.org/issue7195
+    """
+    result = os.path.basename(path)
+    if os.name == 'nt':
+        d1 = os.path.splitdrive(path)[0]
+        d2 = os.path.splitdrive(start)[0]
+        if d1 != d2:
+            if strategy == 'outside':
+                result = '..'+os.sep+os.path.basename(path)
+            elif strategy == 'absolute':
+                result = os.path.abspath(path)
+        else:
+            result = os.path.relpath(path, start)
+    else:
+        result = os.path.relpath(path, start)
+    return result

@@ -6,106 +6,146 @@ from bpy.types import PropertyGroup
 from bpy.props import BoolProperty, CollectionProperty, FloatProperty, IntProperty, StringProperty, EnumProperty
 
 import mmd_tools.core.model as mmd_model
+from mmd_tools.core.material import FnMaterial
 from mmd_tools.properties.morph import BoneMorph
 from mmd_tools.properties.morph import MaterialMorph
 from mmd_tools.properties.morph import VertexMorph
+from mmd_tools.properties.morph import UVMorph
+from mmd_tools.properties.morph import GroupMorph
 from mmd_tools import utils
 
 #===========================================
 # Callback functions
 #===========================================
+def _toggleUseToonTexture(self, context):
+    root = self.id_data
+    rig = mmd_model.Model(root)
+    use_toon = self.use_toon_texture
+    for i in rig.meshes():
+        for m in i.data.materials:
+            if m is None:
+                continue
+            FnMaterial(m).use_toon_texture(use_toon)
+
+def _toggleUseSphereTexture(self, context):
+    root = self.id_data
+    rig = mmd_model.Model(root)
+    use_sphere = self.use_sphere_texture
+    for i in rig.meshes():
+        for m in i.data.materials:
+            if m is None:
+                continue
+            FnMaterial(m).use_sphere_texture(use_sphere)
+
 def _toggleVisibilityOfMeshes(self, context):
     root = self.id_data
     rig = mmd_model.Model(root)
-    objects = list(rig.meshes())
     hide = not self.show_meshes
-    if hide and context.active_object in objects:
-        context.scene.objects.active = root
-    for i in objects:
+    for i in rig.meshes():
         i.hide = hide
+    if hide and context.active_object is None:
+        context.scene.objects.active = root
 
 def _toggleVisibilityOfRigidBodies(self, context):
     root = self.id_data
     rig = mmd_model.Model(root)
-    objects = list(rig.rigidBodies())
     hide = not self.show_rigid_bodies
-    if hide and context.active_object in objects:
-        context.scene.objects.active = root
-    for i in objects:
+    for i in rig.rigidBodies():
         i.hide = hide
+    if hide and context.active_object is None:
+        context.scene.objects.active = root
 
 def _toggleVisibilityOfJoints(self, context):
     root = self.id_data
     rig = mmd_model.Model(root)
-    objects = list(rig.joints())
     hide = not self.show_joints
-    if hide and context.active_object in objects:
-        context.scene.objects.active = root
-    for i in objects:
+    for i in rig.joints():
         i.hide = hide
+    if hide and context.active_object is None:
+        context.scene.objects.active = root
 
 def _toggleVisibilityOfTemporaryObjects(self, context):
     root = self.id_data
     rig = mmd_model.Model(root)
-    objects = list(rig.temporaryObjects())
     hide = not self.show_temporary_objects
-    if hide and context.active_object in objects:
-        context.scene.objects.active = root
-    for i in objects:
+    for i in rig.temporaryObjects(rigid_track_only=True):
         i.hide = hide
+    if hide and context.active_object is None:
+        context.scene.objects.active = root
 
 def _toggleShowNamesOfRigidBodies(self, context):
     root = self.id_data
     rig = mmd_model.Model(root)
-    objects = list(rig.rigidBodies())
-    for i in objects:
+    for i in rig.rigidBodies():
         i.show_name = root.mmd_root.show_names_of_rigid_bodies
 
 def _toggleShowNamesOfJoints(self, context):
     root = self.id_data
     rig = mmd_model.Model(root)
-    objects = list(rig.joints())
-    for i in objects:
+    for i in rig.joints():
         i.show_name = root.mmd_root.show_names_of_joints
 
-def _setVisibilityOfMMDRigArmature(obj, v):
+def _setVisibilityOfMMDRigArmature(prop, v):
+    obj = prop.id_data
     rig = mmd_model.Model(obj)
     arm = rig.armature()
+    if arm is None:
+        return
     if bpy.context.active_object == arm:
         bpy.context.scene.objects.active = obj
     arm.hide = not v
 
+def _getVisibilityOfMMDRigArmature(prop):
+    rig = mmd_model.Model(prop.id_data)
+    arm = rig.armature()
+    return not (arm is None or arm.hide)
+
 def _setActiveRigidbodyObject(prop, v):
     obj = bpy.context.scene.objects[v]
-    root = prop.id_data
-    rig = mmd_model.Model(root)
-    for i in rig.rigidBodies():
-        i.hide = False
-    if not obj.hide:
+    if mmd_model.isRigidBodyObject(obj):
+        obj.hide = False
         utils.selectAObject(obj)
     prop['active_rigidbody_object_index'] = v
 
 def _getActiveRigidbodyObject(prop):
+    objects = bpy.context.scene.objects
+    active_obj = objects.active
+    if active_obj and mmd_model.isRigidBodyObject(active_obj):
+        prop['active_rigidbody_object_index'] = objects.find(active_obj.name)
     return prop.get('active_rigidbody_object_index', 0)
 
 def _setActiveJointObject(prop, v):
     obj = bpy.context.scene.objects[v]
-    root = prop.id_data
-    rig = mmd_model.Model(root)
-    for i in rig.joints():
-        i.hide = False
-    if not obj.hide:
+    if mmd_model.isJointObject(obj):
+        obj.hide = False
         utils.selectAObject(obj)
     prop['active_joint_object_index'] = v
 
 def _getActiveJointObject(prop):
+    objects = bpy.context.scene.objects
+    active_obj = objects.active
+    if active_obj and mmd_model.isJointObject(active_obj):
+        prop['active_joint_object_index'] = objects.find(active_obj.name)
     return prop.get('active_joint_object_index', 0)
 
 def _activeMorphReset(self, context):
     root = self.id_data
     root.mmd_root.active_morph = 0
-    
 
+def _setActiveMeshObject(prop, v):
+    obj = bpy.context.scene.objects[v]
+    if obj.type == 'MESH' and obj.mmd_type == 'NONE':
+        obj.hide = False
+        utils.selectAObject(obj)
+    prop['active_mesh_index'] = v
+    
+def _getActiveMeshObject(prop):
+    objects = bpy.context.scene.objects
+    active_obj = objects.active
+    if (active_obj and active_obj.type == 'MESH'
+            and active_obj.mmd_type == 'NONE'):
+        prop['active_mesh_index'] = objects.find(active_obj.name)
+    return prop.get('active_mesh_index', -1)
 
 #===========================================
 # Property classes
@@ -116,22 +156,24 @@ class MMDDisplayItem(PropertyGroup):
     """
     type = EnumProperty(
         name='Type',
+        description='Select item type',
         items = [
             ('BONE', 'Bone', '', 1),
             ('MORPH', 'Morph', '', 2),
             ],
         )
 
-    morph_category = EnumProperty(
-        name='Category',
+    morph_type = EnumProperty(
+        name='Morph Type',
+        description='Select morph type',
         items = [
-            ('SYSTEM', 'System', '', 0),
-            ('EYEBROW', 'Eye Brow', '', 1),
-            ('EYE', 'Eye', '', 2),
-            ('MOUTH', 'Mouth', '', 3),
-            ('OTHER', 'Other', '', 4),
+            ('material_morphs', 'Material', 'Material Morphs', 0),
+            ('uv_morphs', 'UV', 'UV Morphs', 1),
+            ('bone_morphs', 'Bone', 'Bone Morphs', 2),
+            ('vertex_morphs', 'Vertex', 'Vertex Morphs', 3),
+            ('group_morphs', 'Group', 'Group Morphs', 4),
             ],
-        default='OTHER',
+        default='vertex_morphs',
         )
 
 class MMDDisplayItemFrame(PropertyGroup):
@@ -149,6 +191,7 @@ class MMDDisplayItemFrame(PropertyGroup):
     # 特殊枠はファイル仕様上の固定枠(削除、リネーム不可)
     is_special = BoolProperty(
         name='Special',
+        description='Is special',
         default=False,
         )
 
@@ -161,6 +204,7 @@ class MMDDisplayItemFrame(PropertyGroup):
     ## 現在アクティブな項目のインデックス
     active_item = IntProperty(
         name='Active Display Item',
+        min=0,
         default=0,
         )
 
@@ -172,52 +216,94 @@ class MMDRoot(PropertyGroup):
     """
     name = StringProperty(
         name='Name',
+        description='The name of the MMD model',
         default='',
         )
 
     name_e = StringProperty(
         name='Name (English)',
+        description='The english name of the MMD model',
         default='',
         )
 
+    comment_text = StringProperty(
+        name='Comment',
+        description='The text datablock of the comment',
+        default='',
+        )
+
+    comment_e_text = StringProperty(
+        name='Comment (English)',
+        description='The text datablock of the english comment',
+        default='',
+        )
+
+#     advanced_mode = BoolProperty(
+#         name='Advanced Mode',
+#         description='This option enables advanced and experimental features',
+#         default=False,
+#         )
+
     show_meshes = BoolProperty(
         name='Show Meshes',
+        description='Show all meshes of the MMD model',
         update=_toggleVisibilityOfMeshes,
         )
 
     show_rigid_bodies = BoolProperty(
         name='Show Rigid Bodies',
+        description='Show all rigid bodies of the MMD model',
         update=_toggleVisibilityOfRigidBodies,
         )
 
     show_joints = BoolProperty(
         name='Show Joints',
+        description='Show all joints of the MMD model',
         update=_toggleVisibilityOfJoints,
         )
 
     show_temporary_objects = BoolProperty(
         name='Show Temps',
+        description='Show all temporary objects of the MMD model',
         update=_toggleVisibilityOfTemporaryObjects,
         )
 
     show_armature = BoolProperty(
         name='Show Armature',
-        get=lambda x: not mmd_model.Model(x.id_data).armature().hide,
-        set=lambda x, v: _setVisibilityOfMMDRigArmature(x.id_data, v),
+        description='Show the armature object of the MMD model',
+        get=_getVisibilityOfMMDRigArmature,
+        set=_setVisibilityOfMMDRigArmature,
         )
 
     show_names_of_rigid_bodies = BoolProperty(
         name='Show Rigid Body Names',
+        description='Show rigid body names',
         update=_toggleShowNamesOfRigidBodies,
         )
 
     show_names_of_joints = BoolProperty(
         name='Show Joint Names',
+        description='Show joint names',
         update=_toggleShowNamesOfJoints,
+        )
+
+    use_toon_texture = BoolProperty(
+        name='Use Toon Texture',
+        description='Use toon texture',
+        update=_toggleUseToonTexture,
+        default=True,
+        )
+
+    use_sphere_texture = BoolProperty(
+        name='Use Sphere Texture',
+        description='Use sphere texture',
+        update=_toggleUseSphereTexture,
+        default=True,
         )
 
     scale = FloatProperty(
         name='Scale',
+        description='Imported scale factor to reverse on export',
         min=0.1,
         default=1,
         )
@@ -261,7 +347,10 @@ class MMDRoot(PropertyGroup):
         name='Material Morphs',
         type=MaterialMorph,
         )
-
+    uv_morphs = CollectionProperty(
+        name='UV Morphs',
+        type=UVMorph,
+        )
     bone_morphs = CollectionProperty(
         name='Bone Morphs',
         type=BoneMorph,
@@ -270,18 +359,39 @@ class MMDRoot(PropertyGroup):
         name='Vertex Morphs',
         type=VertexMorph
         )
+    group_morphs = CollectionProperty(
+        name='Group Morphs',
+        type=GroupMorph,
+        )
     active_morph_type = EnumProperty(
         name='Active Morph Type',
+        description='Select current morph type',
         items = [
-            ('MATMORPH', 'Material', '', 0),
-            ('BONEMORPH', 'Bone', '', 1),
-            ('VTXMORPH', 'Vertex', '', 2),
+            ('material_morphs', 'Material', 'Material Morphs', 0),
+            ('uv_morphs', 'UV', 'UV Morphs', 1),
+            ('bone_morphs', 'Bone', 'Bone Morphs', 2),
+            ('vertex_morphs', 'Vertex', 'Vertex Morphs', 3),
+            ('group_morphs', 'Group', 'Group Morphs', 4),
             ],
-        default='VTXMORPH',
+        default='vertex_morphs',
         update=_activeMorphReset
         )
     active_morph = IntProperty(
         name='Active Morph',
         min=0,
         default=0
+        )
+    editing_morphs = IntProperty(
+        name='Editing Morph',
+        description=('Internal property used to indicate that a morph is being viewed or edited. ' +
+                     'This is used as safety check to prevent some operations.'),
+        default=0, 
+        min=0,
+        )
+    active_mesh_index = IntProperty(
+        name='Active Mesh',
+        description='Active Mesh in this model',
+        default=-1,
+        set=_setActiveMeshObject,
+        get=_getActiveMeshObject,
         )

@@ -3,13 +3,14 @@
 import bpy
 from bpy.types import Operator
 
+from mmd_tools import utils
 import mmd_tools.core.model as mmd_model
 
 
 class AddDisplayItemFrame(Operator):
     bl_idname = 'mmd_tools.add_display_item_frame'
     bl_label = 'Add Display Item Frame'
-    bl_description = ''
+    bl_description = 'Add a display item frame to the list'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -18,12 +19,13 @@ class AddDisplayItemFrame(Operator):
         mmd_root = root.mmd_root
         item = mmd_root.display_item_frames.add()
         item.name = 'Display Frame'
+        mmd_root.active_display_item_frame = len(mmd_root.display_item_frames)-1
         return {'FINISHED'}
 
 class RemoveDisplayItemFrame(Operator):
     bl_idname = 'mmd_tools.remove_display_item_frame'
     bl_label = 'Remove Display Item Frame'
-    bl_description = ''
+    bl_description = 'Remove active display item frame from the list'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -33,13 +35,13 @@ class RemoveDisplayItemFrame(Operator):
         # Let's prevent the accidental deletion of the special frames
         if not mmd_root.display_item_frames[mmd_root.active_display_item_frame].is_special:
             mmd_root.display_item_frames.remove(mmd_root.active_display_item_frame)
-            mmd_root.active_display_item_frame -= 1
+            mmd_root.active_display_item_frame = max(0, mmd_root.active_display_item_frame-1)
         return {'FINISHED'}
 
 class MoveUpDisplayItemFrame(Operator):
     bl_idname = 'mmd_tools.move_up_display_item_frame'
     bl_label = 'Move Up Display Item Frame'
-    bl_description = ''
+    bl_description = 'Move active display item frame up in the list'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -56,7 +58,7 @@ class MoveUpDisplayItemFrame(Operator):
 class MoveDownDisplayItemFrame(Operator):
     bl_idname = 'mmd_tools.move_down_display_item_frame'
     bl_label = 'Move Down Display Item Frame'
-    bl_description = ''
+    bl_description = 'Move active display item frame down in the list'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -72,8 +74,8 @@ class MoveDownDisplayItemFrame(Operator):
 
 class AddDisplayItem(Operator):
     bl_idname = 'mmd_tools.add_display_item'
-    bl_label = 'Add Display Item Frame'
-    bl_description = ''
+    bl_label = 'Add Display Item'
+    bl_description = 'Add a display item to the list'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -82,13 +84,15 @@ class AddDisplayItem(Operator):
         mmd_root = root.mmd_root
         frame = mmd_root.display_item_frames[mmd_root.active_display_item_frame]
         item = frame.items.add()
+        item.type = 'MORPH' if frame.name == u'表情' else 'BONE'
         item.name = 'Display Item'
+        frame.active_item = len(frame.items)-1
         return {'FINISHED'}
 
 class RemoveDisplayItem(Operator):
     bl_idname = 'mmd_tools.remove_display_item'
-    bl_label = 'Remove Display Item Frame'
-    bl_description = ''
+    bl_label = 'Remove Display Item'
+    bl_description = 'Remove active display item from the list'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -97,13 +101,13 @@ class RemoveDisplayItem(Operator):
         mmd_root = root.mmd_root
         frame = mmd_root.display_item_frames[mmd_root.active_display_item_frame]
         frame.items.remove(frame.active_item)
-        frame.active_item -= 1
+        frame.active_item = max(0, frame.active_item-1)
         return {'FINISHED'}
 
 class MoveUpDisplayItem(Operator):
     bl_idname = 'mmd_tools.move_up_display_item'
-    bl_label = 'Move Up Display Item Frame'
-    bl_description = ''
+    bl_label = 'Move Up Display Item'
+    bl_description = 'Move active display item up in the list'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -120,8 +124,8 @@ class MoveUpDisplayItem(Operator):
 
 class MoveDownDisplayItem(Operator):
     bl_idname = 'mmd_tools.move_down_display_item'
-    bl_label = 'Move Down Display Item Frame'
-    bl_description = ''
+    bl_label = 'Move Down Display Item'
+    bl_description = 'Move active display item down in the list'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -138,8 +142,8 @@ class MoveDownDisplayItem(Operator):
 
 class SelectCurrentDisplayItem(Operator):
     bl_idname = 'mmd_tools.select_current_display_item'
-    bl_label = 'Select Current Display Item Frame'
-    bl_description = ''
+    bl_label = 'Select Current Display Item'
+    bl_description = 'Select the bone assigned to the display item in the armature'
     bl_options = {'PRESET'}
 
     def execute(self, context):
@@ -147,23 +151,8 @@ class SelectCurrentDisplayItem(Operator):
         root = mmd_model.Model.findRoot(obj)
         rig = mmd_model.Model(root)
         mmd_root = root.mmd_root
-
-        try:
-            bpy.ops.object.mode_set(mode='OBJECT')
-        except Exception:
-            pass
-
         arm = rig.armature()
-        for i in context.scene.objects:
-            i.select = False
-        arm.hide = False
-        arm.select = True
-        context.scene.objects.active = arm
-
-        bpy.ops.object.mode_set(mode='POSE')
         frame = mmd_root.display_item_frames[mmd_root.active_display_item_frame]
         item = frame.items[frame.active_item]
-        bone_name = item.name
-        for i in arm.pose.bones:
-            i.bone.select = (i.name == bone_name)
+        utils.selectSingleBone(context, arm, item.name)
         return {'FINISHED'}
