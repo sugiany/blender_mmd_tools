@@ -90,9 +90,9 @@ def _set_size(prop, value):
                 height=value[1],
                 target_object=obj,
                 )
-        if rb is None:
-            bpy.ops.rigidbody.object_add(type='ACTIVE')
-            obj.rigid_body.collision_shape = shape
+        mesh.update()
+        if rb:
+            rb.collision_shape = shape
     else:
         if shape == 'SPHERE':
             radius = max(value[0], 1e-3)

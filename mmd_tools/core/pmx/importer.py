@@ -430,7 +430,8 @@ class PMXImporter:
     def __importRigids(self):
         start_time = time.time()
         self.__rigidTable = {}
-        for i, rigid in enumerate(self.__model.rigids):
+        rigid_pool = self.__rig.createRigidBodyPool(len(self.__model.rigids))
+        for rigid, rigid_obj in zip(self.__model.rigids, rigid_pool):
             loc = mathutils.Vector(rigid.location) * self.TO_BLE_MATRIX * self.__scale
             rot = mathutils.Vector(rigid.rotation) * self.TO_BLE_MATRIX * -1
             if rigid.type == pmx.Rigid.TYPE_BOX:
@@ -439,6 +440,7 @@ class PMXImporter:
                 size = mathutils.Vector(rigid.size)
 
             obj = self.__rig.createRigidBody(
+                obj = rigid_obj,
                 name = rigid.name,
                 name_e = rigid.name_e,
                 shape_type = rigid.type,
@@ -457,22 +459,23 @@ class PMXImporter:
                 bone = None if rigid.bone == -1 or rigid.bone is None else self.__boneTable[rigid.bone].name,
                 )
             obj.hide = True
-            self.__rigidTable[i] = obj
+            self.__rigidTable[len(self.__rigidTable)] = obj
 
         logging.debug('Finished importing rigid bodies in %f seconds.', time.time() - start_time)
 
     def __importJoints(self):
         start_time = time.time()
-        for joint in self.__model.joints:
+        joint_pool = self.__rig.createJointPool(len(self.__model.joints))
+        for joint, joint_obj in zip(self.__model.joints, joint_pool):
             loc = mathutils.Vector(joint.location) * self.TO_BLE_MATRIX * self.__scale
             rot = mathutils.Vector(joint.rotation) * self.TO_BLE_MATRIX * -1
 
             obj = self.__rig.createJoint(
+                obj = joint_obj,
                 name = joint.name,
                 name_e = joint.name_e,
                 location = loc,
                 rotation = rot,
-                size = 0.5 * self.__scale,
                 rigid_a = self.__rigidTable.get(joint.src_rigid, None),
                 rigid_b = self.__rigidTable.get(joint.dest_rigid, None),
                 maximum_location = mathutils.Vector(joint.maximum_location) * self.TO_BLE_MATRIX * self.__scale,

@@ -102,6 +102,29 @@ class Model:
         frame_facial.name_e = 'Exp'
         frame_facial.is_special = True
 
+    def createRigidBodyPool(self, counts):
+        if counts < 1:
+            return []
+        obj = bpyutils.createObject(name='Rigidbody', object_data=bpy.data.meshes.new(name='Rigidbody'))
+        obj.parent = self.rigidGroupObject()
+        obj.mmd_type = 'RIGID_BODY'
+        obj.rotation_mode = 'YXZ'
+        obj.draw_type = 'SOLID'
+        obj.show_wire = True
+        obj.show_transparent = True
+        obj.hide_render = True
+        for attr_name in ('camera', 'diffuse', 'glossy', 'scatter', 'shadow', 'transmission'):
+            if hasattr(obj.cycles_visibility, attr_name):
+                setattr(obj.cycles_visibility, attr_name, False)
+
+        if bpy.app.version < (2, 71, 0):
+            obj.mmd_rigid.shape = 'BOX'
+            obj.mmd_rigid.size = (1, 1, 1)
+        bpy.ops.rigidbody.object_add(type='ACTIVE')
+        if counts == 1:
+            return [obj]
+        return bpyutils.duplicateObject(obj, counts)
+
     def createRigidBody(self, **kwargs):
         ''' Create a object for MMD rigid body dynamics.
         ### Parameters ###
@@ -134,28 +157,19 @@ class Model:
         linear_damping = kwargs.get('linear_damping')
         bounce = kwargs.get('bounce')
 
-        obj = bpyutils.createObject(name='Rigidbody')
+        obj = kwargs.get('obj', None)
+        if obj is None:
+            obj, = self.createRigidBodyPool(1)
+
         obj.location = location
-        obj.rotation_mode = 'YXZ'
         obj.rotation_euler = rotation
-        obj.hide_render = True
-        obj.mmd_type = 'RIGID_BODY'
-        obj.parent = self.rigidGroupObject()
 
         obj.mmd_rigid.shape = rigid_body.collisionShape(shape_type)
         obj.mmd_rigid.size = size
         obj.mmd_rigid.type = str(dynamics_type)
-        obj.draw_type = 'WIRE'
-        obj.show_wire = True
-
-        for attr_name in ('camera', 'diffuse', 'glossy', 'scatter', 'shadow', 'transmission'):
-            if hasattr(obj.cycles_visibility, attr_name):
-                setattr(obj.cycles_visibility, attr_name, False)
 
         if collision_group_number is not None:
             obj.mmd_rigid.collision_group_number = collision_group_number
-            obj.draw_type = 'SOLID'
-            obj.show_transparent = True
         if collision_group_mask is not None:
             obj.mmd_rigid.collision_group_mask = collision_group_mask
         if name is not None:
@@ -181,6 +195,33 @@ class Model:
         obj.select = False
         return obj
 
+    def createJointPool(self, counts):
+        if counts < 1:
+            return []
+        obj = bpyutils.createObject(name='Joint', object_data=None)
+        obj.parent = self.jointGroupObject()
+        obj.mmd_type = 'JOINT'
+        obj.rotation_mode = 'YXZ'
+        obj.empty_draw_type = 'ARROWS'
+        obj.empty_draw_size = 0.5 * self.__root.mmd_root.scale
+        obj.hide_render = True
+
+        bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
+        rbc = obj.rigid_body_constraint
+        rbc.disable_collisions = False
+        rbc.use_limit_ang_x = True
+        rbc.use_limit_ang_y = True
+        rbc.use_limit_ang_z = True
+        rbc.use_limit_lin_x = True
+        rbc.use_limit_lin_y = True
+        rbc.use_limit_lin_z = True
+        rbc.use_spring_x = True
+        rbc.use_spring_y = True
+        rbc.use_spring_z = True
+        if counts == 1:
+            return [obj]
+        return bpyutils.duplicateObject(obj, counts)
+
     def createJoint(self, **kwargs):
         ''' Create a joint object for MMD rigid body dynamics.
         ### Parameters ###
@@ -198,7 +239,6 @@ class Model:
 
         location = kwargs['location']
         rotation = kwargs['rotation']
-        size = kwargs['size']
 
         rigid_a = kwargs['rigid_a']
         rigid_b = kwargs['rigid_b']
@@ -213,39 +253,22 @@ class Model:
         name = kwargs['name']
         name_e = kwargs.get('name_e')
 
-        obj = bpy.data.objects.new(
-            'J.'+name,
-            None)
-        bpy.context.scene.objects.link(obj)
-        bpy.context.scene.objects.active = obj
-        obj.mmd_type = 'JOINT'
+        obj = kwargs.get('obj', None)
+        if obj is None:
+            obj, = self.createJointPool(1)
+
+        obj.name = 'J.' + name
         obj.mmd_joint.name_j = name
         if name_e is not None:
             obj.mmd_joint.name_e = name_e
 
         obj.location = location
-        obj.rotation_mode = 'YXZ'
         obj.rotation_euler = rotation
-        obj.empty_draw_size = size
-        obj.empty_draw_type = 'ARROWS'
-        obj.hide_render = True
 
-        bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
         rbc = obj.rigid_body_constraint
 
         rbc.object1 = rigid_a
         rbc.object2 = rigid_b
-
-        rbc.disable_collisions = False
-        rbc.use_limit_ang_x = True
-        rbc.use_limit_ang_y = True
-        rbc.use_limit_ang_z = True
-        rbc.use_limit_lin_x = True
-        rbc.use_limit_lin_y = True
-        rbc.use_limit_lin_z = True
-        rbc.use_spring_x = True
-        rbc.use_spring_y = True
-        rbc.use_spring_z = True
 
         rbc.limit_lin_x_upper = max_loc[0]
         rbc.limit_lin_y_upper = max_loc[1]
@@ -266,7 +289,6 @@ class Model:
         obj.mmd_joint.spring_linear = spring_linear
         obj.mmd_joint.spring_angular = spring_angular
 
-        obj.parent = self.jointGroupObject()
         obj.select = False
         return obj
 
@@ -755,33 +777,19 @@ class Model:
         logging.debug('-'*60)
         logging.debug(' creating ncc, counts: %d', total_len)
 
-        ncc_obj = bpy.data.objects.new('ncc', None)
-        bpy.context.scene.objects.link(ncc_obj)
+        ncc_obj = bpyutils.createObject(name='ncc', object_data=None)
         ncc_obj.location = [0, 0, 0]
         ncc_obj.empty_draw_size = 0.5
         ncc_obj.empty_draw_type = 'ARROWS'
         ncc_obj.mmd_type = 'NON_COLLISION_CONSTRAINT'
         ncc_obj.hide_render = True
         ncc_obj.parent = self.temporaryGroupObject()
-        with bpyutils.select_object(ncc_obj):
-            bpy.ops.rigidbody.constraint_add(type='GENERIC')
+
+        bpy.ops.rigidbody.constraint_add(type='GENERIC')
         rb = ncc_obj.rigid_body_constraint
         rb.disable_collisions = True
 
-        assert(ncc_obj.select and len(bpy.context.selected_objects) == 1)
-        last_selected = ncc_objs = [ncc_obj]
-        while len(ncc_objs) < total_len:
-            bpy.ops.object.duplicate()
-            ncc_objs.extend(bpy.context.selected_objects)
-            remain = total_len - len(ncc_objs) - len(bpy.context.selected_objects)
-            if remain < 0:
-                last_selected = bpy.context.selected_objects
-                for i in range(-remain):
-                    last_selected[i].select = False
-            else:
-                for i in range(min(remain, len(last_selected))):
-                    last_selected[i].select = True
-            last_selected = bpy.context.selected_objects
+        ncc_objs = bpyutils.duplicateObject(ncc_obj, total_len)
         logging.debug(' created %d ncc.', len(ncc_objs))
 
         for ncc_obj, pair in zip(ncc_objs, nonCollisionJointTable):

@@ -95,6 +95,28 @@ def select_object(obj, objects=[]):
     """
     return __SelectObjects(obj, objects)
 
+def duplicateObject(obj, total_len):
+    for i in bpy.context.selected_objects:
+        i.select = False
+    obj.select = True
+    assert(len(bpy.context.selected_objects) == 1)
+    assert(bpy.context.selected_objects[0] == obj)
+    last_selected = objs = [obj]
+    while len(objs) < total_len:
+        bpy.ops.object.duplicate()
+        objs.extend(bpy.context.selected_objects)
+        remain = total_len - len(objs) - len(bpy.context.selected_objects)
+        if remain < 0:
+            last_selected = bpy.context.selected_objects
+            for i in range(-remain):
+                last_selected[i].select = False
+        else:
+            for i in range(min(remain, len(last_selected))):
+                last_selected[i].select = True
+        last_selected = bpy.context.selected_objects
+    assert(len(objs) == total_len)
+    return objs
+
 def makeCapsuleBak(segment=16, ring_count=8, radius=1.0, height=1.0, target_scene=None):
     import math
     if target_scene is None:
@@ -147,10 +169,10 @@ def makeCapsuleBak(segment=16, ring_count=8, radius=1.0, height=1.0, target_scen
     target_scene.objects.link(meshObj)
     return meshObj
 
-def createObject(name='Object', target_scene=None):
+def createObject(name='Object', object_data=None, target_scene=None):
     if target_scene is None:
         target_scene = bpy.context.scene
-    obj = bpy.data.objects.new(name=name, object_data=bpy.data.meshes.new(name=name))
+    obj = bpy.data.objects.new(name=name, object_data=object_data)
     target_scene.objects.link(obj)
     target_scene.objects.active = obj
     obj.select = True
@@ -199,6 +221,7 @@ def makeCapsule(segment=8, ring_count=2, radius=1.0, height=1.0, target_object=N
     import math
     if target_object is None:
         target_object = createObject(name='Capsule')
+    height = max(height, 1e-3)
 
     mesh = target_object.data
     bm = bmesh.new()
