@@ -1,6 +1,8 @@
 mmd_tools
 ===========
 
+# Notice: This version is no longer maintained.  Maintained version: https://github.com/powroupi/blender_mmd_tools
+
 概要
 ----
 mmd_toolsはblender用MMD(MikuMikuDance)モデルデータ(.pmd, .pmx)およびモーションデータ(.vmd)インポータです。
