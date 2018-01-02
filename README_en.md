@@ -36,7 +36,7 @@ Extract the archive and put the folder mmd__tools into the addon folder of blend
     .../blender-2.67-windows64/2.67/scripts/addons/
 
 ### Loading Addon
-1. In User Preferences, under addon tab, select User filter and click the checkbox before mmd_tools
+1. In User Preferences, under addon tab, select User filter with Community in 'Supported Level', then click the checkbox before mmd_tools
    (you can also find the addon my search)
 2. After installation, you can find the panel called MMD on the left of 3D view
 
